@@ -24,7 +24,7 @@ class EpisodeRead(Contract):
     end_round_id: str
     summary: Name
     title: str = ""
-    created_by_round_id: str
+    created_by_round_id: str | None
     created_at: datetime
 
 

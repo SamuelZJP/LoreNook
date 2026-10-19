@@ -2,7 +2,7 @@
 
 [中文](../zh-CN/backend/09-round-summaries.md) | [Backend overview](README.md)
 
-Updated: 2026-10-19
+Updated: 2026-10-20
 
 ## 1. Responsibilities and implementation
 
@@ -45,9 +45,13 @@ AI body is only the inner text of the unique, closed, nonblank `<content>` secti
 
 Use this round's saved updated-state YAML, previous summaries only for continuity, and current user input plus the `<content>` body. Preserve key dialogue, facts, actions, emotional/state changes, and distinguish plans or guesses from completed events.
 
-Request a date—time—location header followed by about 150 Chinese characters of factual third-person narration. Use supplied scene fields without inventing missing values. Do not add interpretation, evaluation, speculation, previews, or a closing conclusion; no JSON, tags, tools, or fences. Length and header are prompt requirements rather than mechanical rewriting rules. Runtime requires one normally completed nonblank text reply and preserves whitespace/newlines.
+Request a date—time—location header followed by about 150 Chinese characters of factual third-person narration. Use supplied scene fields without inventing missing values. Do not add interpretation, evaluation, speculation, previews, or a closing conclusion; no JSON, tags, tools, or fences. Runtime requires one normally completed nonblank text reply and preserves whitespace/newlines.
+
+Reject significantly short generated summaries with 422: the minimum is `min(75, max(1, ceil(N / 5)))`, where N counts only the current user input and extracted AI body. Count Unicode letters/numbers (`str.isalnum`), excluding whitespace, punctuation and symbols. For output, exclude a leading scene line beginning with a numeric year plus `-`, `/` or `年` (or a literal format placeholder) and containing `—`; it contributes no narrative length even when it is the only line. State, prior summaries and prompt text do not count as source material. The 75-character cap is half the 150-character prompt target; the 20% source rule allows genuinely short dialogue without padding. No upper limit or automatic rewriting is imposed. Failures use the existing error/retry flow and preserve the saved state. Manual edits and historical summaries are not retroactively checked.
 
 Support `google_generate_content` (one candidate, `text/plain`) and `deepseek_chat_completions` (system/user messages, non-streaming text mode). Defaults fill other fields. Reject tools, explicit refusals, and truncation; native reasoning remains only in complete call logs. See [model calls](06-model-calls.md).
+
+After length validation, trimmed summary text must start with two ASCII digits (`[0-9]{2}`). Check the full summary, rejecting introductions, fences, tags, single digits and non-ASCII numerals. This is a prefix check, not full date validation. Trimming is used only for inspection; persist the original text. Failure returns 422 through existing error/retry handling, retaining state and progress. The prompt requires a numeric date opening; historical/manual text is unaffected.
 
 ## 4. Persistence, errors, and retry
 

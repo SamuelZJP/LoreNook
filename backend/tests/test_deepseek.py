@@ -129,7 +129,7 @@ def test_full_deepseek_archive_and_retry_records(database, archive_chat, tmp_pat
         if step == "state_update":
             text = '<UpdateVariable><Analysis>跨日结算。</Analysis><JSONPatch>[{"op":"replace","path":"/世界/日期","value":"2026-10-20"}]</JSONPatch></UpdateVariable>'
         else:
-            text = " 回合摘要\r\n" if step == "round_summary" else " 情节摘要\r\n"
+            text = " 2026/10/20 回合摘要\r\n" if step == "round_summary" else " 2026/10/19 用户与角色交换消息并确认计划，随后达成约定。\r\n"
             if step == "episode_summary":
                 assert body["response_format"] == {"type": "json_object"}
                 text = json.dumps({"title": "测试事件", "summary": text}, ensure_ascii=False)
@@ -146,7 +146,7 @@ def test_full_deepseek_archive_and_retry_records(database, archive_chat, tmp_pat
     finally:
         client.close()
     assert result.round.archive_step == "complete"
-    assert result.round.summary == " 回合摘要\r\n" and result.episode.summary == " 情节摘要\r\n"
+    assert result.round.summary == " 2026/10/20 回合摘要\r\n" and result.episode.summary == " 2026/10/19 用户与角色交换消息并确认计划，随后达成约定。\r\n"
     assert result.episode.title == "测试事件"
     assert result.state.content["世界"]["日期"] == "2026-10-20"
     assert len(calls) == 3 + bool(failed_step)

@@ -1435,7 +1435,7 @@ export interface components {
              */
             title: string;
             /** Created By Round Id */
-            created_by_round_id: string;
+            created_by_round_id: string | null;
             /**
              * Created At
              * Format: date-time

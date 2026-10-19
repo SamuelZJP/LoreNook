@@ -2,7 +2,7 @@
 
 [中文](../zh-CN/backend/08-state-updates.md) | [Backend overview](README.md)
 
-Updated: 2026-10-19
+Updated: 2026-10-20
 
 ## 1. Responsibilities and implementation
 
@@ -125,7 +125,7 @@ Supported operations are `add`, `replace`, and `remove`. Paths follow [JSON Poin
 
 Apply operations sequentially to a copy. Skip an individually malformed, mistyped, or unsuccessful operation and continue; report its count in `skipped_operations`. This module intentionally tolerates individual failures rather than failing the entire batch.
 
-Validate and correct the final full state through Schema, then check the universal world contract. An empty operation list, or all operations skipped, may still save an unchanged valid snapshot. Whole-response parsing, model, or final validation failures save no state and do not fall back to the old state as success.
+Validate and correct the final full state through Schema, then check the universal world contract. Compare the complete resulting JSON with the previous state, ignoring object key order but preserving value types and array order. An identical final state fails with 422, including empty/all-skipped operations, writes of original values, cancelling operations, and changes reverted by Schema correction. Save no snapshot and retain `state_update` for retry. The prompt explains this failure rule and requires factual updates; it must not invent elapsed time or other changes to pass the check. Whole-response parsing, model, or final validation failures also save no state.
 
 ## 5. Saving, retry, and concurrency
 

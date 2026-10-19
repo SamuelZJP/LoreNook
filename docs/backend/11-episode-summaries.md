@@ -2,7 +2,7 @@
 
 [中文](../zh-CN/backend/11-episode-summaries.md) | [Backend overview](README.md)
 
-Updated: 2026-10-19
+Updated: 2026-10-20
 
 ## 1. Responsibilities and implementation
 
@@ -41,7 +41,11 @@ Request a title of at most 20 characters, plus a summary starting with `start(yy
 
 Use the `episode_summary` binding with Google single-candidate `responseMimeType=application/json` or DeepSeek non-streaming `response_format={"type":"json_object"}`. Defaults fill remaining parameters. Require one normally completed text candidate, rejecting tools/refusals/truncation and excluding native reasoning. Complete requests/replies are recorded before parsing.
 
-Output exactly `{"title":"Event title","summary":"Date range—location\nEvent summary"}`. Both fields must be nonblank strings; title length is at most 20 characters. Reject missing/extra/duplicate fields, wrong types, multiple objects, nonfinite numbers, and invalid Unicode. Accept one outer JSON code fence, but do not search mixed explanatory text for an object. Persist field strings separately with their whitespace/newlines intact. Length and date-header guidance are prompt requirements, not automatic rewriting. Invalid JSON fails at the current step without fallback to plain text or an old summary.
+Output exactly `{"title":"Event title","summary":"Date range—location\nEvent summary"}`. Both fields must be nonblank strings; title length is at most 20 characters. Reject missing/extra/duplicate fields, wrong types, multiple objects, nonfinite numbers, and invalid Unicode. Accept one outer JSON code fence, but do not search mixed explanatory text for an object. Persist field strings separately with their whitespace/newlines intact. Invalid JSON fails at the current step without fallback to plain text or an old summary.
+
+Generated narrative must reach `min(100, max(1, ceil(N / 5)))` effective characters, using the [round summary counting rules](09-round-summaries.md). N sums user input and extracted AI body for the selected range, plus First Message when supplied (body only if tagged). Exclude states, round summaries, bridge material, and all material outside the range; output title and a separate date/location header cannot compensate for a short narrative. The 100-character cap is half the 200-character lower prompt target; the 20% source rule accommodates short input without invented padding. No upper limit or rewriting is imposed. Failure returns 422 through existing error/retry handling, preserving prior results and frozen coverage. Manual edits/imports and historical episodes are not retroactively checked.
+
+After parsing and length validation, the trimmed `summary` field must start with two ASCII digits (`[0-9]{2}`), independently of the title and JSON wrapper. This is a prefix check, not full date validation; preserve the original field text. Failure returns 422 through existing error/retry handling, retaining prior results and frozen coverage. The prompt requires a numeric date opening; historical/imported/manual text is unaffected.
 
 ## 4. Saving, failures, and concurrency
 
@@ -66,6 +70,8 @@ Changed inputs/progress return conflicts; stale results and errors are not writt
 | `PUT /api/chats/{chat_id}/episodes/{episode_id}` | Accept `{"summary":"Episode summary text","title":"Optional new title"}`; omitting title preserves it, save immediately, return the episode |
 
 Episode fields: `id`, `chat_id`, `start_round_id`, `end_round_id`, `title`, `summary`, `created_by_round_id`, `created_at`. All endpoints enforce chat ownership.
+
+Imported historical episodes have a null `created_by_round_id`; they remain readable and participate in memory and coverage, but are edited through data management. Normal generation always records its creating round.
 
 Editing can change only the title and summary of an episode created by the latest completed round. It cannot change ranges/creator or trigger generation. Saving another round ends that edit scope.
 

@@ -51,7 +51,8 @@ AI回复：{{ai_response}}
     - don't update field names starts with `_` as they are readonly, such as `_变量`
     - 'Analysis只写简短的结算结论，包括经过的时间、是否允许较大幅度的变化和各变量的变化或不变；不输出详细推理过程，不要求特定语言或字数。'
     - 'path使用JSON Pointer，~与/分别转义为~0与~1；replace和remove的目标必须存在，add的父路径必须存在；数组add是插入，-表示追加。'
-    - '每条add/replace必须提供value；没有变化时JSONPatch内容为[]；不得把状态根节点改成非对象。'
+    - '每条add/replace必须提供value；不得把状态根节点改成非对象。最终状态完全不变会判定本步骤失败，包括空Patch和写回原值。'
+    - '仅提交有本回合事实或变量更新规则依据的变化；不要为了通过检查编造时间推进、地点转移或其他变量变化。确实没有可更新内容时，在Analysis中如实说明并返回空Patch，由系统记录失败。'
     - '只输出下述结构，各标签恰好出现一次并正确闭合；不要使用Markdown代码围栏。'
   format: |-
     <UpdateVariable>

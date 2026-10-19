@@ -340,7 +340,7 @@ def test_next_episode_excludes_covered_rounds_and_old_episode(database, pending_
         assert "回合摘要1\r\n" not in prompt and "旧情节" not in prompt and "2026-10-19" not in prompt
         assert "回合5摘要" in prompt and "完整 AI 正文5" in prompt  # preceding covered bridge only
         assert "回合摘要11" not in prompt and "2026-10-21" not in prompt
-        return httpx.Response(200, json=text_response(episode_json("第二个情节")))
+        return httpx.Response(200, json=text_response(episode_json("2026/10/20 角色与用户继续交换消息，并确认下一步行动计划。")))
     async def scenario(client):
         root = f"/api/chats/{ids['chat_id']}"
         result = await client.post(root + f"/rounds/{later[-1]}/episode-summary")
@@ -366,7 +366,7 @@ def test_round_summary_decision_episode_chain(database, pending_episode):
         repo.add(ChatModelBinding(chat_id=ids["chat_id"], purpose="round_summary", model_config_id=ids["model_id"]))
     def handler(request):
         calls.append(request)
-        return httpx.Response(200, json=text_response("第六回合摘要" if len(calls) == 1 else TEXT))
+        return httpx.Response(200, json=text_response("2026/10/20 第六回合摘要" if len(calls) == 1 else TEXT))
     async def scenario(client):
         root = f"/api/chats/{ids['chat_id']}/rounds/{ids['round_id']}"
         summary = await client.post(root + "/round-summary")

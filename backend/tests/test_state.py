@@ -227,15 +227,36 @@ def test_state_step_saves_snapshot_and_progress_atomically(database, state_round
         assert repo.latest_state(character_id).round_id == round_id
 
 
-@pytest.mark.parametrize("operations,skipped", [([], 0), ([{"op": "replace", "path": "/missing", "value": 1}], 1)])
-def test_empty_or_all_skipped_patch_can_save_unchanged_state(database, state_round, operations, skipped):
+@pytest.mark.parametrize("operations", [[], [{"op": "replace", "path": "/missing", "value": 1}],
+    [{"op": "replace", "path": "/年龄", "value": 16}],
+    [{"op": "replace", "path": "/好感度", "value": -10}],
+    [{"op": "replace", "path": "/年龄", "value": 17}, {"op": "replace", "path": "/年龄", "value": 16}],
+    [{"op": "replace", "path": "", "value": dict(reversed(list(python_initial_state(SCHEMA).items())))}],
+])
+def test_unchanged_final_state_fails_and_can_retry(database, state_round, operations):
     chat_id, character_id, round_id = state_round
+    calls = []
+    def handler(request):
+        calls.append(request)
+        patch = operations if len(calls) == 1 else [{"op": "replace", "path": "/好感度", "value": 1}]
+        return httpx.Response(200, json=patch_response(patch))
     async def scenario(client):
-        result = await client.post(f"/api/chats/{chat_id}/rounds/{round_id}/state-update")
-        assert result.status_code == 200, result.text
-        assert result.json()["skipped_operations"] == skipped
-        assert result.json()["state"]["content"] == python_initial_state(SCHEMA)
-    run_api(database, scenario, llm_transport=httpx.MockTransport(lambda request: httpx.Response(200, json=patch_response(operations))))
+        path = f"/api/chats/{chat_id}/rounds/{round_id}/state-update"
+        result = await client.post(path)
+        assert result.status_code == 422, result.text
+        with database.read() as session:
+            repo = Repository(session)
+            assert repo.state_for_round(chat_id, round_id) is None
+            assert repo.latest_state(character_id).content == python_initial_state(SCHEMA)
+            record = repo.get(Round, round_id)
+            assert record.archive_step == "state_update" and "完全相同" in record.archive_error
+        retry = await client.post(path)
+        assert retry.status_code == 200, retry.text
+        assert retry.json()["state"]["content"]["好感度"] == 1
+        assert retry.json()["archive_step"] == "round_summary"
+        with database.read() as session:
+            assert Repository(session).get(Round, round_id).archive_error is None
+    run_api(database, scenario, llm_transport=httpx.MockTransport(handler))
 
 
 @pytest.mark.parametrize("failure,status", [("model", 502), ("json", 422), ("candidate", 422),
@@ -360,7 +381,8 @@ def test_recent_summaries_include_episode_covered_rounds_and_retry_clears_error(
         assert "第1回合：" not in prompt and "第2回合：" not in prompt
         assert prompt.index("第3回合：摘要3") < prompt.index("第4回合：摘要4") < prompt.index("第5回合：摘要5")
         assert "年龄: 21" in prompt and "情节汇总不用于" not in prompt
-        return httpx.Response(429, json={}) if len(calls) == 1 else httpx.Response(200, json=patch_response([]))
+        return httpx.Response(429, json={}) if len(calls) == 1 else httpx.Response(200, json=patch_response([
+            {"op": "replace", "path": "/好感度", "value": 1}]))
     async def scenario(client):
         path = f"/api/chats/{chat_id}/rounds/{current_id}/state-update"
         assert (await client.post(path)).status_code == 502
@@ -397,7 +419,8 @@ def test_state_save_failure_rolls_back_snapshot_and_step(database, state_round, 
         original(self, *args, **kwargs)
         raise RuntimeError("保存后提交前失败")
     monkeypatch.setattr(ArchiveRepository, "save_state", fail_after_save)
-    client = ModelClient(transport=httpx.MockTransport(lambda request: httpx.Response(200, json=patch_response([]))))
+    client = ModelClient(transport=httpx.MockTransport(lambda request: httpx.Response(200, json=patch_response([
+        {"op": "replace", "path": "/好感度", "value": 1}]))))
     try:
         with pytest.raises(RuntimeError):
             run_state_update(database, client, chat_id, round_id)

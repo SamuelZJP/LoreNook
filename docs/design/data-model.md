@@ -143,10 +143,12 @@ If no episode is needed, the decision advances directly to completion. Each resu
 | `end_round_id` | Last covered round |
 | `title` | Episode title, nonblank and at most 20 characters on generation; empty for legacy episodes |
 | `summary` | Episode summary text |
-| `created_by_round_id` | Round whose archive created the episode |
+| `created_by_round_id` | Round whose archive created the episode; null for imported history |
 | `created_at` | Save time |
 
 If round 6 creates an episode covering 1–5, its endpoints are 1 and 5, and its creating round is 6. `created_by_round_id` determines whether the episode is editable from the latest completed round. Coverage advances only when the episode is saved successfully.
+
+Imported historical episodes may have no creating round and can cover through the latest completed round. They participate in memory and coverage normally and are edited through data management. They must still cover consecutive completed rounds from the earliest uncovered round without overlaps or gaps. Normal archiving always records a creating round and ends its coverage before that round.
 
 ## 10. Creation and modification
 

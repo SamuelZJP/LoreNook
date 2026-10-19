@@ -50,4 +50,9 @@ def update_state(context: StateUpdateContext, client: ModelClient, validator: St
     except (KeyError, ValueError, TypeError, RecursionError):
         raise StateUpdateError("状态更新响应必须是正常完成的单个候选，包含唯一的 UpdateVariable、非空 Analysis 和 JSONPatch 数组") from None
     patched, skipped = apply_operations(context.state, operations)
-    return checked_state(validator, context.schema_source, patched), skipped
+    state = checked_state(validator, context.schema_source, patched)
+    if json.dumps(state, sort_keys=True, ensure_ascii=False, allow_nan=False) == json.dumps(
+        context.state, sort_keys=True, ensure_ascii=False, allow_nan=False
+    ):
+        raise StateUpdateError("状态更新失败：Patch 应用及 Schema 校验修正后的最终状态与更新前完全相同")
+    return state, skipped

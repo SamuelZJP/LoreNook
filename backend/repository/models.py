@@ -218,7 +218,8 @@ class Episode(Identified, Timestamped, Base):
     end_round_id: Mapped[str] = mapped_column(String(36))
     summary: Mapped[str] = mapped_column(Text)
     title: Mapped[str] = mapped_column(Text, default="", server_default="")
-    created_by_round_id: Mapped[str] = mapped_column(String(36), unique=True)
+    # Imported history may have no corresponding archive workflow round.
+    created_by_round_id: Mapped[str | None] = mapped_column(String(36), unique=True)
     __table_args__ = (
         CheckConstraint("length(trim(summary)) > 0", name="nonempty_summary"),
         ForeignKeyConstraint(["start_round_id", "chat_id"], ["rounds.id", "rounds.chat_id"],

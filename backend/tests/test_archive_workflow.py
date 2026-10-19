@@ -2,6 +2,7 @@ from backend.tests.state_fixtures import WORLD
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 import json
+import re
 
 import httpx
 import pytest
@@ -18,8 +19,8 @@ from backend.workflows.archive import confirm_archive, retry_archive
 
 INPUT = " 用户原文\r\n"
 OUTPUT = " <report_nya~>自定义思考</report_nya~>\r\n<content>本回合正文</content>\n"
-SUMMARY = " 摘要原文\r\n"
-EPISODE = " 情节原文\r\n"
+SUMMARY = " 2026/10/19—08:01—教室\n摘要原文\r\n"
+EPISODE = " 2026/10/19—2026/10/19—教室\n角色与用户在连续几轮对话中交换消息，确认此前的计划与约定。\r\n"
 
 
 def response(text):
@@ -57,7 +58,10 @@ def successful_handler(calls, *, new_day=False):
         step = step_of(request)
         calls.append(step)
         if step == "state_update":
-            patch = '[{"op":"replace","path":"/世界/日期","value":"2026-10-20"}]' if new_day else "[]"
+            prompt = json.loads(request.content)["contents"][0]["parts"][0]["text"]
+            hour, minute = map(int, re.search(r"时间: ['\"]?(\d{2}):(\d{2})", prompt).groups())
+            patch = json.dumps([{"op": "replace", "path": "/世界/日期", "value": "2026-10-20"}] if new_day
+                               else [{"op": "replace", "path": "/世界/时间", "value": f"{hour:02}:{(minute + 1) % 60:02}"}], ensure_ascii=False)
             return response('<UpdateVariable><Analysis>本轮结算。</Analysis><JSONPatch>' + patch +
                             '</JSONPatch></UpdateVariable>')
         return response(EPISODE if step == "episode_summary" else SUMMARY)
@@ -130,7 +134,8 @@ def test_confirmation_generates_episode_only_when_required(database, archive_cha
 
 
 @pytest.mark.parametrize("failed_step", ["state_update", "round_summary", "episode_summary"])
-def test_generation_failure_returns_progress_and_retry_skips_successful_steps(database, archive_chat, failed_step):
+@pytest.mark.parametrize("failure_kind", ["http", "invalid_content"])
+def test_generation_failure_returns_progress_and_retry_skips_successful_steps(database, archive_chat, failed_step, failure_kind):
     previous = seed_history(database, archive_chat) if failed_step == "episode_summary" else []
     calls, failed = [], False
     good = successful_handler(calls, new_day=bool(previous))
@@ -140,12 +145,17 @@ def test_generation_failure_returns_progress_and_retry_skips_successful_steps(da
         if step == failed_step and not failed:
             failed = True
             calls.append(step)
+            if failure_kind == "invalid_content":
+                text = ('<UpdateVariable><Analysis>无变化。</Analysis><JSONPatch>[]</JSONPatch></UpdateVariable>'
+                        if step == "state_update" else json.dumps({"title": "事件", "summary": "略"})
+                        if step == "episode_summary" else "略")
+                return response(text)
             return httpx.Response(429, json={"error": "archive-secret"})
         return good(request)
     async def scenario(client):
         root = f"/api/chats/{archive_chat}"
         result = await client.post(root + "/archive", json=payload(previous[-1] if previous else None))
-        assert result.status_code == 502 and "archive-secret" not in result.text
+        assert result.status_code == (502 if failure_kind == "http" else 422) and "archive-secret" not in result.text
         progress = result.json()["archive"]
         record = progress["round"]
         rid = record["id"]

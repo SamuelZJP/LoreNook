@@ -111,7 +111,7 @@ class EpisodeRow(TimestampedRow):
     start_round_id: RecordId
     end_round_id: RecordId
     summary: Name
-    created_by_round_id: RecordId
+    created_by_round_id: RecordId | None = None
 
 
 class AdminCreate(Contract):

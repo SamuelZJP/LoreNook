@@ -305,7 +305,7 @@ def test_summary_to_decision_chain_has_no_extra_model_call(database, chat, count
     calls = []
     def handler(request):
         calls.append(request)
-        return httpx.Response(200, json={"candidates": [{"finishReason": "STOP", "content": {"parts": [{"text": "本回合摘要"}]}}]})
+        return httpx.Response(200, json={"candidates": [{"finishReason": "STOP", "content": {"parts": [{"text": "2026/10/20 本回合摘要"}]}}]})
     async def scenario(client):
         root = f"/api/chats/{chat[0]}/rounds/{ids[-1]}"
         summary = await client.post(root + "/round-summary")

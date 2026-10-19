@@ -95,8 +95,8 @@ Final data must satisfy:
 - Round numbers are continuous from 1; only the latest round may be incomplete.
 - `state_update` has no current-round state, summary, or decision; `round_summary` has state only; `episode_decision` has state and summary but no decision.
 - `episode_summary` has state, summary, and a required saved range without its episode. `complete` has state, summary, decision, and any required episode.
-- Episode endpoints/creator share a chat; ranges are forward, continuous, cover archived rounds, and end before the creating round.
-- Saved episodes exactly match their creating round's decision. In creating-round order, each begins at the earliest uncovered round without overlaps or skipped history.
+- Episode endpoints/creator share a chat; ranges are forward, continuous, cover archived rounds, and end before the creating round. Imported historical episodes may have a null `created_by_round_id` and cover through the latest completed round.
+- Saved episodes with a creator exactly match that round's decision. In coverage order, every episode begins at the earliest uncovered round without overlaps or skipped history; creating rounds, when present, retain their chronological order.
 - Pending ranges likewise start at the earliest uncovered round without advancing coverage.
 - Preset selection, model purposes, definition ownership, and state ownership satisfy database references, uniqueness, and field constraints.
 
