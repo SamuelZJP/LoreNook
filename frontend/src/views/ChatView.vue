@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, toRef, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import { PanelRight, Check, Trash2, Code2, Loader2, AlertTriangle, Settings2 } from 'lucide-vue-next'
+import { PanelRight, Check, Trash2, Code2, Loader2, AlertTriangle, Settings2, ChevronUp } from 'lucide-vue-next'
 import { api } from '@/api/endpoints'
 import { ApiError, isTemplateError } from '@/api/client'
 import { useRoundFlow } from '@/composables/roundFlow'
@@ -47,6 +47,20 @@ const roundNo = computed(() => new Map(roundList.value.map((r) => [r.id, r.round
 const latest = computed(() => roundList.value.at(-1) ?? null)
 const latestComplete = computed(() => !latest.value || latest.value.archive_step === 'complete')
 
+// Floor display limit: rendering only. Earlier floors revealed here stay until the chat changes.
+const revealed = ref(0)
+watch(chatId, () => { revealed.value = 0 })
+const shownCount = computed(() => (prefs.floorLimit === null ? Infinity : prefs.floorLimit + revealed.value))
+const hiddenFloors = computed(() => Math.max(0, roundList.value.length - shownCount.value))
+const shownRounds = computed(() => (hiddenFloors.value ? roundList.value.slice(hiddenFloors.value) : roundList.value))
+function loadEarlier() {
+  const el = scroller.value
+  const fromBottom = el ? el.scrollHeight - el.scrollTop : 0
+  revealed.value += prefs.floorLimit ?? 0
+  // Keep the floor the reader was looking at in place while earlier floors are inserted above it.
+  nextTick(() => { if (el) el.scrollTop = el.scrollHeight - fromBottom })
+}
+
 const episodesByEnd = computed(() => {
   const map = new Map<string, NonNullable<typeof episodes.data.value>>()
   for (const ep of episodes.data.value ?? []) {
@@ -66,7 +80,9 @@ const readiness = computed(() => {
 })
 
 const raw = reactive(new Set<string>())
+/** Summaries toggled away from the `showSummaries` default. */
 const openSummaries = reactive(new Set<string>())
+const summaryOpen = (id: string) => prefs.showSummaries !== openSummaries.has(id)
 function toggle(set: Set<string>, id: string) {
   if (set.has(id)) set.delete(id)
   else set.add(id)
@@ -121,7 +137,13 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
       <ErrorBox v-if="chat.error.value" class="m" :error="chat.error.value" title="无法读取聊天" />
       <div ref="scroller" class="timeline">
         <div class="timeline-inner">
-          <MessageBubble v-if="character" side="ai" page :name="character.name" :avatar="character.avatar" floor="0">
+          <div v-if="hiddenFloors" class="earlier">
+            <button class="btn small" type="button" @click="loadEarlier">
+              <ChevronUp /> 加载更早的楼层
+            </button>
+            <span class="faint">还有 {{ hiddenFloors }} 层未显示</span>
+          </div>
+          <MessageBubble v-else-if="character" side="ai" page :name="character.name" :avatar="character.avatar" floor="0">
             <template #meta><span v-if="prefs.showFloorNumbers">#0 开场</span></template>
             <OutputView v-if="character.first_message" :text="character.first_message" :raw="raw.has('first')" />
             <p v-else class="faint">（没有开场消息）</p>
@@ -132,7 +154,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 
           <ErrorBox v-if="rounds.error.value" :error="rounds.error.value" title="无法读取回合" />
 
-          <template v-for="r in roundList" :key="r.id">
+          <template v-for="r in shownRounds" :key="r.id">
             <MessageBubble side="user" :name="identity?.name ?? '我'" :avatar="identity?.avatar">
               <template #meta><span v-if="prefs.showFloorNumbers">#{{ r.round_no }}</span></template>
               <div class="plain user-text">{{ r.user_input || '（空输入）' }}</div>
@@ -147,14 +169,17 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
               <OutputView :text="r.ai_output" :raw="raw.has(r.id)" />
               <template #actions>
                 <button class="btn ghost small" type="button" @click="toggle(raw, r.id)"><Code2 /> {{ raw.has(r.id) ? '渲染' : '原文' }}</button>
-                <button v-if="r.summary || r.archive_step !== 'state_update'" class="btn ghost small" type="button" @click="toggle(openSummaries, r.id)">
-                  {{ (prefs.showSummaries ? !openSummaries.has(r.id) : openSummaries.has(r.id)) ? '收起摘要' : '摘要' }}
+                <button
+                  v-if="r.summary || r.archive_step !== 'state_update'" class="btn ghost small" type="button"
+                  :aria-expanded="summaryOpen(r.id)" :aria-controls="`summary-${r.id}`" @click="toggle(openSummaries, r.id)"
+                >
+                  {{ summaryOpen(r.id) ? '收起摘要' : '摘要' }}
                 </button>
               </template>
             </MessageBubble>
             <RoundSummaryBlock
-              v-if="(prefs.showSummaries ? !openSummaries.has(r.id) : openSummaries.has(r.id)) && (r.summary || r.archive_step !== 'state_update')"
-              class="indent" :chat-id="chatId" :round-id="r.id" :summary="r.summary"
+              v-if="summaryOpen(r.id) && (r.summary || r.archive_step !== 'state_update')"
+              :id="`summary-${r.id}`" class="indent" :chat-id="chatId" :round-id="r.id" :summary="r.summary"
               :editable="r.id === latest?.id && latestComplete"
             />
             <EpisodeCard
@@ -232,7 +257,8 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 .dock { flex-shrink: 0; background: linear-gradient(to bottom, transparent, var(--bg) 18px); }
 .dock-inner { padding-top: 4px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); gap: 8px; }
 .indent { margin-left: 44px; }
-.user-text { font-size: var(--reading-size); }
+.user-text { font-size: var(--reading-size); font-family: var(--font-reading); }
+.earlier { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; font-size: 12px; }
 .notice { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 12px; border-radius: var(--radius-m); background: var(--warn-soft); font-size: 13px; }
 .notice svg { width: 16px; height: 16px; color: var(--warn); flex-shrink: 0; }
 .tpl { margin-top: 6px; font-size: 13px; }

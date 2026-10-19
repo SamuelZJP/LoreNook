@@ -37,7 +37,8 @@ Markers in the user input change the mock behavior: `[[fail-writing]]`, `[[fail-
 | `src/api/` | `schema.d.ts` (generated), `client.ts` (fetch wrapper, `ApiError` normalizing every `detail` form plus `archive` progress), `endpoints.ts` (typed endpoint functions) |
 | `src/composables/roundFlow.ts` | Round lifecycle: generate, regenerate, confirm, retry, and reconciling a lost confirmation response by reading progress |
 | `src/lib/sections.ts` | Splits AI output into tag sections for display; `contentProblem` mirrors the archive's `<content>` requirement |
-| `src/lib/prefs.ts` | Browser-local preferences (theme, font size, per-tag rendering category and display mode, send key) |
+| `src/lib/prefs.ts` | Browser-local preferences (theme, font size, reading fonts, per-tag rendering category and display mode, send key, floor display limit) |
+| `src/lib/fonts.ts` | Chinese and English reading font stacks; the English stack goes first so Latin text takes it and CJK falls through to the Chinese stack |
 | `src/lib/quotes.ts` | Recognizes standalone and inline quotations in main prose; `src/lib/markdown.ts` applies it during Markdown rendering |
 | `src/styles/reading.css` | Reading surface, prose typography, quotation, thought, and other-content styles; reading tokens live in `tokens.css` |
 | `src/lib/admin.ts` | Data-management staging, operations, and conflict detection |
@@ -50,5 +51,6 @@ Markers in the user input change the mock behavior: `[[fail-writing]]`, `[[fail-
 
 - Saved data always comes from the backend. Only the unconfirmed candidate lives in memory and is lost on reload; the page warns before unloading while a candidate or request is pending.
 - Model text is rendered with Markdown-it with raw HTML disabled and images disabled; display preferences never change stored output.
+- The floor display limit (default 100, or unlimited) only limits rendering; earlier floors can be revealed in the chat, and the model context is unaffected. Round summaries are collapsed by default.
 - Model editing sends `api_key` only when the user explicitly chooses to replace or clear it.
 - Preferences are stored in `localStorage` under `lorenook.prefs` (and `lorenook.panel` for the side panel) and apply to this browser only.

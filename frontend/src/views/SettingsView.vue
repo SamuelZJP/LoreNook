@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Plus, Trash2, RotateCcw } from 'lucide-vue-next'
 import TopBar from '@/components/TopBar.vue'
 import OutputView from '@/components/chat/OutputView.vue'
 import { categoryDefaultMode, prefs, resetPrefs, type RenderCategory, type SectionMode } from '@/lib/prefs'
+import { EN_FONTS, ZH_FONTS } from '@/lib/fonts'
 
 const modes: { id: SectionMode; label: string }[] = [
   { id: 'show', label: '显示' },
@@ -34,6 +35,19 @@ function addTag() {
 function removeTag(name: string) {
   delete prefs.sections[name]
 }
+// Floor limit: the field keeps the last valid number while "unlimited" is on.
+const limitDraft = ref(String(prefs.floorLimit ?? 100))
+const limitProblem = computed(() => (/^[1-9]\d*$/.test(limitDraft.value.trim()) ? null : '请输入正整数'))
+watch(() => prefs.floorLimit, (v) => { if (v !== null) limitDraft.value = String(v) })
+function commitLimit() {
+  if (!limitProblem.value) prefs.floorLimit = Number(limitDraft.value.trim())
+}
+function setUnlimited(on: boolean) {
+  prefs.floorLimit = on ? null : limitProblem.value ? 100 : Number(limitDraft.value.trim())
+}
+
+const fontSample = `窗外的雨停了。她翻开那本 The Little Prince（1943 年初版），轻声念道："All grown-ups were once children." 然后合上书，说："我们走吧。"`
+
 function reset() {
   if (confirm('恢复所有界面偏好为默认值？')) resetPrefs()
 }
@@ -70,6 +84,25 @@ const sample = `<think>她还不确定该不该提起那封信，也许先试探
             <label>正文字号：{{ prefs.fontSize }}px</label>
             <input v-model.number="prefs.fontSize" type="range" min="13" max="22" step="1" />
           </div>
+          <div class="row wrap font-row">
+            <div class="field grow">
+              <label for="zh-font">中文字体</label>
+              <select id="zh-font" v-model="prefs.zhFont" class="select">
+                <option v-for="f in ZH_FONTS" :key="f.id" :value="f.id">{{ f.label }}</option>
+              </select>
+            </div>
+            <div class="field grow">
+              <label for="en-font">英文字体</label>
+              <select id="en-font" v-model="prefs.enFont" class="select">
+                <option v-for="f in EN_FONTS" :key="f.id" :value="f.id">{{ f.label }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="card card-pad page-surface font-preview">
+            <p class="reading-prose">{{ fontSample }}</p>
+            <p class="summary-sample">回合摘要：她在雨夜读完 The Little Prince，决定和你一起离开书店。</p>
+          </div>
+          <p class="hint">用于聊天正文和回合摘要。除思源宋体随应用加载外，其他字体取决于设备是否安装，缺少时会自动改用相近字体。代码与界面文字不受影响。</p>
         </section>
 
         <section class="card card-pad stack">
@@ -126,6 +159,19 @@ const sample = `<think>她还不确定该不该提起那封信，也许先试探
           </div>
           <label class="check"><input v-model="prefs.showFloorNumbers" type="checkbox" /> 显示楼层编号</label>
           <label class="check"><input v-model="prefs.showSummaries" type="checkbox" /> 默认展开回合摘要</label>
+          <div class="field">
+            <label for="floor-limit">楼层显示上限</label>
+            <div class="row wrap limit-row">
+              <input
+                id="floor-limit" v-model="limitDraft" class="input limit" inputmode="numeric"
+                :disabled="prefs.floorLimit === null" :aria-invalid="!!limitProblem" @input="commitLimit"
+              />
+              <span class="faint">层</span>
+              <label class="check"><input type="checkbox" :checked="prefs.floorLimit === null" @change="setUnlimited(($event.target as HTMLInputElement).checked)" /> 不限制</label>
+            </div>
+            <p v-if="limitProblem && prefs.floorLimit !== null" class="hint warn-text">{{ limitProblem }}</p>
+            <p class="hint">只显示最近的楼层，可在聊天顶部加载更早的楼层。不影响聊天记录和发送给模型的上下文。</p>
+          </div>
         </section>
 
         <div><button class="btn" type="button" @click="reset"><RotateCcw /> 恢复默认</button></div>
@@ -149,4 +195,10 @@ const sample = `<think>她还不确定该不该提起那封信，也许先试探
 .warn-text { color: var(--warn); }
 .btn-spacer { width: 28px; flex-shrink: 0; }
 input[type='range'] { accent-color: var(--accent); }
+.font-row { gap: 12px; align-items: flex-start; }
+.font-row .field { min-width: 160px; }
+.font-preview .reading-prose { margin: 0; }
+.summary-sample { margin: 10px 0 0; font-family: var(--font-reading); font-size: 13px; line-height: 1.65; color: var(--page-muted); }
+.limit-row { gap: 8px; }
+.limit { width: 96px; }
 </style>

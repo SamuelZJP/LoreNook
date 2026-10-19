@@ -1,4 +1,5 @@
 import { reactive, watch } from 'vue'
+import { EN_FONTS, ZH_FONTS, readingFonts, type EnFont, type ZhFont } from './fonts'
 
 /**
  * Frontend-only preferences, stored in this browser's localStorage. They do not sync across
@@ -23,10 +24,16 @@ export const categoryDefaultMode: Record<RenderCategory, SectionMode> = {
 export interface Prefs {
   theme: 'system' | 'light' | 'dark'
   fontSize: number
+  zhFont: ZhFont
+  enFont: EnFont
   markdown: boolean
   sendKey: 'ctrl-enter' | 'enter'
   showFloorNumbers: boolean
   showSummaries: boolean
+  /** Most recent floors rendered in a chat; `null` renders all. Display only. */
+  floorLimit: number | null
+  /** Stored-format version; see `load`. */
+  version: number
   /** Rendering rule per tag name; tags not listed use `unknownSection`. */
   sections: Record<string, SectionRule>
   unknownSection: SectionRule
@@ -35,14 +42,19 @@ export interface Prefs {
 }
 
 const KEY = 'lorenook.prefs'
+const VERSION = 2
 
 const defaults: Prefs = {
   theme: 'system',
   fontSize: 16,
+  zhFont: 'noto-serif',
+  enFont: 'follow',
   markdown: true,
   sendKey: 'ctrl-enter',
   showFloorNumbers: true,
-  showSummaries: true,
+  showSummaries: false,
+  floorLimit: 100,
+  version: VERSION,
   sections: {
     content: { category: 'prose', mode: 'show' },
     think: { category: 'thought', mode: 'collapse' },
@@ -66,9 +78,17 @@ function toRule(value: unknown, fallback: SectionRule, legacyCategory: RenderCat
   }
 }
 
+function toFloorLimit(value: unknown): number | null {
+  if (value === null) return null
+  return Number.isInteger(value) && (value as number) > 0 ? (value as number) : defaults.floorLimit
+}
+
 function load(): Prefs {
   try {
     const stored = JSON.parse(localStorage.getItem(KEY) ?? '{}')
+    // Version 1 saved every field on any change, so a stored `showSummaries: true` is
+    // indistinguishable from the old default; drop it so the new collapsed default applies.
+    if ((stored.version ?? 1) < 2 && stored.showSummaries === true) delete stored.showSummaries
     const sections: Record<string, SectionRule> = structuredClone(defaults.sections)
     for (const [name, value] of Object.entries(stored.sections ?? {})) {
       const fallback = defaults.sections[name] ?? defaults.unknownSection
@@ -80,6 +100,10 @@ function load(): Prefs {
       sections,
       unknownSection: toRule(stored.unknownSection, defaults.unknownSection, 'other'),
       looseText: toRule(stored.looseText, defaults.looseText, 'other'),
+      zhFont: ZH_FONTS.some((f) => f.id === stored.zhFont) ? stored.zhFont : defaults.zhFont,
+      enFont: EN_FONTS.some((f) => f.id === stored.enFont) ? stored.enFont : defaults.enFont,
+      floorLimit: toFloorLimit(stored.floorLimit),
+      version: VERSION,
     }
   } catch {
     return structuredClone(defaults)
@@ -101,6 +125,9 @@ function apply() {
   if (prefs.theme === 'system') delete root.dataset.theme
   else root.dataset.theme = prefs.theme
   root.style.setProperty('--reading-size', `${prefs.fontSize}px`)
+  const fonts = readingFonts(prefs.zhFont, prefs.enFont)
+  root.style.setProperty('--font-reading', fonts.reading)
+  root.style.setProperty('--font-thought', fonts.thought)
 }
 
 watch(

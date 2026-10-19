@@ -24,7 +24,8 @@ def validate_world(content: dict) -> dict:
     if not isinstance(clock, str) or re.fullmatch(r"[0-9]{2}:[0-9]{2}", clock) is None:
         raise ValueError("世界.时间 必须采用 24 小时制 HH:mm 格式")
     try:
-        time.fromisoformat(clock)
+        # ISO parsing accepts 24:00 on Python 3.14; our clock ends at 23:59.
+        time(int(clock[:2]), int(clock[3:]))
     except ValueError:
         raise ValueError("世界.时间 必须是有效时间（00:00 至 23:59）") from None
     if not isinstance(world.get("地点"), str):

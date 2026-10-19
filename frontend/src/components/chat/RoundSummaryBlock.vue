@@ -58,5 +58,5 @@ async function save() {
 <style scoped>
 .summary { display: flex; flex-direction: column; gap: 6px; padding: 8px 12px; border-radius: var(--radius-m); background: var(--bg-sunken); font-size: 13px; }
 .head { min-height: 28px; }
-.text { white-space: pre-wrap; color: var(--text-muted); line-height: 1.65; }
+.text { white-space: pre-wrap; color: var(--text-muted); line-height: 1.65; font-family: var(--font-reading); }
 </style>
