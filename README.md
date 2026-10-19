@@ -4,6 +4,8 @@
 
 A personal AI roleplaying tool built around chats, layered memory, and programmable writing presets. The backend implements character and chat management, definition rendering, memory assembly, model calls, writing generation, state updates, round summaries, episode decisions and summaries, sequential archiving, and data management. A Vue web frontend covers the chat workflow, resource editors, data management, and preferences.
 
+Milestone 1 is deployed and accepted on Ubuntu 26.04 LTS. See [deployment and operations](docs/deployment/ubuntu.md) for the existing Caddy entry point, systemd services, updates, and backups, and [milestone 1](docs/releases/milestone-1.md) for acceptance results.
+
 ## Local development
 
 Python 3.12 or later is required. Run these commands from the project root in PowerShell:
@@ -36,6 +38,8 @@ npm run dev
 ```
 
 Open http://localhost:5173. See [frontend/README.md](frontend/README.md) for builds, type generation, and the mock backend.
+
+For reproducible installation from the committed lock file, use `npm ci`. Production serves `frontend/dist/` through Caddy; Vite development and preview servers are local tools.
 
 ## Validation and migrations
 

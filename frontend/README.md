@@ -9,6 +9,7 @@ Run from `frontend/`:
 | Command | Purpose |
 | --- | --- |
 | `npm install` | Install dependencies |
+| `npm ci` | Install exactly from the committed lock file |
 | `npm run dev` | Dev server on http://localhost:5173, proxying `/api` and `/health` to the backend |
 | `npm run build` | Type-check (`vue-tsc`) and build to `dist/` |
 | `npm run preview` | Serve the built `dist/` with the same proxy |
@@ -17,7 +18,7 @@ Run from `frontend/`:
 
 The proxy target defaults to `http://127.0.0.1:8000`; set `LORENOOK_BACKEND` to use another address. Proxy timeouts are disabled because generation and archiving can run for minutes.
 
-Production hosting is not packaged yet. `dist/` is a static site: serve it from the same origin as the API and route unknown paths to `index.html` (history-mode routing).
+Production uses Caddy to serve `dist/` from the same origin as the API, with history-route fallback to `index.html`. Keep API requests outside that fallback. The existing deployment and update procedure is documented in [Ubuntu deployment and operations](../docs/deployment/ubuntu.md). Vite development and preview servers are local tools.
 
 ## Mock backend
 

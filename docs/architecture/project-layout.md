@@ -2,7 +2,7 @@
 
 [中文](../zh-CN/architecture/project-layout.md) | [Documentation](../README.md)
 
-Updated: 2026-10-19
+Updated: 2026-10-20
 
 ## 1. Documentation
 
@@ -17,6 +17,11 @@ LoreNook/
    │  └─ data-model.md             # Logical business data
    ├─ architecture/
    │  └─ project-layout.md         # This document
+   ├─ deployment/
+   │  └─ ubuntu.md                 # Installation, routing, updates, backups
+   ├─ releases/
+   │  └─ milestone-1.md            # Delivered scope and acceptance
+   ├─ issues/                      # Backend/frontend issue records
    ├─ backend/
    │  ├─ README.md                 # Stack, layers, and workflows
    │  └─ 01-… through 13-…         # Numbered module references
@@ -25,9 +30,13 @@ LoreNook/
    │  ├─ index.md                  # Chinese documentation index
    │  ├─ design/
    │  ├─ architecture/
-   │  └─ backend/
+   │  ├─ backend/
+   │  ├─ deployment/
+   │  └─ releases/
    └─ archive/
-      └─ initial-project-outline.zh-CN.md
+      ├─ initial-project-outline.zh-CN.md
+      ├─ frontend-handoff.temporary.md
+      └─ frontend-test-handoff.temporary.md
 ```
 
 The [backend index](../backend/README.md) lists every module document. English and Chinese subject documents use matching relative layouts. Historical drafts are linked from the indexes and kept outside the current specification.
@@ -96,8 +105,10 @@ Creating a chat copies resources and generates its initial state in one transact
 ## 4. Runtime data and configuration
 
 - `data/`: default SQLite database location.
+- `deploy/`: ignored, machine-local service, environment, and backup configuration.
+- `backups/`: ignored database/configuration backups and restore-check files.
 - `alembic.ini` and `backend/migrations/`: database migration configuration and versions.
 - `pyproject.toml`: package metadata, compatible dependencies, and test settings.
 - `requirements-dev.lock`: pinned validation environment.
 
-Virtual environments, caches, generated package metadata, and temporary work are outside the maintained documentation structure. Deployment packaging remains future design work.
+Virtual environments, caches, generated package metadata, and temporary work are outside the maintained documentation structure. The accepted deployment uses systemd and the existing Caddy entry point; setup and operations are in [Ubuntu deployment](../deployment/ubuntu.md). Machine-local files remain outside version control; their reproducible contents are documented there.

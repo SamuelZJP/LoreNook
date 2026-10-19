@@ -278,7 +278,7 @@ The preset extracts the specified argument, checks required tags and closing str
 
 Accepted output retains its approved tags and waits for confirmation before storage. On later sends, the preset decides which sections to include. Archiving reads the `<content>` body, while frontend parsing determines display. Neither request filtering nor hiding a section changes stored AI output.
 
-Separate copies for display and context are unnecessary. Retaining complete upstream responses as diagnostic records remains an open design question.
+Separate copies for display and context are unnecessary. Complete model requests and upstream responses can be retained through opt-in call recording, disabled by default; see [model calls](../backend/06-model-calls.md).
 
 ## 8. Module boundaries
 
@@ -292,6 +292,6 @@ Separate copies for display and context are unnecessary. Retaining complete upst
 | Archive modules | State updates, summaries, or decisions | Programmable writing presets |
 | Frontend parsing | Display and rendering | Rewriting stored output |
 
-## 9. Further design work
+## 9. Delivery status and future scope
 
-Frontend layout, appearance, parsing controls, and deployment arrangements still need detail. The backend has established Jinja2 definitions, JavaScript/QuickJS presets, Python/Pydantic state Schemas, tag extraction, sequential archiving, and interruption recovery. See the [backend overview](../backend/README.md) for their contracts.
+The Vue frontend and first Ubuntu deployment are implemented and accepted. Frontend structure and rendering are documented in the [frontend README](../../frontend/README.md); installation, routing, updates, and backups are in [deployment and operations](../deployment/ubuntu.md). See [milestone 1](../releases/milestone-1.md) for validation and current boundaries. Candidate restoration, streaming, multi-user accounts, and media generation remain outside this release. Backend contracts are documented in the [backend overview](../backend/README.md).

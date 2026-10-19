@@ -1,5 +1,7 @@
 # LoreNook Frontend — Temporary Functional Brief
 
+Archived: 2026-10-20. This is the implementation-stage brief, not the current work queue. Its pending-work statements are historical. See the [frontend README](../../frontend/README.md), [milestone 1](../releases/milestone-1.md), and [deployment guide](../deployment/ubuntu.md) for current status.
+
 Date: 2026-10-19  
 Status: Temporary handoff for frontend exploration and implementation.
 
@@ -115,12 +117,12 @@ Image generation, voice, multi-user accounts, offline operation, and pending-can
 
 ## References
 
-- [Project setup and API overview](../README.md)
-- [Product design](design/product-design.md)
-- [Data model](design/data-model.md)
-- [Backend overview and module references](backend/README.md)
-- [Writing workflow](backend/07-writing-workflow.md)
-- [Archive contracts and recovery](backend/12-archiving-workflow.md)
-- [Data management contracts](backend/13-data-management.md)
+- [Project setup and API overview](../../README.md)
+- [Product design](../design/product-design.md)
+- [Data model](../design/data-model.md)
+- [Backend overview and module references](../backend/README.md)
+- [Writing workflow](../backend/07-writing-workflow.md)
+- [Archive contracts and recovery](../backend/12-archiving-workflow.md)
+- [Data management contracts](../backend/13-data-management.md)
 
 This temporary brief does not replace those detailed contracts. It can be revised or removed once the frontend direction and implementation are established.

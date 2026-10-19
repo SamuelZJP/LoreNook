@@ -4,6 +4,8 @@
 
 个人使用的 AI 角色扮演工具。当前后端已实现资料与聊天管理、定义解析、分层记忆、写作预设、模型调用、完整写作生成、状态管理与更新、回合摘要、情节判定、情节摘要、确认归档流程与数据管理；Vue 网页前端覆盖聊天流程、资源编辑、数据管理与偏好设置。
 
+里程碑一已在 Ubuntu 26.04 LTS 部署并验收。现有 Caddy 入口、systemd 服务、更新与备份见[部署与运维](deployment/ubuntu.md)，验收结果见[里程碑一](releases/milestone-1.md)。
+
 ## 本地开发
 
 需要 Python 3.12 或更高版本。在项目根目录执行（PowerShell）：
@@ -36,6 +38,8 @@ npm run dev
 ```
 
 打开 http://localhost:5173。构建、类型生成与模拟后端见 [frontend/README.md](../../frontend/README.md)。
+
+从已提交的锁定文件重复安装时使用 `npm ci`。正式部署由 Caddy 托管 `frontend/dist/`；Vite 开发与预览服务用于本地工作。
 
 ## 验证与迁移
 

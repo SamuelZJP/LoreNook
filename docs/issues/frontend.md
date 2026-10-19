@@ -1,6 +1,6 @@
 # Frontend Issue Log
 
-This document records frontend issues and expected behavior identified during testing. Requirements are being collected first; production code changes will follow after this round of issue collection is complete.
+This document records frontend issues, expected behavior, and implementation status. The first milestone has been accepted; see the [release record](../releases/milestone-1.md) for its validation scope.
 
 For entries involving a backend handoff, describe frontend behavior on the premise that the backend changes have already been completed, for example: “The backend now provides …; the frontend needs to …”. This wording states the handoff premise, not actual implementation progress. Track progress separately in each entry's status.
 
@@ -9,7 +9,7 @@ Backend issue BE-001 uses the existing archive error display and retry flow and 
 ## FE-001 Richer Chat Presentation and Rendering Categories
 
 - Recorded: 2026-10-20
-- Status: Implemented (Manuscript reading surface, three rendering categories, quotation recognition); awaiting testing.
+- Status: Implemented (Manuscript reading surface, three rendering categories, quotation recognition); included in the accepted first milestone. No separate automated visual test suite was added.
 - Scope: Visual presentation of chat content, rendering tag configuration, and output parsing.
 
 ### Overall Visual Direction

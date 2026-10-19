@@ -1,5 +1,7 @@
 # LoreNook Frontend — Temporary Testing Handoff
 
+Archived: 2026-10-20. This records the original mock-backed smoke checks and testing handoff. Statements about untested or unpackaged work describe that stage, not present deployment status. Later owner acceptance is recorded in [milestone 1](../releases/milestone-1.md); operations are documented in the [deployment guide](../deployment/ubuntu.md).
+
 Date: 2026-10-19
 Status: The frontend build is complete; testing is handed to the next stage. The original requirements are in [frontend-handoff.temporary.md](frontend-handoff.temporary.md).
 

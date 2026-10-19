@@ -2,7 +2,7 @@
 
 [English](../../architecture/project-layout.md) | [中文文档索引](../index.md)
 
-更新日期：2026-10-19
+更新日期：2026-10-20
 
 ## 1. 文档目录
 
@@ -17,6 +17,11 @@ LoreNook/
    │  └─ data-model.md             # 逻辑数据模型
    ├─ architecture/
    │  └─ project-layout.md         # 项目结构
+   ├─ deployment/
+   │  └─ ubuntu.md                 # 安装、分流、更新与备份
+   ├─ releases/
+   │  └─ milestone-1.md            # 交付范围与验收
+   ├─ issues/                      # 后端与前端问题记录
    ├─ backend/
    │  ├─ README.md                 # 技术、分层与流程
    │  └─ 01-… 至 13-…              # 模块说明
@@ -25,9 +30,13 @@ LoreNook/
    │  ├─ index.md                  # 中文文档索引
    │  ├─ design/
    │  ├─ architecture/
-   │  └─ backend/
+   │  ├─ backend/
+   │  ├─ deployment/
+   │  └─ releases/
    └─ archive/
-      └─ initial-project-outline.zh-CN.md
+      ├─ initial-project-outline.zh-CN.md
+      ├─ frontend-handoff.temporary.md
+      └─ frontend-test-handoff.temporary.md
 ```
 
 各模块的完整导航见[后端总览](../backend/README.md)。中英文主题文档采用对应目录，历史草稿独立归档，由索引提供入口。
@@ -96,8 +105,10 @@ API 负责传输，Workflow 控制顺序与保存时机，模块实现业务行�
 ## 4. 运行数据与配置
 
 - `data/`：默认 SQLite 数据库位置。
+- `deploy/`：忽略提交的本机服务、环境变量与备份配置。
+- `backups/`：忽略提交的数据库、配置备份与恢复检查文件。
 - `alembic.ini` 与 `backend/migrations/`：迁移配置及版本。
 - `pyproject.toml`：包配置、兼容依赖与测试设置。
 - `requirements-dev.lock`：验证环境的固定依赖。
 
-虚拟环境、缓存、生成的包元数据与临时内容不属于维护文档目录。部署打包仍待设计。
+虚拟环境、缓存、生成的包元数据与临时内容不属于维护文档目录。已验收部署采用 systemd 与现有 Caddy 入口，配置及运维见 [Ubuntu 部署](../deployment/ubuntu.md)。本机文件不进入版本控制，可重建内容在该文档中保留。

@@ -13,7 +13,13 @@ English is the primary documentation language. The [Chinese edition](zh-CN/index
 5. [Backend overview](backend/README.md): implementation layers and end-to-end workflows.
 6. Read the relevant module reference below for detailed contracts.
 
-The product design describes intended behavior, including frontend work that still needs implementation. The data model describes logical business data; the data-access reference adds physical database constraints. Module references describe the implemented backend interfaces.
+The product design describes product behavior and scope. The data model describes logical business data; the data-access reference adds physical database constraints. Module references describe the implemented backend interfaces. The frontend and first personal deployment have been accepted; see the release record for the validation scope.
+
+## Deployment and release
+
+- [Ubuntu deployment and operations](deployment/ubuntu.md): existing Caddy routing, systemd, database migration, updates, backup, and restoration.
+- [Milestone 1](releases/milestone-1.md): accepted scope, validation evidence, Python 3.14 compatibility fix, and current boundaries.
+- [Frontend implementation](../frontend/README.md): commands, structure, rendering, and browser-local preferences.
 
 ## Backend reference
 
@@ -53,3 +59,5 @@ API identifiers, paths, tags, and executable example keys keep their original sp
 ## Historical material
 
 The [initial project outline](archive/initial-project-outline.zh-CN.md) is preserved in its original Chinese with a status notice. It records early ideas, including flows superseded by the current design, and is not a current specification. A full English translation is not maintained for this historical draft.
+
+The [frontend functional brief](archive/frontend-handoff.temporary.md) and [testing handoff](archive/frontend-test-handoff.temporary.md) preserve the implementation-stage requirements and smoke-test checklist. Their pending-work statements are historical; use the current frontend README and milestone record for present status.
