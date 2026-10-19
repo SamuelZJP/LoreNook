@@ -1,20 +1,35 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { Plus, Trash2, RotateCcw } from 'lucide-vue-next'
 import TopBar from '@/components/TopBar.vue'
 import OutputView from '@/components/chat/OutputView.vue'
-import { prefs, resetPrefs, type SectionMode } from '@/lib/prefs'
+import { categoryDefaultMode, prefs, resetPrefs, type RenderCategory, type SectionMode } from '@/lib/prefs'
 
 const modes: { id: SectionMode; label: string }[] = [
   { id: 'show', label: '显示' },
   { id: 'collapse', label: '折叠' },
   { id: 'hide', label: '隐藏' },
 ]
+const categories: { id: RenderCategory; label: string }[] = [
+  { id: 'prose', label: '正文' },
+  { id: 'thought', label: '思维链' },
+  { id: 'other', label: '其他' },
+]
 const newTag = ref('')
+const newCategory = ref<RenderCategory | ''>('')
+const newTagName = computed(() => newTag.value.trim().replace(/^<\/?|>$/g, ''))
+const addProblem = computed(() => {
+  if (!newTagName.value) return null
+  if (!/^[A-Za-z_][\w\-~.:]*$/.test(newTagName.value)) return '标签名需以字母或下划线开头，只含字母、数字和 _ - ~ . :'
+  if (newTagName.value in prefs.sections) return '这个标签已在列表中'
+  return null
+})
 function addTag() {
-  const name = newTag.value.trim().replace(/^<|>$/g, '')
-  if (name && !(name in prefs.sections)) prefs.sections[name] = 'collapse'
+  const category = newCategory.value
+  if (!newTagName.value || !category || addProblem.value) return
+  prefs.sections[newTagName.value] = { category, mode: categoryDefaultMode[category] }
   newTag.value = ''
+  newCategory.value = ''
 }
 function removeTag(name: string) {
   delete prefs.sections[name]
@@ -23,11 +38,15 @@ function reset() {
   if (confirm('恢复所有界面偏好为默认值？')) resetPrefs()
 }
 
-const sample = `<think>这是预设自定义的思考区段，不是模型原生推理。</think>
-<content>“早上好。”她把书合上，**抬起头**看向你。
+const sample = `<think>她还不确定该不该提起那封信，也许先试探一下。这是预设自定义的思考区段，不是模型原生推理。</think>
+<content>凌晨 3:40，雨势小了些。她把那本 1998 年版的《Le Petit Prince》合上，指尖在封面上停了很久，才轻声说了句“随便你吧”，像是在对自己说。
+“你来得太晚了。”
+“走吧。”她站起身，把伞递给你。
 
-窗外的雨还没有停。</content>
-<status>好感度 +1</status>`
+所谓“规矩”，在这间旧书店里从来只有一条——不许在第 7 排书架前说谎。
+「那封信……『你』真的读过吗？」
+【喂？听得到吗？这里信号不太好。】</content>
+<status>好感度 62 → 63 · 第 3 天 21:40</status>`
 </script>
 
 <template>
@@ -58,34 +77,42 @@ const sample = `<think>这是预设自定义的思考区段，不是模型原生
           <p class="hint">AI 输出按顶层标签拆分为区段。这些设置只影响显示，确认与存储的始终是完整原文。</p>
           <label class="check"><input v-model="prefs.markdown" type="checkbox" /> 用 Markdown 渲染（HTML 标签会被转义，不会执行）</label>
           <div class="tag-table">
-            <div v-for="(_mode, name) in prefs.sections" :key="name" class="tag-row">
+            <div class="tag-row head faint">
+              <span class="grow">标签</span><span class="cat">渲染类别</span><span class="mode">显示方式</span><span class="btn-spacer" />
+            </div>
+            <div v-for="(rule, name) in prefs.sections" :key="name" class="tag-row">
               <code class="grow">&lt;{{ name }}&gt;</code>
-              <select v-model="prefs.sections[name]" class="select mode">
+              <select v-model="rule.category" class="select cat" :aria-label="`${name} 的渲染类别`">
+                <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.label }}</option>
+              </select>
+              <select v-model="rule.mode" class="select mode" :aria-label="`${name} 的显示方式`">
                 <option v-for="m in modes" :key="m.id" :value="m.id">{{ m.label }}</option>
               </select>
               <button class="btn ghost icon small" type="button" :title="`移除 ${name}`" @click="removeTag(String(name))"><Trash2 /></button>
             </div>
-            <div class="tag-row">
-              <span class="grow">其他未列出的标签</span>
-              <select v-model="prefs.unknownSection" class="select mode">
-                <option v-for="m in modes" :key="m.id" :value="m.id">{{ m.label }}</option>
+            <div v-for="row in [{ rule: prefs.unknownSection, label: '其他未列出的标签' }, { rule: prefs.looseText, label: '标签外的文本' }]" :key="row.label" class="tag-row">
+              <span class="grow">{{ row.label }}</span>
+              <select v-model="row.rule.category" class="select cat" :aria-label="`${row.label}的渲染类别`">
+                <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.label }}</option>
               </select>
-              <span class="btn-spacer" />
-            </div>
-            <div class="tag-row">
-              <span class="grow">标签外的文本</span>
-              <select v-model="prefs.looseText" class="select mode">
+              <select v-model="row.rule.mode" class="select mode" :aria-label="`${row.label}的显示方式`">
                 <option v-for="m in modes" :key="m.id" :value="m.id">{{ m.label }}</option>
               </select>
               <span class="btn-spacer" />
             </div>
           </div>
-          <div class="row">
-            <input v-model="newTag" class="input" placeholder="添加标签名，例如 report_nya~" @keydown.enter="addTag" />
-            <button class="btn" type="button" @click="addTag"><Plus /> 添加</button>
+          <div class="row wrap add-row">
+            <input v-model="newTag" class="input grow" placeholder="添加标签名，例如 report_nya~" @keydown.enter="addTag" />
+            <select v-model="newCategory" class="select cat" aria-label="新标签的渲染类别">
+              <option value="" disabled>选择渲染类别</option>
+              <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.label }}</option>
+            </select>
+            <button class="btn" type="button" :disabled="!newTagName || !newCategory || !!addProblem" @click="addTag"><Plus /> 添加</button>
           </div>
+          <p v-if="addProblem" class="hint warn-text">{{ addProblem }}</p>
+          <p class="hint">渲染类别决定区段的样式：正文使用书页排版并标出对白引号；思维链显示为可展开的批注；其他内容显示为紧凑的附注。显示方式决定是否展开或隐藏。</p>
           <div class="label">预览</div>
-          <div class="card card-pad preview"><OutputView :text="sample" /></div>
+          <div class="card card-pad page-surface"><OutputView :text="sample" /></div>
         </section>
 
         <section class="card card-pad stack">
@@ -114,8 +141,12 @@ const sample = `<think>这是预设自定义的思考区段，不是模型原生
 .seg { gap: 16px; }
 .tag-table { display: flex; flex-direction: column; gap: 6px; }
 .tag-row { display: flex; align-items: center; gap: 8px; }
-.mode { width: 110px; }
+.mode { width: 96px; flex-shrink: 0; }
+.cat { width: 110px; flex-shrink: 0; }
+.head { font-size: 12px; }
+.add-row .input { min-width: 180px; }
+.add-row .cat { width: auto; }
+.warn-text { color: var(--warn); }
 .btn-spacer { width: 28px; flex-shrink: 0; }
-.preview { background: var(--bubble-ai); }
 input[type='range'] { accent-color: var(--accent); }
 </style>

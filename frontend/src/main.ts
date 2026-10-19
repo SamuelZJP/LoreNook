@@ -3,7 +3,9 @@ import { VueQueryPlugin, QueryClient } from '@tanstack/vue-query'
 import App from './App.vue'
 import { router } from './router'
 import './styles/tokens.css'
+import '@fontsource-variable/noto-serif-sc'
 import './styles/base.css'
+import './styles/reading.css'
 import './lib/prefs'
 
 const queryClient = new QueryClient({

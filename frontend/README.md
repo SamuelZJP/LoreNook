@@ -37,7 +37,9 @@ Markers in the user input change the mock behavior: `[[fail-writing]]`, `[[fail-
 | `src/api/` | `schema.d.ts` (generated), `client.ts` (fetch wrapper, `ApiError` normalizing every `detail` form plus `archive` progress), `endpoints.ts` (typed endpoint functions) |
 | `src/composables/roundFlow.ts` | Round lifecycle: generate, regenerate, confirm, retry, and reconciling a lost confirmation response by reading progress |
 | `src/lib/sections.ts` | Splits AI output into tag sections for display; `contentProblem` mirrors the archive's `<content>` requirement |
-| `src/lib/prefs.ts` | Browser-local preferences (theme, font size, section display, send key) |
+| `src/lib/prefs.ts` | Browser-local preferences (theme, font size, per-tag rendering category and display mode, send key) |
+| `src/lib/quotes.ts` | Recognizes standalone and inline quotations in main prose; `src/lib/markdown.ts` applies it during Markdown rendering |
+| `src/styles/reading.css` | Reading surface, prose typography, quotation, thought, and other-content styles; reading tokens live in `tokens.css` |
 | `src/lib/admin.ts` | Data-management staging, operations, and conflict detection |
 | `src/views/ChatView.vue` | Chat timeline, candidate, archive banner, composer, side panel |
 | `src/components/panel/` | Chat side panel: state, memory and diagnostics, chat settings, chat-owned resources |

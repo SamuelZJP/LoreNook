@@ -220,7 +220,7 @@ async function runParse() {
           <ErrorBox v-if="trialError" :error="trialError" title="试运行失败" />
           <div v-if="parsed !== null" class="stack tight">
             <span class="label">解析结果（显示效果）</span>
-            <div class="card card-pad"><OutputView :text="parsed" /></div>
+            <div class="card card-pad page-surface"><OutputView :text="parsed" /></div>
             <details><summary class="label">原文</summary><pre class="raw">{{ parsed }}</pre></details>
           </div>
         </div>

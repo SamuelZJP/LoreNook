@@ -1,6 +1,11 @@
 :root {
   --font-sans: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
   --font-mono: ui-monospace, 'JetBrains Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+  /* Reading text. Locally installed copies of the Source Han / Noto Serif design come first; the
+     bundled variable font covers everything else. Never fall through to generic serif, which on
+     Windows resolves to SimSun. */
+  --font-reading: 'Source Han Serif SC', 'Noto Serif CJK SC', 'Noto Serif SC Variable', 'Noto Serif SC', 'Songti SC', 'STSong', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  --font-thought: 'Kaiti SC', 'STKaiti', 'KaiTi', 'AR PL UKai CN', var(--font-reading);
   --reading-size: 16px;
 
   --radius-s: 6px;
@@ -44,6 +49,21 @@
   --syn-function: #2563c9;
   --syn-property: #0e7490;
   --syn-type: #a3366b;
+  /* Reading surface for AI output */
+  --page-bg: #fbf8f2;
+  --page-border: #e6dccb;
+  --page-rule: #efe7d8;
+  --page-text: #2b2621;
+  --page-muted: #857a6a;
+  --page-em: #6b5f50;
+  --page-weight: 400;
+  --page-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .16 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  --page-glow: radial-gradient(120% 70% at 0% 0%, rgb(255 246 228 / 70%), transparent 60%);
+  --quote: #7d3c66;
+  --slip-bg: #f4ebe8;
+  --slip-border: #ead8d6;
+  --slip-text: #5a2944;
+  --slip-dash: #d7bfcb;
   color-scheme: light;
 }
 
@@ -83,6 +103,20 @@
     --syn-function: #7fb2ff;
     --syn-property: #6fd3e0;
     --syn-type: #f08cc0;
+    --page-bg: #1d1b20;
+    --page-border: #3a343a;
+    --page-rule: #2b272c;
+    --page-text: #e4dccd;
+    --page-muted: #978b7c;
+    --page-em: #c2b6a4;
+    --page-weight: 380;
+    --page-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .9 0 0 0 0 .82 0 0 0 .045 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+    --page-glow: radial-gradient(120% 70% at 0% 0%, rgb(120 90 130 / 12%), transparent 60%);
+    --quote: #e3aac6;
+    --slip-bg: #2b2229;
+    --slip-border: #45343f;
+    --slip-text: #f1cadb;
+    --slip-dash: #6a4a5c;
     color-scheme: dark;
   }
 }
@@ -122,5 +156,19 @@
   --syn-function: #7fb2ff;
   --syn-property: #6fd3e0;
   --syn-type: #f08cc0;
+  --page-bg: #1d1b20;
+  --page-border: #3a343a;
+  --page-rule: #2b272c;
+  --page-text: #e4dccd;
+  --page-muted: #978b7c;
+  --page-em: #c2b6a4;
+  --page-weight: 380;
+  --page-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .9 0 0 0 0 .82 0 0 0 .045 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  --page-glow: radial-gradient(120% 70% at 0% 0%, rgb(120 90 130 / 12%), transparent 60%);
+  --quote: #e3aac6;
+  --slip-bg: #2b2229;
+  --slip-border: #45343f;
+  --slip-text: #f1cadb;
+  --slip-dash: #6a4a5c;
   color-scheme: dark;
 }

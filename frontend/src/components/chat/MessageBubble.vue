@@ -8,6 +8,8 @@ defineProps<{
   avatar?: string | null
   floor?: number | string | null
   pending?: boolean
+  /** Paint the bubble as the reading page used for AI output. */
+  page?: boolean
 }>()
 </script>
 
@@ -19,7 +21,7 @@ defineProps<{
         <span class="name">{{ name }}</span>
         <slot name="meta" />
       </div>
-      <div class="bubble"><slot /></div>
+      <div class="bubble" :class="{ 'page-surface': page }"><slot /></div>
       <div v-if="$slots.actions" class="actions"><slot name="actions" /></div>
     </div>
   </div>
@@ -38,6 +40,7 @@ defineProps<{
   border: 1px solid var(--border); box-shadow: var(--shadow); min-width: 0; max-width: 100%;
 }
 .ai .bubble { border-top-left-radius: 4px; }
+.bubble.page-surface { padding: 16px 20px 14px; }
 .user .bubble { background: var(--bubble-user); color: var(--bubble-user-text); border-color: transparent; border-top-right-radius: 4px; }
 .pending .bubble { border-style: dashed; border-color: var(--accent); }
 .user.pending .bubble { border: 1px dashed var(--bubble-user-text); }
@@ -46,5 +49,6 @@ defineProps<{
 @media (max-width: 640px) {
   .av { display: none; }
   .col { max-width: 94%; }
+  .bubble.page-surface { padding: 14px 14px 12px; }
 }
 </style>

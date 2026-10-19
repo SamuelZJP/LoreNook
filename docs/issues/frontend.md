@@ -9,7 +9,7 @@ Backend issue BE-001 uses the existing archive error display and retry flow and 
 ## FE-001 Richer Chat Presentation and Rendering Categories
 
 - Recorded: 2026-10-20
-- Status: Requirements recorded; design and implementation pending. No production code changes at this stage.
+- Status: Implemented (Manuscript reading surface, three rendering categories, quotation recognition); awaiting testing.
 - Scope: Visual presentation of chat content, rendering tag configuration, and output parsing.
 
 ### Overall Visual Direction

@@ -121,7 +121,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
       <ErrorBox v-if="chat.error.value" class="m" :error="chat.error.value" title="无法读取聊天" />
       <div ref="scroller" class="timeline">
         <div class="timeline-inner">
-          <MessageBubble v-if="character" side="ai" :name="character.name" :avatar="character.avatar" floor="0">
+          <MessageBubble v-if="character" side="ai" page :name="character.name" :avatar="character.avatar" floor="0">
             <template #meta><span v-if="prefs.showFloorNumbers">#0 开场</span></template>
             <OutputView v-if="character.first_message" :text="character.first_message" :raw="raw.has('first')" />
             <p v-else class="faint">（没有开场消息）</p>
@@ -137,7 +137,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
               <template #meta><span v-if="prefs.showFloorNumbers">#{{ r.round_no }}</span></template>
               <div class="plain user-text">{{ r.user_input || '（空输入）' }}</div>
             </MessageBubble>
-            <MessageBubble side="ai" :name="character?.name ?? 'AI'" :avatar="character?.avatar">
+            <MessageBubble side="ai" page :name="character?.name ?? 'AI'" :avatar="character?.avatar">
               <template #meta>
                 <span v-if="prefs.showFloorNumbers">#{{ r.round_no }}</span>
                 <span v-if="r.archive_step !== 'complete'" class="badge warn">
@@ -170,7 +170,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
               <template #meta><span class="badge">候选输入</span></template>
               <div class="plain user-text">{{ candidate.user_input || '（空输入）' }}</div>
             </MessageBubble>
-            <MessageBubble side="ai" :name="character?.name ?? 'AI'" :avatar="character?.avatar" pending>
+            <MessageBubble side="ai" page :name="character?.name ?? 'AI'" :avatar="character?.avatar" pending>
               <template #meta><span class="badge accent">未保存的候选</span></template>
               <OutputView :text="candidate.ai_output" :raw="raw.has('candidate')" />
               <template #actions>
