@@ -65,6 +65,21 @@ backend/
 
 The implemented layout groups ordinary queries in `repository/queries.py`, archive persistence in `repository/archive.py`, and data management in `repository/admin.py`. HTTP resources are likewise grouped where appropriate, such as `api/catalog.py` and `api/models.py`. Native adapters reside in `llm/google.py` and `llm/deepseek.py`; `llm/generation.py` shares text request construction across archive generators. This tree does not prescribe a separate adapter directory.
 
+### Frontend
+
+```text
+frontend/
+├─ src/
+│  ├─ api/                    # Generated OpenAPI types, fetch client, endpoint functions
+│  ├─ lib/                    # Output sections, preferences, Markdown, data-management staging
+│  ├─ composables/            # Round lifecycle, layout state, toasts
+│  ├─ components/             # Shell, chat timeline, side panel tabs, resource editors
+│  └─ views/                  # Home, chat, library, data management, settings
+└─ dev/mock_backend.py        # Real backend with mocked model calls, for development and testing
+```
+
+The frontend is a Vue 3 single-page application. It calls the backend's `/api` contracts and keeps only the unconfirmed candidate and browser-local display preferences in the browser. See [`frontend/README.md`](../../frontend/README.md).
+
 ## 3. Request and persistence boundaries
 
 ```text
@@ -85,4 +100,4 @@ Creating a chat copies resources and generates its initial state in one transact
 - `pyproject.toml`: package metadata, compatible dependencies, and test settings.
 - `requirements-dev.lock`: pinned validation environment.
 
-Virtual environments, caches, generated package metadata, and temporary work are outside the maintained documentation structure. Deployment packaging and the frontend directory layout remain future design work.
+Virtual environments, caches, generated package metadata, and temporary work are outside the maintained documentation structure. Deployment packaging remains future design work.

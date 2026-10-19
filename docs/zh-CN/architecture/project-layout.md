@@ -65,6 +65,21 @@ backend/
 
 当前普通查询集中在 `repository/queries.py`，归档写入位于 `repository/archive.py`，数据管理位于 `repository/admin.py`，不再按每个实体各列一份 Repository 文件。HTTP 资料与模型接口分别使用 `api/catalog.py`、`api/models.py` 等实际分组；原生接口适配位于 `llm/google.py`、`llm/deepseek.py`，三个归档生成模块通过 `llm/generation.py` 共用文本请求构建。
 
+### 前端
+
+```text
+frontend/
+├─ src/
+│  ├─ api/                    # 生成的 OpenAPI 类型、请求客户端、接口函数
+│  ├─ lib/                    # 输出区段、偏好、Markdown、数据管理暂存
+│  ├─ composables/            # 回合生命周期、布局状态、提示
+│  ├─ components/             # 外壳、聊天时间线、侧边面板、资源编辑器
+│  └─ views/                  # 首页、聊天、资源库、数据管理、设置
+└─ dev/mock_backend.py        # 使用模拟模型调用的真实后端，用于开发与测试
+```
+
+前端是 Vue 3 单页应用，调用后端 `/api` 接口；浏览器中只保存未确认的候选回复和本地显示偏好。见 [`frontend/README.md`](../../../frontend/README.md)。
+
 ## 3. 调用与事务
 
 ```text
@@ -85,4 +100,4 @@ API 负责传输，Workflow 控制顺序与保存时机，模块实现业务行�
 - `pyproject.toml`：包配置、兼容依赖与测试设置。
 - `requirements-dev.lock`：验证环境的固定依赖。
 
-虚拟环境、缓存、生成的包元数据与临时内容不属于维护文档目录。部署打包及前端目录仍待设计。
+虚拟环境、缓存、生成的包元数据与临时内容不属于维护文档目录。部署打包仍待设计。

@@ -2,7 +2,7 @@
 
 [中文](docs/zh-CN/README.md) | [Documentation](docs/README.md)
 
-A personal AI roleplaying tool built around chats, layered memory, and programmable writing presets. The backend implements character and chat management, definition rendering, memory assembly, model calls, writing generation, state updates, round summaries, episode decisions and summaries, sequential archiving, and data management. Frontend integration is the next stage.
+A personal AI roleplaying tool built around chats, layered memory, and programmable writing presets. The backend implements character and chat management, definition rendering, memory assembly, model calls, writing generation, state updates, round summaries, episode decisions and summaries, sequential archiving, and data management. A Vue web frontend covers the chat workflow, resource editors, data management, and preferences.
 
 ## Local development
 
@@ -24,6 +24,18 @@ The default database is `data/lorenook.db` under the project root. Set `LORENOOK
 $env:LORENOOK_DATABASE_URL = 'sqlite:///data/development.db'
 .venv\Scripts\python.exe -m alembic upgrade head
 ```
+
+## Frontend
+
+The web frontend lives in `frontend/` (Vue 3, TypeScript, Vite). With the backend running on port 8000:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Open http://localhost:5173. See [frontend/README.md](frontend/README.md) for builds, type generation, and the mock backend.
 
 ## Validation and migrations
 

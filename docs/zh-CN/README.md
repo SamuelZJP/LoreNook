@@ -2,7 +2,7 @@
 
 [English](../../README.md) | [中文文档索引](index.md)
 
-个人使用的 AI 角色扮演工具。当前后端已实现资料与聊天管理、定义解析、分层记忆、写作预设、模型调用、完整写作生成、状态管理与更新、回合摘要、情节判定、情节摘要、确认归档流程与数据管理。
+个人使用的 AI 角色扮演工具。当前后端已实现资料与聊天管理、定义解析、分层记忆、写作预设、模型调用、完整写作生成、状态管理与更新、回合摘要、情节判定、情节摘要、确认归档流程与数据管理；Vue 网页前端覆盖聊天流程、资源编辑、数据管理与偏好设置。
 
 ## 本地开发
 
@@ -24,6 +24,18 @@ python -m venv .venv
 $env:LORENOOK_DATABASE_URL = 'sqlite:///data/development.db'
 .venv\Scripts\python.exe -m alembic upgrade head
 ```
+
+## 前端
+
+网页前端位于 `frontend/`（Vue 3、TypeScript、Vite）。后端在 8000 端口运行时：
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+打开 http://localhost:5173。构建、类型生成与模拟后端见 [frontend/README.md](../../frontend/README.md)。
 
 ## 验证与迁移
 
