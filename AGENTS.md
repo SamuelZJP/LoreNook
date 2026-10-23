@@ -1,5 +1,7 @@
-# 协作约定
+# Agent notes
 
-- 沟通与文档保持简明直接，减少防御性表述，不堆砌免责声明、假设风险和重复边界说明。
-- 讨论阶段先积累结论，达到阶段性成果或用户明确要求时再修改设计文档。
-- 项目文档独立描述 LoreNook 的规则，不以其他项目名称或代码路径代替设计说明。
+- Personal project, single `main` branch. Commit directly to `main`.
+- Keep communication and docs short and direct. No defensive caveats or repeated disclaimers.
+- Write docs and code comments in English. User-facing UI text, prompts and the `世界` state keys stay Chinese.
+- Docs are minimal: `README.md`, `docs/design.md`, `docs/deployment.md`. The code is the reference for implementation details. Update `design.md` only when a concept or rule changes, and only once a discussion has reached a conclusion.
+- Run `.venv/bin/python -m pytest -q` after backend changes and `npm run typecheck` in `frontend/` after frontend changes.
