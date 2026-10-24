@@ -20,9 +20,11 @@ def resolve_chat_definitions(database: Database, chat_id: str) -> ChatResolvedDe
         if state is None:
             raise ConflictError("Chat has no state snapshot")
         snapshot_id, content = state.id, state.content
+        names = {"user_name": repository.get(UserIdentity, identity_id).name,
+                 "character_name": repository.get(Character, character_id).name}
         storage = DefinitionStorage(repository)
         character_definitions = storage.read(character_id=character_id)
         user_definitions = storage.read(user_identity_id=identity_id)
 
-    resolved = DefinitionRenderer().resolve(character_definitions, user_definitions, content)
+    resolved = DefinitionRenderer().resolve(character_definitions, user_definitions, content, **names)
     return ChatResolvedDefinitions(chat_id=chat_id, state_snapshot_id=snapshot_id, **resolved.model_dump())

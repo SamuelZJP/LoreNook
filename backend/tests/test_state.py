@@ -178,7 +178,7 @@ def state_round(database, chat):
         repo = ArchiveRepository(session)
         character = repo.get(Character, chat[1])
         character.state_schema = SCHEMA
-        character.state_reference, character.state_update_rules = "参考设定", "限制好感度"
+        character.state_reference, character.state_update_rules = "参考{{char}}设定", "限制{{ user }}好感度"
         repo.latest_state(character.id).content = python_initial_state(SCHEMA)
         model = repo.add(ModelConfig(chat_id=chat[0], name="状态模型", api_type="google_generate_content",
                                      base_url="https://provider.test/v1beta", api_key="state-key", model="test-model"))
@@ -195,15 +195,15 @@ def test_state_step_saves_snapshot_and_progress_atomically(database, state_round
         calls.append(request)
         body = json.loads(request.content)
         text = body["contents"][0]["parts"][0]["text"]
-        assert "参考设定" in text and "限制好感度" in text
+        assert "参考角色设定" in text and "限制身份好感度" in text
         assert "用户输入\r\n" in text and " 正文\r\n " in text and "不得提供" not in text
         assert "好感度: 0" in text and "身份" in text
         assert body["generationConfig"]["responseMimeType"] == "text/plain"
         headings = ["## 特别强调", "## 上下文", "## 过去状态", "## 最近剧情回顾",
                     "## 本回合对话", "## 变量更新规则", "## 世界状态约定", "## 输出格式"]
         assert [text.index(heading) for heading in headings] == sorted(text.index(heading) for heading in headings)
-        assert "<Reference_Info>\n参考设定\n</Reference_Info>" in text
-        assert "<Variable_Update_Rules>\n限制好感度\n</Variable_Update_Rules>" in text
+        assert "<Reference_Info>\n参考角色设定\n</Reference_Info>" in text
+        assert "<Variable_Update_Rules>\n限制身份好感度\n</Variable_Update_Rules>" in text
         return httpx.Response(200, json=patch_response([
             {"op": "replace", "path": "/好感度", "value": 150},
             {"op": "replace", "path": "/不存在", "value": 1},

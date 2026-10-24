@@ -11,6 +11,8 @@ from backend.schemas.definitions import DefinitionPatch, DefinitionReorder
 from backend.shared.errors import ConflictError, DefinitionTemplateError, NotFoundError
 from backend.workflows.resolve_definitions import resolve_chat_definitions
 
+NAMES = {"user_name": "小明", "character_name": "江清月"}
+
 
 def definition(content, *, identifier="definition", order=0, enabled=True, template=True):
     return DefinitionRead(id=identifier, character_id="character", user_identity_id=None,
@@ -25,17 +27,25 @@ def test_render_nested_json_conditions_loops_and_preserve_text():
                             "{% for name in state['成员'] %}{{ name }}{% endfor %}\n")]
     user = [definition("<content>{{ untouched }}</content>\r\n", identifier="plain", template=False)]
     original_source = character[0].content
-    resolved = renderer.resolve(character, user, state)
+    resolved = renderer.resolve(character, user, state, **NAMES)
     assert resolved.character_definitions[0].content == "2026-10-19\n年长\n甲乙\n"
     assert resolved.user_definitions[0].content == "<content>{{ untouched }}</content>\r\n"
     assert character[0].content == original_source and state == original_state
+
+
+def test_user_and_char_placeholders_in_plain_text_and_templates():
+    character = [definition("{{char}}喜欢{{ USER }}，{{ state['年龄'] }}岁，{{ other }}", identifier="plain", template=False),
+                 definition("{{char}}喜欢{{ User }}{% if user == '小明' %}！{% endif %}", identifier="template", order=1)]
+    resolved = DefinitionRenderer().resolve(character, [], {"年龄": 16}, **NAMES)
+    assert [item.content for item in resolved.character_definitions] == [
+        "江清月喜欢小明，{{ state['年龄'] }}岁，{{ other }}", "江清月喜欢小明！"]
 
 
 def test_enabled_filter_deterministic_order_and_plain_invalid_template():
     definitions = [definition("{{ missing }}", identifier="disabled", enabled=False),
                    definition("{{ broken", identifier="b", order=1, template=False),
                    definition("first", identifier="a", order=1, template=False)]
-    result = DefinitionRenderer().resolve(definitions, [], {})
+    result = DefinitionRenderer().resolve(definitions, [], {}, **NAMES)
     assert [item.id for item in result.character_definitions] == ["a", "b"]
     assert [item.content for item in result.character_definitions] == ["first", "{{ broken"]
 
@@ -49,14 +59,14 @@ def test_enabled_filter_deterministic_order_and_plain_invalid_template():
 def test_template_errors_identify_definition_and_abort(source):
     with pytest.raises(DefinitionTemplateError) as caught:
         DefinitionRenderer().resolve([definition("valid", identifier="good"), definition(source, identifier="bad")],
-                                     [], {"世界": {}, "年龄": 16})
+                                     [], {"世界": {}, "年龄": 16}, **NAMES)
     assert caught.value.definition_id == "bad" and caught.value.message
 
 
 def test_template_errors_include_syntax_or_runtime_line():
     for source in ("first\n{% if %}", "first\n{{ state['missing'] }}"):
         with pytest.raises(DefinitionTemplateError) as caught:
-            DefinitionRenderer().resolve([definition(source)], [], {})
+            DefinitionRenderer().resolve([definition(source)], [], {}, **NAMES)
         assert caught.value.line == 2
 
 
@@ -69,7 +79,7 @@ def test_sandbox_blocks_mutations_and_python_internals(source):
     state = {"世界": {"日期": "2026-10-19"}, "成员": ["甲"]}
     original = deepcopy(state)
     with pytest.raises(DefinitionTemplateError):
-        DefinitionRenderer().resolve([definition(source)], [], state)
+        DefinitionRenderer().resolve([definition(source)], [], state, **NAMES)
     assert state == original
 
 
@@ -77,17 +87,17 @@ def test_raw_tags_are_not_escaped_and_missing_values_can_be_guarded():
     result = DefinitionRenderer().resolve([definition(
         "{{ state['text'] }}|{{ state['missing'] | default('未设置') }}|"
         "{% if state['missing'] is defined %}yes{% else %}no{% endif %}"
-    )], [], {"text": "<content>甲 & 乙</content>"})
+    )], [], {"text": "<content>甲 & 乙</content>"}, **NAMES)
     assert result.character_definitions[0].content == "<content>甲 & 乙</content>|未设置|no"
 
 
 def test_template_context_is_not_reused_and_output_is_bounded():
     renderer = DefinitionRenderer(max_output_chars=5)
     item = definition("{{ state['value'] }}")
-    assert renderer.resolve([item], [], {"value": "first"}).character_definitions[0].content == "first"
-    assert renderer.resolve([item], [], {"value": "next"}).character_definitions[0].content == "next"
+    assert renderer.resolve([item], [], {"value": "first"}, **NAMES).character_definitions[0].content == "first"
+    assert renderer.resolve([item], [], {"value": "next"}, **NAMES).character_definitions[0].content == "next"
     with pytest.raises(DefinitionTemplateError, match="超过"):
-        renderer.resolve([definition("{% for item in range(10) %}a{% endfor %}")], [], {})
+        renderer.resolve([definition("{% for item in range(10) %}a{% endfor %}")], [], {}, **NAMES)
 
 
 @pytest.mark.parametrize("owner_model", [Character, UserIdentity])

@@ -9,7 +9,7 @@ import OutputView from '../chat/OutputView.vue'
 import ScopeNote from './ScopeNote.vue'
 import JsonField, { jsonProblem } from './JsonField.vue'
 import { toast } from '@/composables/toast'
-import { pretty } from '@/lib/format'
+import { pretty, substituteNames } from '@/lib/format'
 import presetExample from '@examples/presets/examples/google_tool.js?raw'
 
 const props = defineProps<{ id: string | null; chatId: string | null }>()
@@ -136,7 +136,7 @@ async function loadChatMaterials() {
     const [chat, defs, memory] = await Promise.all([api.chat(chatId), api.resolveDefinitions(chatId), api.memory(chatId)])
     const { chat_id: _c, uses_compressed_history: _u, ...history } = memory
     materials.value = pretty({
-      first_message: chat.character.first_message,
+      first_message: substituteNames(chat.character.first_message, chat.user_identity.name, chat.character.name),
       character_name: chat.character.name,
       user_identity_name: chat.user_identity.name,
       character_definitions: defs.character_definitions,

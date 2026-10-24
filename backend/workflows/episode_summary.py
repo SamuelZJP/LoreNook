@@ -3,6 +3,7 @@
 from backend.llm.client import ModelClient
 from backend.llm.recording import recorded_workflow
 from backend.modules.chats.service import ChatService
+from backend.modules.definitions.renderer import substitute_names
 from backend.modules.episode_summary.generate import generate_episode_summary
 from backend.modules.models.service import ModelService
 from backend.repository.archive import ArchiveRepository
@@ -41,7 +42,9 @@ def _context(repository: ArchiveRepository, chat_id: str, round_id: str) -> Epis
     return EpisodeSummaryContext(
         chat_id=chat_id, round_id=round_id, start_round_id=record.episode_start_round_id,
         end_round_id=record.episode_end_round_id, character_name=character.name, user_name=identity.name,
-        rounds=rounds, first_message=character.first_message if selected[0].round_no == 1 else None,
+        rounds=rounds, first_message=substitute_names(
+            character.first_message, user_name=identity.name, character_name=character.name,
+        ) if selected[0].round_no == 1 else None,
         bridge=EpisodeBridgeRound.model_validate(bridge) if bridge is not None else None,
         connection=ModelService(repository, chat_id).for_purpose("episode_summary"),
     )

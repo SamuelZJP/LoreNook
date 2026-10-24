@@ -42,12 +42,12 @@ def writing_chat(database, chat):
                                     model="example-model", default_parameters={"generationConfig": {"topP": 0.9}}))
         repo.get(Chat, chat[0]).writing_preset_id = preset.id
         repo.add(ChatModelBinding(chat_id=chat[0], purpose="writing", model_config_id=model.id))
-        repo.get(Character, chat[1]).first_message = " 开场\r\n"
+        repo.get(Character, chat[1]).first_message = " 开场{{user}}\r\n"
         definition = repo.add(Definition(character_id=chat[1], order=2, has_template=True,
                                          content="年龄{{ state['年龄'] }}"))
         repo.add(Definition(character_id=chat[1], order=0, enabled=False, has_template=True, content="{{ missing }}"))
         identity = repo.list_owned(UserIdentity, chat[0])[0]
-        repo.add(Definition(user_identity_id=identity.id, content=" 用户定义\r\n"))
+        repo.add(Definition(user_identity_id=identity.id, content=" 用户定义{{ Char }}\r\n"))
         state_id = repo.latest_state(chat[1]).id
         return {"chat_id": chat[0], "character_id": chat[1], "preset_id": preset.id,
                 "model_config_id": model.id, "definition_id": definition.id, "state_snapshot_id": state_id}
@@ -101,8 +101,8 @@ def test_generate_and_regenerate_return_unsaved_candidates(database, writing_cha
     for value in seen:
         assert value["history"]["items"] == [] and value["history"]["total_rounds"] == 0
         assert value["character_definitions"] == [{"id": ids["definition_id"], "order": 2, "content": "年龄16"}]
-        assert value["user_definitions"][0]["content"] == " 用户定义\r\n"
-        assert value["first_message"] == " 开场\r\n" and value["state"]["年龄"] == 16
+        assert value["user_definitions"][0]["content"] == " 用户定义角色\r\n"
+        assert value["first_message"] == " 开场身份\r\n" and value["state"]["年龄"] == 16
     assert seen[0]["user_input"] != seen[1]["user_input"]
 
 
@@ -259,7 +259,7 @@ def test_single_snapshot_and_same_preset_source_during_call(database, writing_ch
     assert seen[0][0]["state"]["年龄"] == 16 and seen[1][0]["state"]["年龄"] == 20
     assert seen[0][0]["character_definitions"][0]["content"] == "年龄16"
     assert seen[1][0]["character_definitions"][0]["content"] == "新定义20"
-    assert seen[0][0]["first_message"] == " 开场\r\n" and seen[1][0]["first_message"] == "新开场"
+    assert seen[0][0]["first_message"] == " 开场身份\r\n" and seen[1][0]["first_message"] == "新开场"
     assert seen[0][1:] == ("private-writing-key", "/v1beta/models/example-model:generateContent")
     assert seen[1][1:] == ("updated-key", "/v1beta/models/updated-model:generateContent")
     with database.read() as session:

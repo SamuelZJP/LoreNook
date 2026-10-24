@@ -17,6 +17,11 @@ export function hue(seed: string): number {
   return h
 }
 
+/** Same {{user}} / {{char}} replacement the backend applies before the preset runs. */
+export function substituteNames(text: string, user: string, char: string): string {
+  return text.replace(/\{\{\s*(user|char)\s*\}\}/gi, (_, key: string) => (key.toLowerCase() === 'user' ? user : char))
+}
+
 export function pretty(value: unknown): string {
   return JSON.stringify(value, null, 2)
 }

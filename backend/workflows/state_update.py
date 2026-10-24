@@ -3,6 +3,7 @@
 from backend.llm.client import ModelClient
 from backend.llm.recording import recorded_workflow
 from backend.modules.chats.service import ChatService
+from backend.modules.definitions.renderer import substitute_names
 from backend.modules.models.service import ModelService
 from backend.modules.state.schema import StateValidator, validate_state
 from backend.modules.state.update import update_state
@@ -28,11 +29,13 @@ def _context(repository: Repository, chat_id: str, round_id: str, window: int) -
     state = repository.latest_state(character.id)
     if state is None or state.round_id == round_id:
         raise ConflictError("状态更新缺少合法的上一状态")
+    names = {"user_name": identity.name, "character_name": character.name}
     return StateUpdateContext(
         chat_id=chat_id, round_id=round_id, round_no=record.round_no,
         user_input=record.user_input, ai_output=record.ai_output,
         state_snapshot_id=state.id, state=state.content, schema_source=character.state_schema,
-        reference=character.state_reference, update_rules=character.state_update_rules, user_name=identity.name,
+        reference=substitute_names(character.state_reference, **names),
+        update_rules=substitute_names(character.state_update_rules, **names), user_name=identity.name,
         summaries=[f"第{r.round_no}回合：{r.summary}" for r in repository.summaries_before(chat_id, record.round_no, window)],
         connection=ModelService(repository, chat_id).for_purpose("state_update"),
     )

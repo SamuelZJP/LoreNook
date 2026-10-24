@@ -62,12 +62,12 @@ def test_first_message_episode_title_edit_and_memory(database, pending_episode):
     ids = pending_episode
     with database.transaction() as session:
         repo = Repository(session)
-        repo.get(Character, ids["character_id"]).first_message = "<report_nya~>开场报告不提供</report_nya~><content>开场事实</content>"
+        repo.get(Character, ids["character_id"]).first_message = "<report_nya~>开场报告不提供</report_nya~><content>开场事实{{user}}</content>"
         chat = repo.get(Chat, ids["chat_id"])
         chat.recent_rounds, chat.min_summaries = 0, 0
     def handler(request):
         prompt = json.loads(request.content)["contents"][0]["parts"][0]["text"]
-        assert "[首条消息]\n开场事实" in prompt and "开场报告不提供" not in prompt
+        assert "[首条消息]\n开场事实身份" in prompt and "开场报告不提供" not in prompt
         assert "## 已归档的最后一个对话回合" not in prompt
         assert "约200~300字" in prompt and "不超过20字" in prompt
         assert "起始时间(yyyy/mm/dd)-终止时间(yyyy/mm/dd)—地点" in prompt

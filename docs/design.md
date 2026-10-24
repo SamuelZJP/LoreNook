@@ -112,6 +112,7 @@ Episode coverage (for decisions) and episode use (in context) are independent: a
 - Ordered entries with `enabled`, `has_template`, `content`. Exactly one of `character_id` / `user_identity_id` is set.
 - Templates use Jinja2 (`ImmutableSandboxedEnvironment` + `StrictUndefined`). Any failing template fails the send before the model is called.
 - Rendered text is used for that request only; the stored definition is never overwritten.
+- `{{user}}` / `{{char}}` (case-insensitive, inner spaces allowed) become the chat's identity and character names before any preset or archive prompt sees them. Applies to all definitions (plain text by literal replacement, templates as variables `user` / `char`), First Message, state reference info and update rules. Character text must use these instead of a hard-coded user name, since one character can be paired with any identity.
 
 ## Writing presets
 

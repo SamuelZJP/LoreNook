@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pydantic import JsonValue
 
 from backend.modules.chats.service import ChatService
-from backend.modules.definitions.renderer import DefinitionRenderer
+from backend.modules.definitions.renderer import DefinitionRenderer, substitute_names
 from backend.modules.definitions.storage import DefinitionStorage
 from backend.modules.memory.service import MemoryService
 from backend.repository.models import Character, Chat, UserIdentity, WritingPreset
@@ -63,10 +63,11 @@ def collect_writing_snapshot(repository: Repository, chat_id: str) -> WritingSna
 
 def resolve_writing_materials(snapshot: WritingSnapshot, user_input: str) -> WritingMaterials:
     """Render only after the database session has closed."""
+    names = {"user_name": snapshot.user_identity_name, "character_name": snapshot.character_name}
     resolved = DefinitionRenderer().resolve(snapshot.character_definitions, snapshot.user_definitions,
-                                            snapshot.state)
+                                            snapshot.state, **names)
     return WritingMaterials(
         character_name=snapshot.character_name, user_identity_name=snapshot.user_identity_name,
-        first_message=snapshot.first_message, state=snapshot.state, history=snapshot.history,
+        first_message=substitute_names(snapshot.first_message, **names), state=snapshot.state, history=snapshot.history,
         user_input=user_input, **resolved.model_dump(),
     )

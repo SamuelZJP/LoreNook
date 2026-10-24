@@ -8,6 +8,7 @@ import { useRoundFlow } from '@/composables/roundFlow'
 import { contentProblem } from '@/lib/sections'
 import { STEP_LABELS } from '@/lib/archive'
 import { prefs } from '@/lib/prefs'
+import { substituteNames } from '@/lib/format'
 import { isWide } from '@/composables/layout'
 import TopBar from '@/components/TopBar.vue'
 import ErrorBox from '@/components/ErrorBox.vue'
@@ -43,6 +44,8 @@ function togglePanel(tab?: typeof panelTab.value) {
 
 const character = computed(() => chat.data.value?.character)
 const identity = computed(() => chat.data.value?.user_identity)
+const firstMessage = computed(() =>
+  character.value && identity.value ? substituteNames(character.value.first_message, identity.value.name, character.value.name) : '')
 const roundList = computed(() => rounds.data.value ?? [])
 const roundNo = computed(() => new Map(roundList.value.map((r) => [r.id, r.round_no])))
 const latest = computed(() => roundList.value.at(-1) ?? null)
@@ -146,7 +149,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
           </div>
           <MessageBubble v-else-if="character" side="ai" page :name="character.name" :avatar="character.avatar" floor="0">
             <template #meta><span v-if="prefs.showFloorNumbers">#0 开场</span></template>
-            <OutputView v-if="character.first_message" :text="character.first_message" :raw="raw.has('first')" />
+            <OutputView v-if="character.first_message" :text="firstMessage" :raw="raw.has('first')" />
             <p v-else class="faint">（没有开场消息）</p>
             <template #actions>
               <button v-if="character.first_message" class="btn ghost small" type="button" @click="toggle(raw, 'first')"><Code2 /> {{ raw.has('first') ? '渲染' : '原文' }}</button>
