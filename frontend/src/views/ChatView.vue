@@ -18,6 +18,7 @@ import ArchiveBanner from '@/components/chat/ArchiveBanner.vue'
 import RoundSummaryBlock from '@/components/chat/RoundSummaryBlock.vue'
 import EpisodeCard from '@/components/chat/EpisodeCard.vue'
 import ChatPanel from '@/components/panel/ChatPanel.vue'
+import type { PanelTab } from '@/components/panel/ChatPanel.vue'
 
 const props = defineProps<{ id: string }>()
 const chatId = toRef(props, 'id')
@@ -28,7 +29,7 @@ const episodes = useQuery({ queryKey: computed(() => ['episodes', chatId.value])
 const flow = useRoundFlow(chatId)
 
 const panelOpen = ref(isWide.value && localPanelPref())
-const panelTab = ref<'state' | 'memory' | 'settings' | 'resources'>('state')
+const panelTab = ref<PanelTab>('state')
 function localPanelPref() {
   try { return localStorage.getItem('lorenook.panel') !== 'closed' } catch { return true }
 }
