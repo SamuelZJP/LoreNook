@@ -125,6 +125,16 @@ async function remove() {
   }
 }
 
+type Tab = 'basic' | 'state' | 'definitions'
+const tab = ref<Tab>('basic')
+const tabs = computed(() => [
+  { id: 'basic' as const, label: '基本信息', fields: ['name', 'avatar', 'description', 'first_message'] as Field[] },
+  ...(isCharacter.value ? [{ id: 'state' as const, label: '状态', fields: ['state_schema', 'state_reference', 'state_update_rules'] as Field[] }] : []),
+  { id: 'definitions' as const, label: `${noun.value}定义`, fields: [] as Field[] },
+])
+watch(() => props.kind, () => { if (!tabs.value.some((t) => t.id === tab.value)) tab.value = 'basic' })
+const tabDirty = (fs: Field[]) => !creating.value && fs.some((f) => changed.value.includes(f))
+
 const defBase = computed(() => (original.value ? definitionBase(props.kind, original.value.id, props.chatId) : null))
 </script>
 
@@ -134,24 +144,32 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
     <ErrorBox v-if="loadError" :error="loadError" title="读取失败" />
     <div v-if="loading" class="empty">加载中…</div>
     <template v-else-if="!loadError">
-      <div class="row">
-        <AvatarBadge :name="draft.name" :src="draft.avatar" :size="52" />
-        <div class="grow stack tight">
-          <div class="field"><label>名称</label><input v-model="draft.name" class="input" /></div>
-        </div>
-      </div>
-      <div class="field">
-        <label>头像引用</label>
-        <input v-model="draft.avatar" class="input" placeholder="图片 URL 或路径（可留空）" />
-        <span class="hint">后端只保存引用文本，没有上传功能。</span>
-      </div>
-      <div class="field"><label>描述</label><textarea v-model="draft.description" class="textarea" rows="3" /></div>
+      <nav class="tabs">
+        <button v-for="t in tabs" :key="t.id" type="button" :class="{ active: tab === t.id }" @click="tab = t.id">
+          {{ t.label }}<span v-if="tabDirty(t.fields)" class="dot" title="有未保存的修改" />
+        </button>
+      </nav>
 
-      <template v-if="isCharacter">
+      <section v-show="tab === 'basic'" class="stack">
+        <div class="row">
+          <AvatarBadge :name="draft.name" :src="draft.avatar" :size="52" />
+          <div class="grow stack tight">
+            <div class="field"><label>名称</label><input v-model="draft.name" class="input" /></div>
+          </div>
+        </div>
         <div class="field">
+          <label>头像引用</label>
+          <input v-model="draft.avatar" class="input" placeholder="图片 URL 或路径（可留空）" />
+          <span class="hint">后端只保存引用文本，没有上传功能。</span>
+        </div>
+        <div class="field"><label>描述</label><textarea v-model="draft.description" class="textarea" rows="3" /></div>
+        <div v-if="isCharacter" class="field">
           <label>开场消息（第 0 楼）</label>
           <textarea v-model="draft.first_message" class="textarea" rows="6" />
         </div>
+      </section>
+
+      <section v-if="isCharacter" v-show="tab === 'state'" class="stack">
         <div class="field">
           <div class="row">
             <label class="label grow">状态 Schema（Python / Pydantic）</label>
@@ -166,10 +184,10 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
         </div>
         <div class="field"><label>状态参考信息</label><textarea v-model="draft.state_reference" class="textarea" rows="4" /></div>
         <div class="field"><label>状态更新规则</label><textarea v-model="draft.state_update_rules" class="textarea" rows="4" /></div>
-      </template>
+      </section>
 
-      <ErrorBox v-if="saveError" :error="saveError" title="保存失败" />
-      <div class="row actions">
+      <ErrorBox v-if="saveError && tab !== 'definitions'" :error="saveError" title="保存失败" />
+      <div v-show="tab !== 'definitions'" class="row actions">
         <button v-if="id && !chatId" class="btn danger" type="button" @click="remove"><Trash2 /> 删除</button>
         <span class="spacer" />
         <span v-if="!creating && changed.length" class="hint">{{ changed.length }} 项未保存</span>
@@ -178,12 +196,18 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
         </button>
       </div>
 
-      <DefinitionsEditor v-if="defBase" :base="defBase" :chat-id="chatId" :title="`${noun}定义`" />
-      <p v-else-if="creating" class="hint">创建后可以添加定义条目。</p>
+      <section v-if="tab === 'definitions'" class="stack">
+        <DefinitionsEditor v-if="defBase" :base="defBase" :chat-id="chatId" :title="`${noun}定义`" />
+        <template v-else-if="creating">
+          <h3>{{ noun }}定义</h3>
+          <p class="hint">创建后可以添加定义条目。</p>
+        </template>
+      </section>
     </template>
   </div>
 </template>
 
 <style scoped>
+.dot { display: inline-block; width: 6px; height: 6px; margin-left: 5px; border-radius: 50%; background: var(--warn); vertical-align: middle; }
 .actions { position: sticky; bottom: 0; background: var(--bg-elev); padding: 8px 0; z-index: 1; }
 </style>
