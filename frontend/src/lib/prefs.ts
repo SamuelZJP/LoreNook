@@ -32,6 +32,8 @@ export interface Prefs {
   showSummaries: boolean
   /** Most recent floors rendered in a chat; `null` renders all. Display only. */
   floorLimit: number | null
+  /** Data management: list round-ordered rows newest first. */
+  dataNewestFirst: boolean
   /** Stored-format version; see `load`. */
   version: number
   /** Rendering rule per tag name; tags not listed use `unknownSection`. */
@@ -54,6 +56,7 @@ const defaults: Prefs = {
   showFloorNumbers: true,
   showSummaries: false,
   floorLimit: 100,
+  dataNewestFirst: true,
   version: VERSION,
   sections: {
     content: { category: 'prose', mode: 'show' },

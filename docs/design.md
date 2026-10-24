@@ -140,6 +140,8 @@ function parse(response)  { return 'full AI output text'; }  // throw Error to f
 
 `/api/admin/data` reads and batch-edits every business table, including history. A batch commits or rolls back as a whole, guarded by a read revision against stale writes. Final consistency is checked (references, continuous round numbers, complete archive results, gap-free non-overlapping episode coverage). No models, Schemas, templates or presets run.
 
+The UI (聊天数据) is scoped by owner: one chat at a time (its history plus its copied resources; definitions belong to their owner's chat), or 资源库原始数据 for rows with `chat_id = NULL`. Pending changes stay global, so one batch can span scopes. 资源库 remains the normal editor for library resources.
+
 Imported episodes may have `created_by_round_id = NULL`; they work normally for memory and coverage.
 
 ## Security

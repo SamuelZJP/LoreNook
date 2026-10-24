@@ -24,7 +24,7 @@ function cycleTheme() {
     <ChatList class="list" />
     <nav class="bottom stack tight">
       <RouterLink to="/library" class="list-item" active-class="active"><Library /> 资源库</RouterLink>
-      <RouterLink to="/data" class="list-item" active-class="active"><Database /> 数据管理</RouterLink>
+      <RouterLink to="/data" class="list-item" active-class="active"><Database /> 聊天数据</RouterLink>
       <RouterLink to="/settings" class="list-item" active-class="active"><Settings /> 设置</RouterLink>
     </nav>
   </aside>

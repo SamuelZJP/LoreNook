@@ -2,6 +2,16 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "mock-backend",
+      "runtimeExecutable": ".venv/bin/python",
+      "runtimeArgs": [
+        "frontend/dev/mock_backend.py",
+        "--port",
+        "8765"
+      ],
+      "port": 8765
+    },
+    {
       "name": "frontend-mock",
       "runtimeExecutable": "env",
       "runtimeArgs": [

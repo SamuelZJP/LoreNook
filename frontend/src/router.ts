@@ -10,7 +10,7 @@ export const router = createRouter({
       name: 'library',
       component: () => import('./views/LibraryView.vue'),
     },
-    { path: '/data', name: 'data', component: () => import('./views/DataView.vue') },
+    { path: '/data/:scope?/:table?', name: 'data', component: () => import('./views/DataView.vue') },
     { path: '/settings', name: 'settings', component: () => import('./views/SettingsView.vue') },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],

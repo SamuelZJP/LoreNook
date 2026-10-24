@@ -1,3 +1,5 @@
+import { PURPOSE_LABELS, STEP_LABELS } from './archive'
+
 /**
  * Staging for data-management batches. Pure functions over snapshot rows so the
  * pending set can be shown, reconciled after a conflict, and turned into operations.
@@ -109,20 +111,6 @@ export function templateFromSchema(schema: Record<string, any>): Row {
   return out
 }
 
-/** Short, human-friendly fields to show per table. */
-export const SUMMARY_FIELDS: Record<string, string[]> = {
-  chats: ['title', 'recent_rounds', 'min_summaries'],
-  characters: ['name', 'chat_id'],
-  user_identities: ['name', 'chat_id'],
-  definitions: ['order', 'enabled', 'has_template', 'content'],
-  writing_presets: ['name', 'chat_id'],
-  model_configs: ['name', 'api_type', 'model', 'has_api_key', 'chat_id'],
-  chat_model_bindings: ['purpose', 'model_config_id'],
-  rounds: ['round_no', 'archive_step', 'user_input', 'summary'],
-  state_snapshots: ['round_id', 'content'],
-  episodes: ['title', 'summary'],
-}
-
 export const TABLE_LABELS: Record<string, string> = {
   chats: '聊天', characters: '角色', user_identities: '用户身份', definitions: '定义', writing_presets: '写作预设',
   model_configs: '模型配置', chat_model_bindings: '模型绑定', rounds: '回合', state_snapshots: '状态快照', episodes: '情节',
@@ -132,4 +120,111 @@ export function preview(value: unknown, max = 80): string {
   if (value === null || value === undefined) return '—'
   const text = typeof value === 'string' ? value : JSON.stringify(value)
   return text.length > max ? `${text.slice(0, max)}…` : text
+}
+
+// ---- Scopes and display ----
+
+/** A chat id, or `LIBRARY` for rows not owned by any chat. */
+export const LIBRARY = 'library'
+
+export const CHAT_TABLE_GROUPS: { label: string; tables: string[] }[] = [
+  { label: '历史', tables: ['rounds', 'state_snapshots', 'episodes'] },
+  { label: '聊天副本', tables: ['chats', 'characters', 'user_identities', 'definitions', 'writing_presets', 'model_configs', 'chat_model_bindings'] },
+]
+export const LIBRARY_TABLES = ['characters', 'user_identities', 'definitions', 'writing_presets', 'model_configs']
+
+/** Tables whose rows are ordered by round and can be sorted either way. */
+export const ROUND_ORDERED = ['rounds', 'state_snapshots', 'episodes']
+
+/** Rows of every table as staged, used to resolve references for titles and scopes. */
+export type Lookup = Record<string, Map<string, Row>>
+
+export function buildLookup(tables: Record<string, StagedRow[]>): Lookup {
+  const out: Lookup = {}
+  for (const [name, rows] of Object.entries(tables)) {
+    out[name] = new Map(rows.filter((s) => s.row.id != null).map((s) => [String(s.row.id), s.row]))
+  }
+  return out
+}
+
+const lookupRow = (lookup: Lookup, table: string, id: unknown) => (id == null ? undefined : lookup[table]?.get(String(id)))
+
+/** The chat id a row belongs to, or `LIBRARY`. Definitions belong to their owner's chat. */
+export function scopeOf(table: string, row: Row, lookup: Lookup): string {
+  if (table === 'chats') return String(row.id)
+  if (table === 'definitions') {
+    const owner = lookupRow(lookup, 'characters', row.character_id) ?? lookupRow(lookup, 'user_identities', row.user_identity_id)
+    return owner?.chat_id != null ? String(owner.chat_id) : LIBRARY
+  }
+  return row.chat_id != null ? String(row.chat_id) : LIBRARY
+}
+
+const roundNo = (lookup: Lookup, id: unknown) => lookupRow(lookup, 'rounds', id)?.round_no as number | undefined
+const nameOf = (row: Row | undefined) => (row ? String(row.name ?? '') : '')
+const firstLine = (text: unknown) => String(text ?? '').trim().split('\n')[0]
+
+/** Position used to sort round-ordered tables. */
+export function roundOrder(table: string, row: Row, lookup: Lookup): number {
+  if (table === 'rounds') return Number(row.round_no ?? 0)
+  if (table === 'state_snapshots') return row.round_id == null ? 0 : (roundNo(lookup, row.round_id) ?? 0)
+  if (table === 'episodes') return roundNo(lookup, row.start_round_id) ?? 0
+  return 0
+}
+
+function roundRange(lookup: Lookup, start: unknown, end: unknown): string {
+  const a = roundNo(lookup, start)
+  const b = roundNo(lookup, end)
+  return `第 ${a ?? '?'}–${b ?? '?'} 回合`
+}
+
+/** Human-readable card title. */
+export function rowTitle(table: string, row: Row, lookup: Lookup): string {
+  switch (table) {
+    case 'chats': return String(row.title || '未命名聊天')
+    case 'definitions': {
+      const owner = lookupRow(lookup, 'characters', row.character_id) ?? lookupRow(lookup, 'user_identities', row.user_identity_id)
+      return `#${row.order ?? 0} · ${nameOf(owner) || '未知所有者'}`
+    }
+    case 'chat_model_bindings':
+      return `${PURPOSE_LABELS[row.purpose as keyof typeof PURPOSE_LABELS] ?? row.purpose} → ${nameOf(lookupRow(lookup, 'model_configs', row.model_config_id)) || '未知模型'}`
+    case 'rounds': return `第 ${row.round_no ?? '?'} 回合`
+    case 'state_snapshots': {
+      if (row.round_id == null) return '初始状态'
+      const n = roundNo(lookup, row.round_id)
+      return n == null ? '未知回合后' : `第 ${n} 回合后`
+    }
+    case 'episodes': return String(row.title || '未命名情节')
+    default: return String(row.name || '未命名')
+  }
+}
+
+export interface Detail { label: string; value: string }
+
+function worldLine(content: unknown): string {
+  const w = (content as Record<string, any> | null)?.['世界']
+  if (!w || typeof w !== 'object') return '—'
+  return [[w['日期'], w['星期'], w['时间']].filter(Boolean).join(' '), w['地点']].filter(Boolean).join(' · ') || '—'
+}
+
+/** A few short fields shown under the title. */
+export function rowDetails(table: string, row: Row, lookup: Lookup): Detail[] {
+  const d = (label: string, value: unknown): Detail => ({ label, value: preview(value) })
+  switch (table) {
+    case 'chats': return [d('近期回合', row.recent_rounds), d('最少摘要', row.min_summaries), d('写作预设', nameOf(lookupRow(lookup, 'writing_presets', row.writing_preset_id)) || null)]
+    case 'characters':
+    case 'user_identities': return [d('描述', firstLine(row.description) || null)]
+    case 'definitions': return [d('状态', [row.enabled ? '启用' : '停用', row.has_template ? '模板' : ''].filter(Boolean).join(' · ')), d('内容', firstLine(row.content) || null)]
+    case 'writing_presets': return [d('长度', `${String(row.source ?? '').length} 字符`)]
+    case 'model_configs': return [d('接口', `${row.api_type} · ${row.model}`), d('密钥', row.has_api_key ? '已设置' : '未设置')]
+    case 'chat_model_bindings': return []
+    case 'rounds': return [
+      d('归档', STEP_LABELS[row.archive_step as keyof typeof STEP_LABELS] ?? row.archive_step),
+      ...(row.archive_error ? [d('错误', row.archive_error)] : []),
+      d('输入', firstLine(row.user_input) || null),
+      d('摘要', row.summary),
+    ]
+    case 'state_snapshots': return [d('世界', worldLine(row.content)), d('角色', nameOf(lookupRow(lookup, 'characters', row.character_id)) || null)]
+    case 'episodes': return [d('范围', roundRange(lookup, row.start_round_id, row.end_round_id)), d('摘要', row.summary)]
+    default: return []
+  }
 }
