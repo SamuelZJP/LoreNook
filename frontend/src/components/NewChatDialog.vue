@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 import { api, MODEL_PURPOSES, type ModelPurpose } from '@/api/endpoints'
 import { PURPOSE_LABELS } from '@/lib/archive'
 import ModalDialog from './ModalDialog.vue'
+import ProfilePicker from './ProfilePicker.vue'
 import ErrorBox from './ErrorBox.vue'
 import { toast } from '@/composables/toast'
 
@@ -87,15 +88,11 @@ const create = useMutation({
       <div class="grid-2">
         <div class="field">
           <label>角色</label>
-          <select v-model="form.character_id" class="select">
-            <option v-for="c in characters.data.value" :key="c.id" :value="c.id">{{ c.name }}</option>
-          </select>
+          <ProfilePicker v-model="form.character_id" :items="characters.data.value ?? []" label="角色" />
         </div>
         <div class="field">
           <label>用户身份</label>
-          <select v-model="form.user_identity_id" class="select">
-            <option v-for="i in identities.data.value" :key="i.id" :value="i.id">{{ i.name }}</option>
-          </select>
+          <ProfilePicker v-model="form.user_identity_id" :items="identities.data.value ?? []" label="用户身份" />
         </div>
       </div>
       <div class="field">
