@@ -13,12 +13,15 @@ def content_length(text: str) -> int:
     return sum(character.isalnum() for character in text)
 
 
+_SEGMENT = r"[^—\s。，,；;！!？?]{0,30}"
+_HEADER = re.compile(rf"(?:\d{{4}}[-/年]|年月日|起始时间|yyyy){_SEGMENT}(?:—{_SEGMENT})?—{_SEGMENT}")
+
+
 def summary_length(text: str) -> int:
-    # A separate scene header must not compensate for a missing narrative.
-    first, _, rest = text.strip().partition("\n")
-    if re.match(r"^(?:\d{4}[-/年]|年月日|起始时间|yyyy)", first) and "—" in first:
-        text = rest
-    return content_length(text)
+    # The scene header must not compensate for a missing narrative; narrative on the same line still counts.
+    text = text.strip()
+    header = _HEADER.match(text)
+    return content_length(text[header.end():] if header else text)
 
 
 def minimum_summary_length(sources: list[str], *, target_floor: int) -> int:

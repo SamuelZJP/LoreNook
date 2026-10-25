@@ -71,7 +71,7 @@ Input: the range's round summaries, inputs, AI bodies and states; First Message 
 
 A structurally valid but useless summary fails with 422 and goes through normal retry:
 
-- **Minimum length**: `min(floor, max(1, ceil(N / 5)))` where N = effective characters of the source dialogue (user input + AI body; plus First Message for episodes). `floor` is 75 for round summaries, 100 for episodes — half of the prompt's target length. "Effective" = `str.isalnum` characters; a standalone date—location header line doesn't count.
+- **Minimum length**: `min(floor, max(1, ceil(N / 5)))` where N = effective characters of the source dialogue (user input + AI body; plus First Message for episodes). `floor` is 75 for round summaries, 100 for episodes — half of the prompt's target length. "Effective" = `str.isalnum` characters; the leading date—location header doesn't count, but narrative on the same line does.
 - **Must start with two ASCII digits** after trimming (i.e. a date), so preambles, code fences and tags are rejected.
 
 These checks apply only to live archive generation, not to imports or manual edits.

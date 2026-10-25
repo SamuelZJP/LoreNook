@@ -31,6 +31,11 @@ def test_counting_and_adaptive_thresholds():
     assert summary_length("2026/10/20—09:30—很长的地点\r\n你好，Ab 12") == 6
     assert summary_length("2026/10/20—09:30—很长的地点") == 0
     assert summary_length("角色在2026年相遇。") == 10
+    assert summary_length("2026/10/20—09:30—教室 你好，Ab 12") == 6
+    assert summary_length("2026/10/20—09:30—教室。你好，Ab 12") == 6
+    assert summary_length("2024/11/14-2024/11/15—校门外 你好") == 2
+    assert summary_length("2024年11月14日—17:53—校门外，他说——好") == 3
+    assert summary_length("2024年，他来了——你好") == 10
     for floor, cap in [(150, 75), (200, 100)]:
         assert minimum_summary_length(["一" * 11, "！ \n"], target_floor=floor) == 3
         assert minimum_summary_length(["一" * 5000], target_floor=floor) == cap
