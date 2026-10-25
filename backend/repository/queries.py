@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, aliased
 
 from backend.repository.models import (
-    Base, Character, Chat, ChatModelBinding, Definition, Episode, ModelConfig, Round,
+    Base, Character, CharacterScene, Chat, ChatModelBinding, Definition, Episode, ModelConfig, Round,
     StateSnapshot, UserIdentity, WritingPreset,
 )
 from backend.shared.errors import NotFoundError
@@ -62,6 +62,17 @@ class Repository:
     ) -> list:
         """None selects library sources; an ID selects only that chat's copies."""
         return list(self.session.scalars(select(model).where(model.chat_id == chat_id).order_by(model.id)))
+
+    def scenes(self, character_id: str) -> list[CharacterScene]:
+        return list(self.session.scalars(select(CharacterScene).where(CharacterScene.character_id == character_id)
+                                         .order_by(CharacterScene.order, CharacterScene.id)))
+
+    def opening_scene(self, character_id: str) -> CharacterScene:
+        """A chat-owned character keeps exactly the scene selected at chat creation."""
+        scenes = self.scenes(character_id)
+        if not scenes:
+            raise NotFoundError("角色没有开场")
+        return scenes[0]
 
     def definitions(
         self, *, character_id: str | None = None,

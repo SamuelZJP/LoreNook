@@ -11,7 +11,7 @@ from backend.schemas.archive import ArchiveStep
 from backend.schemas.chats import ModelPurpose
 from backend.schemas.common import Contract, Name, NonnegativeInt
 
-TableName = Literal["chats", "characters", "user_identities", "definitions", "writing_presets",
+TableName = Literal["chats", "characters", "character_scenes", "user_identities", "definitions", "writing_presets",
                     "model_configs", "chat_model_bindings", "rounds", "state_snapshots", "episodes"]
 RecordId = Annotated[Name, Field(max_length=36)]
 
@@ -48,10 +48,18 @@ class IdentityRow(TimestampedRow):
 
 
 class CharacterRow(IdentityRow):
-    first_message: str = ""
     state_schema: str = ""
     state_reference: str = ""
     state_update_rules: str = ""
+
+
+class SceneRow(IdentifiedRow):
+    character_id: RecordId
+    order: NonnegativeInt = 0
+    name: Name
+    description: str = ""
+    first_message: str = ""
+    initial_state: dict[str, JsonValue] = Field(default_factory=dict)
 
 
 class DefinitionRow(IdentifiedRow):
@@ -164,7 +172,7 @@ class AdminTableInfo(Contract):
 
 
 ROW_SCHEMAS = {
-    "chats": ChatRow, "characters": CharacterRow, "user_identities": IdentityRow,
+    "chats": ChatRow, "characters": CharacterRow, "character_scenes": SceneRow, "user_identities": IdentityRow,
     "definitions": DefinitionRow, "writing_presets": PresetRow, "model_configs": ModelRow,
     "chat_model_bindings": BindingRow, "rounds": RoundRow,
     "state_snapshots": StateRow, "episodes": EpisodeRow,

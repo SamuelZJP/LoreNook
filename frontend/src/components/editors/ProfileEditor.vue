@@ -2,12 +2,14 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
 import { Save, Trash2, FileCode } from 'lucide-vue-next'
-import { api, definitionBase, type Character, type Identity } from '@/api/endpoints'
+import { api, definitionBase, type Character, type Identity, type SceneInput } from '@/api/endpoints'
 import CodeEditor from '../CodeEditor.vue'
 import ErrorBox from '../ErrorBox.vue'
 import AvatarBadge from '../AvatarBadge.vue'
 import ScopeNote from './ScopeNote.vue'
 import DefinitionsEditor from './DefinitionsEditor.vue'
+import ScenesEditor, { newScene, type SceneDraft } from './ScenesEditor.vue'
+import { jsonProblem } from './JsonField.vue'
 import { toast } from '@/composables/toast'
 import schemaExample from '@examples/state/examples/basic.py?raw'
 
@@ -30,20 +32,39 @@ const isCharacter = computed(() => props.kind === 'character')
 const noun = computed(() => (isCharacter.value ? '角色' : '用户身份'))
 const creating = computed(() => !props.chatId && !props.id)
 
-const fields = ['name', 'avatar', 'description', 'first_message', 'state_schema', 'state_reference', 'state_update_rules'] as const
+const fields = ['name', 'avatar', 'description', 'state_schema', 'state_reference', 'state_update_rules'] as const
 type Field = (typeof fields)[number]
 const draft = reactive<Record<Field, string>>({
-  name: '', avatar: '', description: '', first_message: '', state_schema: '', state_reference: '', state_update_rules: '',
+  name: '', avatar: '', description: '', state_schema: '', state_reference: '', state_update_rules: '',
 })
+const scenes = ref<SceneDraft[]>([])
 const activeFields = computed(() => (isCharacter.value ? fields : (['name', 'avatar', 'description'] as const)))
 
-function fill(p: Profile | null) {
+function fill(p: Profile | null, keepKeys = false) {
   for (const f of fields) {
     const v = p ? (p as unknown as Record<string, unknown>)[f] : undefined
     draft[f] = typeof v === 'string' ? v : ''
   }
   if (!p && isCharacter.value) draft.state_schema = schemaExample
+  const saved = p && 'scenes' in p ? p.scenes : []
+  scenes.value = saved.length
+    // Saving replaces scene rows, so keep the editor's keys to preserve expanded cards.
+    ? saved.map((s, i) => ({ key: (keepKeys && scenes.value[i]?.key) || s.id, name: s.name, description: s.description, first_message: s.first_message,
+      state: JSON.stringify(s.initial_state ?? {}, null, 2) }))
+    : [newScene()]
 }
+
+function sceneInputs(): SceneInput[] {
+  return scenes.value.map((s, order) => ({ order, name: s.name, description: s.description,
+    first_message: s.first_message, initial_state: JSON.parse(s.state) }))
+}
+const scenesInvalid = computed(() => isCharacter.value && scenes.value.some((s) => !s.name.trim() || jsonProblem(s.state)))
+const scenesChanged = computed(() => {
+  if (!isCharacter.value || scenesInvalid.value) return isCharacter.value
+  const before = (original.value && 'scenes' in original.value ? original.value.scenes : [])
+    .map(({ order, name, description, first_message, initial_state }) => ({ order, name, description, first_message, initial_state: initial_state ?? {} }))
+  return JSON.stringify(sceneInputs()) !== JSON.stringify(before)
+})
 
 function fillSchemaExample() {
   if (!draft.state_schema.trim() || draft.state_schema === schemaExample || confirm('用示例覆盖当前 Schema？')) draft.state_schema = schemaExample
@@ -88,11 +109,13 @@ async function save() {
     if (creating.value) {
       const body: Record<string, unknown> = {}
       for (const f of activeFields.value) body[f] = f === 'avatar' ? (draft.avatar.trim() || null) : draft[f]
+      if (isCharacter.value) body.scenes = sceneInputs()
       saved = isCharacter.value ? await api.createCharacter(body as never) : await api.createIdentity(body as never)
     } else {
       // PATCH only what changed; avatar is the one nullable field.
       const body: Record<string, unknown> = {}
       for (const f of changed.value) body[f] = f === 'avatar' ? (draft.avatar.trim() || null) : draft[f]
+      if (scenesChanged.value) body.scenes = sceneInputs()
       if (props.chatId) {
         saved = isCharacter.value ? await api.patchChatCharacter(props.chatId, body) : await api.patchChatIdentity(props.chatId, body)
       } else {
@@ -100,7 +123,7 @@ async function save() {
       }
     }
     original.value = saved
-    fill(saved)
+    fill(saved, true)
     qc.invalidateQueries({ queryKey: [isCharacter.value ? 'characters' : 'identities'] })
     if (props.chatId) qc.invalidateQueries({ queryKey: ['chat', props.chatId] })
     toast(creating.value ? `${noun.value}已创建` : '已保存')
@@ -125,15 +148,18 @@ async function remove() {
   }
 }
 
-type Tab = 'basic' | 'state' | 'definitions'
+type Tab = 'basic' | 'scenes' | 'state' | 'definitions'
 const tab = ref<Tab>('basic')
 const tabs = computed(() => [
-  { id: 'basic' as const, label: '基本信息', fields: ['name', 'avatar', 'description', 'first_message'] as Field[] },
+  { id: 'basic' as const, label: '基本信息', fields: ['name', 'avatar', 'description'] as Field[] },
+  ...(isCharacter.value ? [{ id: 'scenes' as const, label: '开场', fields: [] as Field[] }] : []),
   ...(isCharacter.value ? [{ id: 'state' as const, label: '状态', fields: ['state_schema', 'state_reference', 'state_update_rules'] as Field[] }] : []),
   { id: 'definitions' as const, label: `${noun.value}定义`, fields: [] as Field[] },
 ])
 watch(() => props.kind, () => { if (!tabs.value.some((t) => t.id === tab.value)) tab.value = 'basic' })
-const tabDirty = (fs: Field[]) => !creating.value && fs.some((f) => changed.value.includes(f))
+const tabDirty = (id: Tab, fs: Field[]) =>
+  !creating.value && (fs.some((f) => changed.value.includes(f)) || (id === 'scenes' && scenesChanged.value))
+const unsaved = computed(() => changed.value.length + (scenesChanged.value ? 1 : 0))
 
 const defBase = computed(() => (original.value ? definitionBase(props.kind, original.value.id, props.chatId) : null))
 </script>
@@ -146,7 +172,7 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
     <template v-else-if="!loadError">
       <nav class="tabs">
         <button v-for="t in tabs" :key="t.id" type="button" :class="{ active: tab === t.id }" @click="tab = t.id">
-          {{ t.label }}<span v-if="tabDirty(t.fields)" class="dot" title="有未保存的修改" />
+          {{ t.label }}<span v-if="tabDirty(t.id, t.fields)" class="dot" title="有未保存的修改" />
         </button>
       </nav>
 
@@ -163,10 +189,10 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
           <span class="hint">后端只保存引用文本，没有上传功能。</span>
         </div>
         <div class="field"><label>描述</label><textarea v-model="draft.description" class="textarea" rows="3" /></div>
-        <div v-if="isCharacter" class="field">
-          <label>开场消息（第 0 楼）</label>
-          <textarea v-model="draft.first_message" class="textarea" rows="6" />
-        </div>
+      </section>
+
+      <section v-if="isCharacter" v-show="tab === 'scenes'" class="stack">
+        <ScenesEditor v-model="scenes" :state-schema="draft.state_schema" :chat-scoped="!!chatId" />
       </section>
 
       <section v-if="isCharacter" v-show="tab === 'state'" class="stack">
@@ -177,9 +203,9 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
           </div>
           <CodeEditor v-model="draft.state_schema" language="python" min-height="220px" />
           <span class="hint">
-            源码需导出名为 <code>Schema</code> 的模型，其默认值生成初始状态，并且必须包含 <code>世界</code> 对象：
+            源码需导出名为 <code>Schema</code> 的模型，其默认值与各开场的初始变量合并生成初始状态，并且必须包含 <code>世界</code> 对象：
             <code>日期</code>（YYYY-MM-DD）、<code>星期</code>（星期一–星期日）、<code>时间</code>（HH:mm）、<code>地点</code>。
-            创建或修改 Schema 时后端会校验默认初始状态，空 Schema 无效。
+            创建或修改 Schema 时后端会校验每个开场的初始状态。
           </span>
         </div>
         <div class="field"><label>状态参考信息</label><textarea v-model="draft.state_reference" class="textarea" rows="4" /></div>
@@ -190,8 +216,9 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
       <div v-show="tab !== 'definitions'" class="row actions">
         <button v-if="id && !chatId" class="btn danger" type="button" @click="remove"><Trash2 /> 删除</button>
         <span class="spacer" />
-        <span v-if="!creating && changed.length" class="hint">{{ changed.length }} 项未保存</span>
-        <button class="btn primary" type="button" :disabled="saving || !draft.name.trim() || (!creating && !changed.length)" @click="save">
+        <span v-if="scenesInvalid" class="hint bad">开场需要名称和有效的 JSON 初始变量</span>
+        <span v-else-if="!creating && unsaved" class="hint">{{ unsaved }} 项未保存</span>
+        <button class="btn primary" type="button" :disabled="saving || !draft.name.trim() || scenesInvalid || (!creating && !unsaved)" @click="save">
           <Save /> {{ creating ? '创建' : '保存' }}
         </button>
       </div>
@@ -209,5 +236,6 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
 
 <style scoped>
 .dot { display: inline-block; width: 6px; height: 6px; margin-left: 5px; border-radius: 50%; background: var(--warn); vertical-align: middle; }
+.bad { color: var(--danger); }
 .actions { position: sticky; bottom: 0; background: var(--bg-elev); padding: 8px 0; z-index: 1; }
 </style>

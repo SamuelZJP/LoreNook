@@ -246,7 +246,7 @@ def test_changed_input_cannot_save_stale_episode(database, pending_episode, chan
             elif change in {"user_input", "ai_output"}:
                 setattr(repo.get(Round, ids["ids"][0]), change, "修改后的输入" if change == "user_input" else "<content>修改后正文</content>")
             elif change == "first_message":
-                repo.get(Character, ids["character_id"]).first_message = "修改后的开场"
+                repo.opening_scene(ids["character_id"]).first_message = "修改后的开场"
             else:
                 repo.get(ModelConfig, ids["model_id"]).api_key = "changed-key"
         return httpx.Response(200, json=text_response())

@@ -13,7 +13,7 @@ from backend.repository.models import (
 from backend.repository.queries import Repository
 from backend.schemas.catalog import CharacterCreate, CharacterPatch, IdentityCreate, IdentityPatch
 from backend.schemas.chats import ChatCreate, ChatPatch
-from backend.shared.errors import NotFoundError, StateInitializationError
+from backend.shared.errors import ConflictError, NotFoundError, StateInitializationError
 from backend.workflows.create_chat import create_chat
 
 
@@ -23,7 +23,10 @@ def sources(database):
         repository = Repository(session)
         character = CharacterService(repository, initial_state).create(CharacterCreate(
             name="来源角色", avatar="avatars/character.png", description="角色介绍",
-            first_message="<content>开场原文</content>", state_schema="schema source",
+            scenes=[{"name": "白天", "first_message": "<content>开场原文</content>"},
+                    {"order": 1, "name": "夜晚", "description": "晚自习后", "first_message": "夜晚开场",
+                     "initial_state": {"数字": 20}}],
+            state_schema="schema source",
             state_reference="参考", state_update_rules="规则",
             definitions=[
                 {"order": 2, "content": "{{ state['世界']['日期'] }}", "has_template": True},
@@ -41,14 +44,14 @@ def sources(database):
                                            default_parameters={"temperature": 0.8, "nested": {"enabled": True}}))
         extra_model = repository.add(ModelConfig(name="备用模型", api_type="example", base_url="https://example.com",
                                                  model="extra-model"))
-        return {"character_id": character.id, "user_identity_id": identity.id,
+        return {"character_id": character.id, "scene_ids": [scene.id for scene in character.scenes], "user_identity_id": identity.id,
                 "writing_preset_id": preset.id, "extra_preset_id": extra_preset.id,
                 "model_id": model.id, "extra_model_id": extra_model.id}
 
 
-def initial_state(schema):
+def initial_state(schema, overrides=None):
     assert schema == "schema source"
-    return {"世界": dict(WORLD), "数字": 16, "布尔": True, "空值": None}
+    return {"世界": dict(WORLD), "数字": 16, "布尔": True, "空值": None} | (overrides or {})
 
 
 def request_data(sources):
@@ -76,7 +79,9 @@ def test_create_copies_everything_rebuilds_links_and_deduplicates(database, sour
     assert result.character.id != sources["character_id"]
     assert result.user_identity.id != sources["user_identity_id"]
     assert result.character.chat_id == result.user_identity.chat_id == result.id
-    assert result.character.first_message == "<content>开场原文</content>"
+    assert [(scene.name, scene.first_message) for scene in result.character.scenes] == [
+        ("白天", "<content>开场原文</content>")]
+    assert result.character.scenes[0].character_id == result.character.id
     assert result.character.state_schema == "schema source"
     assert result.character.state_reference == "参考"
     assert result.character.state_update_rules == "规则"
@@ -107,13 +112,41 @@ def test_create_copies_everything_rebuilds_links_and_deduplicates(database, sour
         assert {item.id for item in source_definitions}.isdisjoint({item.id for item in result.character.definitions})
 
 
+def test_selected_scene_sets_first_message_and_initial_state(database, sources):
+    result = create_chat(database, ChatCreate(**request_data(sources), scene_id=sources["scene_ids"][1]),
+                         initial_state)
+    assert [(s.order, s.name, s.description, s.first_message, s.initial_state) for s in result.character.scenes] == [
+        (0, "夜晚", "晚自习后", "夜晚开场", {"数字": 20})]
+    assert result.latest_state.content["数字"] == 20
+    with database.read() as session:
+        assert len(Repository(session).scenes(sources["character_id"])) == 2
+
+
+def test_scene_from_another_character_rolls_back(database, sources):
+    with database.transaction() as session:
+        other = CharacterService(Repository(session), initial_state).create(CharacterCreate(
+            name="其他角色", state_schema="schema source"))
+    before = table_counts(database)
+    with pytest.raises(NotFoundError):
+        create_chat(database, ChatCreate(**request_data(sources), scene_id=other.scenes[0].id), initial_state)
+    assert table_counts(database) == before
+
+
+def test_chat_character_keeps_exactly_one_scene(database, sources):
+    chat = create_chat(database, ChatCreate(**request_data(sources)), initial_state)
+    with pytest.raises(ConflictError), database.transaction() as session:
+        CharacterService(Repository(session), initial_state).update(chat.character.id, CharacterPatch(
+            scenes=[{"name": "一"}, {"name": "二"}]), chat.id)
+
+
 def test_sources_and_two_chats_are_independent_even_after_source_deletion(database, sources):
     first = create_chat(database, ChatCreate(**request_data(sources)), initial_state)
     second = create_chat(database, ChatCreate(**request_data(sources)), initial_state)
     with database.transaction() as session:
         repository = Repository(session)
         CharacterService(repository).update(sources["character_id"], CharacterPatch(name="修改来源", definitions=[]))
-        CharacterService(repository).update(first.character.id, CharacterPatch(first_message="聊天一开场"), first.id)
+        CharacterService(repository, initial_state).update(first.character.id, CharacterPatch(
+            scenes=[{"name": "白天", "first_message": "聊天一开场"}]), first.id)
         IdentityService(repository).update(first.user_identity.id, IdentityPatch(name="聊天一身份"), first.id)
         config = repository.get(ModelConfig, sources["model_id"])
         config.default_parameters = {"nested": {"enabled": False}}
@@ -125,9 +158,9 @@ def test_sources_and_two_chats_are_independent_even_after_source_deletion(databa
     with database.read() as session:
         service = ChatService(Repository(session))
         current_first, current_second = service.detail(first.id), service.detail(second.id)
-        assert current_first.character.first_message == "聊天一开场"
+        assert current_first.character.scenes[0].first_message == "聊天一开场"
         assert current_first.user_identity.name == "聊天一身份"
-        assert current_second.character.first_message == "<content>开场原文</content>"
+        assert current_second.character.scenes[0].first_message == "<content>开场原文</content>"
         assert current_second.user_identity.name == "来源身份"
         assert current_first.character.name == current_second.character.name == "来源角色"
         assert len(current_first.character.definitions) == len(current_second.character.definitions) == 2
@@ -163,12 +196,12 @@ def test_chat_copy_cannot_be_used_as_a_library_source(database, sources):
 def test_invalid_initial_state_rolls_back_copied_data(database, sources, state):
     before = table_counts(database)
     with pytest.raises(StateInitializationError):
-        create_chat(database, ChatCreate(**request_data(sources)), lambda _: state)
+        create_chat(database, ChatCreate(**request_data(sources)), lambda *_: state)
     assert table_counts(database) == before
 
 
 def test_initial_state_provider_failure_rolls_back(database, sources):
-    def failing_provider(_):
+    def failing_provider(*_):
         raise RuntimeError("runtime failure")
     before = table_counts(database)
     with pytest.raises(RuntimeError, match="runtime failure"):
@@ -182,7 +215,7 @@ def test_default_provider_only_accepts_empty_schema():
     with pytest.raises(StateInitializationError):
         build_initial_state(empty_schema_state, "some schema")
     original = {"世界": dict(WORLD)}
-    saved = build_initial_state(lambda _: original, "schema")
+    saved = build_initial_state(lambda *_: original, "schema")
     original["世界"]["日期"] = "修改"
     assert saved["世界"]["日期"] == "2026-10-19"
 

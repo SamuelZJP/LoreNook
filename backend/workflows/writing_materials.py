@@ -54,7 +54,7 @@ def collect_writing_snapshot(repository: Repository, chat_id: str) -> WritingSna
         chat_id=chat_id, preset_id=preset.id, source=preset.source,
         state_snapshot_id=state.id, based_on_round_id=latest.id if latest else None,
         character_name=character.name, user_identity_name=identity.name,
-        first_message=character.first_message, state=deepcopy(state.content),
+        first_message=repository.opening_scene(character.id).first_message, state=deepcopy(state.content),
         character_definitions=storage.read(character_id=character.id),
         user_definitions=storage.read(user_identity_id=identity.id),
         history=MemoryHistory.model_validate(history.model_dump(exclude={"chat_id", "uses_compressed_history"})),

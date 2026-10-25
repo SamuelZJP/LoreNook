@@ -9,7 +9,8 @@ The concepts, rules and reasons behind the code. For *how* something is implemen
 | Chat | One conversation between a user identity and a character. Owns its rounds, state and memory. |
 | Character / User identity | The roleplay character and the user's persona. Each has a name, avatar, description and definitions. |
 | Definition | A setting entry (incl. worldbook-style lore) owned by a character or identity. Optionally a Jinja2 template. |
-| First Message | The character's opening text, shown as entry 0 and always passed to the preset. |
+| Scene | One of a character's openings: a First Message plus initial-state overrides. A chat is created from exactly one scene. |
+| First Message | The selected scene's opening text, shown as entry 0 and always passed to the preset. |
 | Round | One user input plus one user-approved AI output. |
 | State | A JSON snapshot at the end of a round: time, place, character attributes, any variables. |
 | Round summary | ~150-character factual summary of one round. |
@@ -17,7 +18,7 @@ The concepts, rules and reasons behind the code. For *how* something is implemen
 | Writing preset | JavaScript that builds the model request and parses/validates the response. |
 | Archiving | The steps that run after the user confirms a round: state → round summary → episode. |
 
-**Chats are fully independent.** Creating a chat copies the selected character, identity, definitions, presets and model configs into chat-owned records with new IDs. Editing a library resource never changes an existing chat. Library records have `chat_id = NULL`.
+**Chats are fully independent.** Creating a chat copies the selected character (with only the selected scene), identity, definitions, presets and model configs into chat-owned records with new IDs. Editing a library resource never changes an existing chat. Library records have `chat_id = NULL`.
 
 ## Round lifecycle
 
@@ -89,7 +90,9 @@ State is free-form JSON, but top-level `世界` is required:
 
 - `日期` strict `YYYY-MM-DD` and a real date; `星期` is 星期一…星期六 or 星期日; `时间` strict `HH:mm`, 00:00–23:59; `地点` any string. No trimming or guessing; weekday isn't cross-checked against date.
 - **These Chinese keys are part of the contract** — episode decisions read `世界.日期`. Don't translate them.
-- `characters.state_schema` is Python source exporting a Pydantic model named `Schema`. Its defaults produce the initial state; its validators check and correct every later state. Example: `backend/modules/state/examples/basic.py`.
+- `characters.state_schema` is Python source exporting a Pydantic model named `Schema`. Its validators check and correct every state. Example: `backend/modules/state/examples/basic.py`.
+- **Initial state** = the selected scene's `initial_state` (a partial JSON object, e.g. `{"世界": {"地点": "教室"}}`) run through the Schema, which fills defaults, then the world contract. With an empty Schema the override is the whole state.
+- A library character has at least one scene; a chat-owned character has exactly one. Saving scenes or the Schema validates every scene's initial state, so a Schema edit can't silently break another scene. Editing a chat copy's scene doesn't recompute its existing state.
 - Generated states and chat-UI edits go through Schema + world contract. Data management writes check only the world contract (no Schema execution).
 - Templates read state with `state["世界"]["时间"]`.
 

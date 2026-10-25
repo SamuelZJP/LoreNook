@@ -43,7 +43,7 @@ def _context(repository: ArchiveRepository, chat_id: str, round_id: str) -> Epis
         chat_id=chat_id, round_id=round_id, start_round_id=record.episode_start_round_id,
         end_round_id=record.episode_end_round_id, character_name=character.name, user_name=identity.name,
         rounds=rounds, first_message=substitute_names(
-            character.first_message, user_name=identity.name, character_name=character.name,
+            repository.opening_scene(character.id).first_message, user_name=identity.name, character_name=character.name,
         ) if selected[0].round_no == 1 else None,
         bridge=EpisodeBridgeRound.model_validate(bridge) if bridge is not None else None,
         connection=ModelService(repository, chat_id).for_purpose("episode_summary"),

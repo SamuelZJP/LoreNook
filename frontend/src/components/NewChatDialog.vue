@@ -21,6 +21,7 @@ const models = useQuery({ queryKey: ['models', null], queryFn: () => api.models(
 const form = reactive({
   title: '',
   character_id: '',
+  scene_id: '',
   user_identity_id: '',
   writing_preset_id: '' as string,
   extraPresets: [] as string[],
@@ -43,6 +44,11 @@ watch(() => presets.data.value, (list) => {
 watch(() => models.data.value, (list) => {
   if (list?.length === 1) for (const p of MODEL_PURPOSES) form.bindings[p] ||= list[0].id
 }, { immediate: true })
+const scenes = computed(() => characters.data.value?.find((c) => c.id === form.character_id)?.scenes ?? [])
+const selectedScene = computed(() => scenes.value.find((s) => s.id === form.scene_id))
+watch(scenes, (list) => {
+  if (!list.some((s) => s.id === form.scene_id)) form.scene_id = list[0]?.id ?? ''
+}, { immediate: true })
 watch(() => form.character_id, (id) => {
   if (titleTouched.value) return
   form.title = characters.data.value?.find((c) => c.id === id)?.name ?? ''
@@ -59,6 +65,7 @@ const create = useMutation({
     return api.createChat({
       title: form.title.trim(),
       character_id: form.character_id,
+      scene_id: form.scene_id || null,
       user_identity_id: form.user_identity_id,
       writing_preset_id: form.writing_preset_id || null,
       writing_preset_ids: form.extraPresets,
@@ -94,6 +101,13 @@ const create = useMutation({
           <label>用户身份</label>
           <ProfilePicker v-model="form.user_identity_id" :items="identities.data.value ?? []" label="用户身份" />
         </div>
+      </div>
+      <div v-if="scenes.length > 1" class="field">
+        <label>开场</label>
+        <select v-model="form.scene_id" class="select">
+          <option v-for="s in scenes" :key="s.id" :value="s.id">{{ s.name }}</option>
+        </select>
+        <span v-if="selectedScene?.description" class="hint">{{ selectedScene.description }}</span>
       </div>
       <div class="field">
         <label>标题</label>

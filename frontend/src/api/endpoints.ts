@@ -4,6 +4,8 @@ import type { Schemas } from './client'
 export type Character = Schemas['CharacterRead']
 export type CharacterCreate = Schemas['CharacterCreate']
 export type CharacterPatch = Schemas['CharacterPatch']
+export type Scene = Schemas['SceneRead']
+export type SceneInput = Schemas['SceneInput']
 export type Identity = Schemas['IdentityRead']
 export type IdentityCreate = Schemas['IdentityCreate']
 export type IdentityPatch = Schemas['IdentityPatch']
@@ -48,6 +50,8 @@ export const api = {
   createCharacter: (body: CharacterCreate) => request<Character>('/api/characters', json('POST', body)),
   patchCharacter: (id: string, body: CharacterPatch) => request<Character>(`/api/characters/${id}`, json('PATCH', body)),
   deleteCharacter: (id: string) => request<void>(`/api/characters/${id}`, json('DELETE')),
+  previewInitialState: (body: Schemas['InitialStatePreview']) =>
+    request<Record<string, unknown>>('/api/characters/initial-state-preview', json('POST', body)),
   identities: () => request<Identity[]>('/api/user-identities'),
   identity: (id: string) => request<Identity>(`/api/user-identities/${id}`),
   createIdentity: (body: IdentityCreate) => request<Identity>('/api/user-identities', json('POST', body)),

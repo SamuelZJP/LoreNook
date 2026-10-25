@@ -14,6 +14,8 @@ ModelPurpose = Literal["writing", "state_update", "round_summary", "episode_summ
 class ChatCreate(Contract):
     title: Name
     character_id: str
+    # None selects the character's first scene.
+    scene_id: str | None = None
     user_identity_id: str
     writing_preset_ids: list[str] = Field(default_factory=list)
     writing_preset_id: str | None = None

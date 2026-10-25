@@ -1,10 +1,14 @@
 from fastapi import APIRouter, Request, Response
+from pydantic import JsonValue
 
 from backend.api.dependencies import DatabaseDependency
 from backend.modules.characters.service import CharacterService
+from backend.modules.state.initial import build_initial_state
 from backend.modules.users.service import IdentityService
 from backend.repository.queries import Repository
-from backend.schemas.catalog import CharacterCreate, CharacterPatch, CharacterRead, IdentityCreate, IdentityPatch, IdentityRead
+from backend.schemas.catalog import (
+    CharacterCreate, CharacterPatch, CharacterRead, IdentityCreate, IdentityPatch, IdentityRead, InitialStatePreview,
+)
 
 router = APIRouter(prefix="/api", tags=["catalog"])
 
@@ -19,6 +23,12 @@ def list_characters(database: DatabaseDependency):
 def create_character(payload: CharacterCreate, request: Request, database: DatabaseDependency):
     with database.transaction() as session:
         return CharacterService(Repository(session), request.app.state.initial_state_factory).create(payload)
+
+
+@router.post("/characters/initial-state-preview", response_model=dict[str, JsonValue])
+def preview_initial_state(payload: InitialStatePreview, request: Request):
+    """Compute a scene's full initial state from an unsaved Schema draft; nothing is stored."""
+    return build_initial_state(request.app.state.initial_state_factory, payload.state_schema, payload.initial_state)
 
 
 @router.get("/characters/{character_id}", response_model=CharacterRead)

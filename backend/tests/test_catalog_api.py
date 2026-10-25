@@ -54,7 +54,8 @@ def test_library_crud_patch_semantics_and_validation(database, path):
 
 def test_chat_endpoints_default_state_and_copy_scoping(database):
     async def scenario(client):
-        character = (await client.post("/api/characters", json={"name": "角色", "state_schema": STATE_SCHEMA, "first_message": "第0楼",
+        character = (await client.post("/api/characters", json={"name": "角色", "state_schema": STATE_SCHEMA,
+                                    "scenes": [{"name": "开场", "first_message": "第0楼"}],
                                     "definitions": [{"content": "设定"}]})).json()
         identity = (await client.post("/api/user-identities", json={"name": "身份"})).json()
         created = await client.post("/api/chats", json={"title": "新聊天", "character_id": character["id"],
@@ -70,9 +71,9 @@ def test_chat_endpoints_default_state_and_copy_scoping(database):
         assert (await client.get(f"{url}/user-identity")).json() == data["user_identity"]
         assert (await client.get(f"/api/characters/{data['character']['id']}")).status_code == 404
         assert (await client.delete(f"/api/user-identities/{data['user_identity']['id']}")).status_code == 404
-        assert (await client.patch(f"{url}/character", json={"name": "副本", "first_message": "副本开场"})).status_code == 200
+        assert (await client.patch(f"{url}/character", json={"name": "副本", "scenes": [{"name": "开场", "first_message": "副本开场"}]})).status_code == 200
         assert (await client.patch(f"{url}/user-identity", json={"name": "副本身份"})).status_code == 200
-        assert (await client.get(f"/api/characters/{character['id']}")).json()["first_message"] == "第0楼"
+        assert (await client.get(f"/api/characters/{character['id']}")).json()["scenes"][0]["first_message"] == "第0楼"
         updated = (await client.patch(url, json={"title": "新标题", "recent_rounds": 0, "min_summaries": 0})).json()
         assert updated["title"] == "新标题" and updated["recent_rounds"] == 0
         assert (await client.get("/api/characters")).json() == [character]
@@ -110,8 +111,8 @@ def test_state_factory_is_injected_into_http_workflow(database):
                                                         "user_identity_id": identity["id"]})
         assert response.status_code == 201, response.text
         assert response.json()["latest_state"]["content"] == {"世界": WORLD}
-    def factory(source):
-        assert source == "custom-schema"
+    def factory(source, overrides):
+        assert source == "custom-schema" and overrides == {}
         return {"世界": dict(WORLD)}
     run_api(database, scenario, factory)
 

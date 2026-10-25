@@ -13,6 +13,14 @@ def check_consistency(tables: dict[str, list[dict]]) -> None:
     identities = {row["chat_id"]: row for row in tables["user_identities"] if row["chat_id"] is not None}
     states = {row["round_id"]: row for row in tables["state_snapshots"] if row["round_id"] is not None}
     initial = {row["character_id"] for row in tables["state_snapshots"] if row["round_id"] is None}
+    scene_counts = {row["id"]: 0 for row in tables["characters"]}
+    for scene in tables["character_scenes"]:
+        scene_counts[scene["character_id"]] = scene_counts.get(scene["character_id"], 0) + 1
+    for row in tables["characters"]:
+        if row["chat_id"] is None:
+            _require(scene_counts[row["id"]] >= 1, "资源库角色至少需要一个开场")
+        else:
+            _require(scene_counts[row["id"]] == 1, "聊天角色必须恰好保留一个开场")
     episodes_by_creator = {row["created_by_round_id"]: row for row in tables["episodes"]
                            if row["created_by_round_id"] is not None}
     for chat in tables["chats"]:

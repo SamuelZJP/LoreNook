@@ -42,7 +42,7 @@ def writing_chat(database, chat):
                                     model="example-model", default_parameters={"generationConfig": {"topP": 0.9}}))
         repo.get(Chat, chat[0]).writing_preset_id = preset.id
         repo.add(ChatModelBinding(chat_id=chat[0], purpose="writing", model_config_id=model.id))
-        repo.get(Character, chat[1]).first_message = " 开场{{user}}\r\n"
+        repo.opening_scene(chat[1]).first_message = " 开场{{user}}\r\n"
         definition = repo.add(Definition(character_id=chat[1], order=2, has_template=True,
                                          content="年龄{{ state['年龄'] }}"))
         repo.add(Definition(character_id=chat[1], order=0, enabled=False, has_template=True, content="{{ missing }}"))
@@ -246,7 +246,7 @@ def test_single_snapshot_and_same_preset_source_during_call(database, writing_ch
                 config.api_key, config.model = "updated-key", "updated-model"
                 repo.get(StateSnapshot, ids["state_snapshot_id"]).content = {"年龄": 20}
                 repo.get(Definition, ids["definition_id"]).content = "新定义{{ state['年龄'] }}"
-                repo.get(Character, ids["character_id"]).first_message = "新开场"
+                repo.opening_scene(ids["character_id"]).first_message = "新开场"
         return httpx.Response(200, json={"text": OUTPUT})
     async def scenario(client):
         path = f"/api/chats/{ids['chat_id']}/writing"

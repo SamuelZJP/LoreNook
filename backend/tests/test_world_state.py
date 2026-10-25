@@ -60,7 +60,7 @@ def test_schema_and_injected_executors_cannot_bypass_world_contract():
     with pytest.raises(StateInitializationError):
         python_initial_state("")
     with pytest.raises(StateInitializationError, match="世界"):
-        build_initial_state(lambda _: {}, "custom")
+        build_initial_state(lambda *_: {}, "custom")
     with pytest.raises(StateSchemaError, match="世界"):
         checked_state(lambda *_: {}, "custom", {"世界": WORLD})
     with pytest.raises(StateSchemaError, match="世界"):

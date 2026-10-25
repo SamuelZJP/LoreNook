@@ -11,7 +11,7 @@ https://lorenook.cryingstray.cn
       └─ /api, /health, /docs → Uvicorn 127.0.0.1:18780 → data/lorenook.db
 ```
 
-Machine-local files (not in Git): `deploy/lorenook.env`, `deploy/lorenook.service`, `deploy/backup.sh`, `deploy/lorenook-backup.{service,timer}`, `data/`, `backups/`. Their contents are reproduced below for reconstruction.
+Machine-local files (not in Git): `deploy/lorenook.env`, `deploy/lorenook.service`, `data/`, `backups/`. Their contents are reproduced below for reconstruction.
 
 ## Update
 
@@ -19,7 +19,7 @@ Wait for running generation/archive work to finish first.
 
 ```bash
 cd ~/LoreNook
-sudo systemctl stop lorenook-backup.timer lorenook-backup.service lorenook
+sudo systemctl stop lorenook
 umask 077
 snap="backups/pre-update-$(date +%Y%m%d-%H%M%S).db"
 sqlite3 data/lorenook.db ".backup '$snap'" && git rev-parse HEAD > "${snap%.db}.commit"
@@ -30,7 +30,7 @@ git pull --ff-only
 sudo setfacl -R -m u:caddy:r-X frontend/dist
 set -a; source deploy/lorenook.env; set +a
 .venv/bin/python -m alembic upgrade head && .venv/bin/python -m alembic check
-sudo systemctl start lorenook lorenook-backup.timer
+sudo systemctl start lorenook
 curl --fail http://127.0.0.1:18780/api/chats
 ```
 
@@ -48,7 +48,13 @@ sudo systemctl restart lorenook
 
 ## Backup and restore
 
-Backups contain model API keys. They are kept on the same machine only. `lorenook-backup.timer` runs daily at 03:00 Asia/Shanghai and deletes `auto-*.db` older than 30 days.
+There is no scheduled backup. Take one manually when needed (the update procedure always snapshots first):
+
+```bash
+cd ~/LoreNook && umask 077 && sqlite3 data/lorenook.db ".backup 'backups/manual-$(date +%Y%m%d-%H%M%S).db'"
+```
+
+Backups contain model API keys. They are kept on the same machine only.
 
 Check a backup without touching production:
 
@@ -58,7 +64,7 @@ sqlite3 backups/restore-check.db 'PRAGMA integrity_check; PRAGMA foreign_key_che
 LORENOOK_DATABASE_URL=sqlite:///backups/restore-check.db .venv/bin/python -m alembic current  # expect (head)
 ```
 
-To restore: stop `lorenook` and `lorenook-backup.timer`, back up the current DB, copy the verified backup to `data/lorenook.db` (mode 600), run `alembic upgrade head`, start both again. If the backup is from a newer schema than the code, check out compatible code first.
+To restore: stop `lorenook`, back up the current DB, copy the verified backup to `data/lorenook.db` (mode 600), run `alembic upgrade head`, start it again. If the backup is from a newer schema than the code, check out compatible code first.
 
 ## Reconstruct from scratch
 
@@ -155,62 +161,3 @@ lorenook.cryingstray.cn {
 ```
 
 Make sure Authelia requires login for this host and frps port 8080 isn't publicly reachable.
-
-### Backups
-
-`deploy/backup.sh`:
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-umask 077
-project="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-backup_dir="$project/backups"
-database="$project/data/lorenook.db"
-mkdir -p "$backup_dir"
-test -f "$database"
-backup="$backup_dir/auto-$(date +%Y%m%d-%H%M%S).db"
-sqlite3 -cmd '.timeout 10000' "$database" ".backup '$backup'"
-result="$(sqlite3 "$backup" 'PRAGMA integrity_check; PRAGMA foreign_key_check;')"
-if [[ "$result" != "ok" ]]; then
-    echo "Backup check failed: $backup" >&2
-    echo "$result" >&2
-    exit 1
-fi
-find "$backup_dir" -maxdepth 1 -type f -name 'auto-*.db' -mtime +29 -delete
-echo "Backup done: $backup"
-```
-
-`deploy/lorenook-backup.service`:
-
-```ini
-[Unit]
-Description=Back up LoreNook database
-
-[Service]
-Type=oneshot
-User=samuel
-WorkingDirectory=/home/samuel/LoreNook
-ExecStart=/bin/bash /home/samuel/LoreNook/deploy/backup.sh
-UMask=0077
-```
-
-`deploy/lorenook-backup.timer`:
-
-```ini
-[Unit]
-Description=Daily LoreNook database backup
-
-[Timer]
-OnCalendar=*-*-* 03:00:00 Asia/Shanghai
-Persistent=true
-Unit=lorenook-backup.service
-
-[Install]
-WantedBy=timers.target
-```
-
-```bash
-sudo systemctl link "$HOME/LoreNook/deploy/lorenook-backup.service"
-sudo systemctl enable --now "$HOME/LoreNook/deploy/lorenook-backup.timer"
-```

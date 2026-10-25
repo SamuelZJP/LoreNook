@@ -136,7 +136,7 @@ async function loadChatMaterials() {
     const [chat, defs, memory] = await Promise.all([api.chat(chatId), api.resolveDefinitions(chatId), api.memory(chatId)])
     const { chat_id: _c, uses_compressed_history: _u, ...history } = memory
     materials.value = pretty({
-      first_message: substituteNames(chat.character.first_message, chat.user_identity.name, chat.character.name),
+      first_message: substituteNames(chat.character.scenes[0]?.first_message ?? '', chat.user_identity.name, chat.character.name),
       character_name: chat.character.name,
       user_identity_name: chat.user_identity.name,
       character_definitions: defs.character_definitions,

@@ -7,7 +7,7 @@ from alembic.config import Config
 
 from backend.config import PROJECT_ROOT, Settings
 from backend.repository.database import Database
-from backend.repository.models import Character, Chat, StateSnapshot, UserIdentity
+from backend.repository.models import Character, CharacterScene, Chat, StateSnapshot, UserIdentity
 from backend.repository.queries import Repository
 
 
@@ -32,6 +32,7 @@ def chat(database):
         repo = Repository(session)
         chat = repo.add(Chat(title="测试聊天"))
         character = repo.add(Character(chat_id=chat.id, name="角色"))
+        repo.add(CharacterScene(character_id=character.id, name="默认"))
         repo.add(UserIdentity(chat_id=chat.id, name="身份"))
         repo.add(StateSnapshot(chat_id=chat.id, character_id=character.id,
                                content={"世界": dict(WORLD), "年龄": 16}))

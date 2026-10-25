@@ -121,7 +121,14 @@ def seed(app) -> None:
             return
         client.post("/api/characters", json={
             "name": "示例角色", "description": "用于前端开发的示例角色",
-            "first_message": "<content>“你来了。”她从书页上抬起头。</content>", "state_schema": schema,
+            "scenes": [
+                {"name": "图书馆", "description": "早晨，图书馆刚开门",
+                 "first_message": "<content>“你来了。”她从书页上抬起头。</content>"},
+                {"order": 1, "name": "闭馆后", "description": "夜晚，只剩你们两人",
+                 "first_message": "<content>灯一盏盏熄灭，她合上了最后一本书。</content>",
+                 "initial_state": {"世界": {"时间": "21:30", "地点": "图书馆"}, "角色": {"好感度": 30, "关系": "熟人"}}},
+            ],
+            "state_schema": schema,
             "definitions": [{"content": "她是一名图书管理员。"},
                             {"content": "当前时间：{{ state[\"世界\"][\"时间\"] }}", "has_template": True}],
         }).raise_for_status()

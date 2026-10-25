@@ -1,6 +1,7 @@
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import Field
+from pydantic import Field, JsonValue
 
 from backend.schemas.common import Contract, Name, NonnegativeInt, PatchContract
 
@@ -40,15 +41,32 @@ class IdentityRead(IdentityCreate):
     definitions: list[DefinitionRead]
 
 
-class CharacterCreate(IdentityCreate):
+class SceneInput(Contract):
+    order: NonnegativeInt = 0
+    name: Name
+    description: str = ""
     first_message: str = ""
+    # Partial state; the character's Schema fills defaults and validates the result.
+    initial_state: dict[str, JsonValue] = Field(default_factory=dict)
+
+
+class SceneRead(SceneInput):
+    id: str
+    character_id: str
+
+
+Scenes = Annotated[list[SceneInput], Field(min_length=1)]
+
+
+class CharacterCreate(IdentityCreate):
+    scenes: Scenes = Field(default_factory=lambda: [SceneInput(name="默认")])
     state_schema: str = ""
     state_reference: str = ""
     state_update_rules: str = ""
 
 
 class CharacterPatch(IdentityPatch):
-    first_message: str | None = None
+    scenes: Scenes | None = None
     state_schema: str | None = None
     state_reference: str | None = None
     state_update_rules: str | None = None
@@ -59,3 +77,9 @@ class CharacterRead(CharacterCreate):
     chat_id: str | None
     created_at: datetime
     definitions: list[DefinitionRead]
+    scenes: list[SceneRead]
+
+
+class InitialStatePreview(Contract):
+    state_schema: str = ""
+    initial_state: dict[str, JsonValue] = Field(default_factory=dict)

@@ -112,7 +112,7 @@ export function templateFromSchema(schema: Record<string, any>): Row {
 }
 
 export const TABLE_LABELS: Record<string, string> = {
-  chats: '聊天', characters: '角色', user_identities: '用户身份', definitions: '定义', writing_presets: '写作预设',
+  chats: '聊天', characters: '角色', character_scenes: '开场', user_identities: '用户身份', definitions: '定义', writing_presets: '写作预设',
   model_configs: '模型配置', chat_model_bindings: '模型绑定', rounds: '回合', state_snapshots: '状态快照', episodes: '情节',
 }
 
@@ -129,9 +129,9 @@ export const LIBRARY = 'library'
 
 export const CHAT_TABLE_GROUPS: { label: string; tables: string[] }[] = [
   { label: '历史', tables: ['rounds', 'state_snapshots', 'episodes'] },
-  { label: '聊天副本', tables: ['chats', 'characters', 'user_identities', 'definitions', 'writing_presets', 'model_configs', 'chat_model_bindings'] },
+  { label: '聊天副本', tables: ['chats', 'characters', 'character_scenes', 'user_identities', 'definitions', 'writing_presets', 'model_configs', 'chat_model_bindings'] },
 ]
-export const LIBRARY_TABLES = ['characters', 'user_identities', 'definitions', 'writing_presets', 'model_configs']
+export const LIBRARY_TABLES = ['characters', 'character_scenes', 'user_identities', 'definitions', 'writing_presets', 'model_configs']
 
 /** Tables whose rows are ordered by round and can be sorted either way. */
 export const ROUND_ORDERED = ['rounds', 'state_snapshots', 'episodes']
@@ -149,9 +149,13 @@ export function buildLookup(tables: Record<string, StagedRow[]>): Lookup {
 
 const lookupRow = (lookup: Lookup, table: string, id: unknown) => (id == null ? undefined : lookup[table]?.get(String(id)))
 
-/** The chat id a row belongs to, or `LIBRARY`. Definitions belong to their owner's chat. */
+/** The chat id a row belongs to, or `LIBRARY`. Definitions and scenes belong to their owner's chat. */
 export function scopeOf(table: string, row: Row, lookup: Lookup): string {
   if (table === 'chats') return String(row.id)
+  if (table === 'character_scenes') {
+    const owner = lookupRow(lookup, 'characters', row.character_id)
+    return owner?.chat_id != null ? String(owner.chat_id) : LIBRARY
+  }
   if (table === 'definitions') {
     const owner = lookupRow(lookup, 'characters', row.character_id) ?? lookupRow(lookup, 'user_identities', row.user_identity_id)
     return owner?.chat_id != null ? String(owner.chat_id) : LIBRARY
@@ -185,6 +189,8 @@ export function rowTitle(table: string, row: Row, lookup: Lookup): string {
       const owner = lookupRow(lookup, 'characters', row.character_id) ?? lookupRow(lookup, 'user_identities', row.user_identity_id)
       return `#${row.order ?? 0} · ${nameOf(owner) || '未知所有者'}`
     }
+    case 'character_scenes':
+      return `#${row.order ?? 0} · ${nameOf(lookupRow(lookup, 'characters', row.character_id)) || '未知角色'} · ${row.name || '未命名'}`
     case 'chat_model_bindings':
       return `${PURPOSE_LABELS[row.purpose as keyof typeof PURPOSE_LABELS] ?? row.purpose} → ${nameOf(lookupRow(lookup, 'model_configs', row.model_config_id)) || '未知模型'}`
     case 'rounds': return `第 ${row.round_no ?? '?'} 回合`
@@ -214,6 +220,7 @@ export function rowDetails(table: string, row: Row, lookup: Lookup): Detail[] {
     case 'characters':
     case 'user_identities': return [d('描述', firstLine(row.description) || null)]
     case 'definitions': return [d('状态', [row.enabled ? '启用' : '停用', row.has_template ? '模板' : ''].filter(Boolean).join(' · ')), d('内容', firstLine(row.content) || null)]
+    case 'character_scenes': return [d('开场', firstLine(row.first_message) || null), d('初始变量', row.initial_state)]
     case 'writing_presets': return [d('长度', `${String(row.source ?? '').length} 字符`)]
     case 'model_configs': return [d('接口', `${row.api_type} · ${row.model}`), d('密钥', row.has_api_key ? '已设置' : '未设置')]
     case 'chat_model_bindings': return []

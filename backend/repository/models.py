@@ -70,11 +70,25 @@ class Character(Identified, Timestamped, Base):
     name: Mapped[str] = mapped_column(Text)
     avatar: Mapped[str | None] = mapped_column(Text)
     description: Mapped[str] = mapped_column(Text, default="", server_default="")
-    first_message: Mapped[str] = mapped_column(Text, default="", server_default="")
     state_schema: Mapped[str] = mapped_column(Text, default="", server_default="")
     state_reference: Mapped[str] = mapped_column(Text, default="", server_default="")
     state_update_rules: Mapped[str] = mapped_column(Text, default="", server_default="")
     __table_args__ = (UniqueConstraint("id", "chat_id"),)
+
+
+class CharacterScene(Identified, Base):
+    """An opening: First Message plus initial-state overrides applied through the character's Schema."""
+    __tablename__ = "character_scenes"
+    character_id: Mapped[str] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+    order: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    name: Mapped[str] = mapped_column(Text)
+    description: Mapped[str] = mapped_column(Text, default="", server_default="")
+    first_message: Mapped[str] = mapped_column(Text, default="", server_default="")
+    initial_state: Mapped[dict[str, Any]] = mapped_column(JSON(none_as_null=True), default=dict, server_default="{}")
+    __table_args__ = (
+        CheckConstraint('"order" >= 0', name="nonnegative_order"),
+        CheckConstraint("json_valid(initial_state) AND json_type(initial_state) = 'object'", name="initial_state_object"),
+    )
 
 
 class UserIdentity(Identified, Timestamped, Base):

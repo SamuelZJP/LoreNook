@@ -21,7 +21,8 @@ def create_chat(
         repository = Repository(session)
         chat = repository.add(Chat(title=payload.title, recent_rounds=payload.recent_rounds,
                                    min_summaries=payload.min_summaries))
-        character = CharacterService(repository, initial_state_factory).copy_to_chat(payload.character_id, chat.id)
+        character = CharacterService(repository, initial_state_factory).copy_to_chat(
+            payload.character_id, chat.id, payload.scene_id)
         IdentityService(repository).copy_to_chat(payload.user_identity_id, chat.id)
 
         preset_ids = list(payload.writing_preset_ids)
@@ -45,6 +46,6 @@ def create_chat(
         for purpose, source_id in payload.model_bindings.items():
             repository.add(ChatModelBinding(chat_id=chat.id, purpose=purpose, model_config_id=configs[source_id]))
 
-        state = build_initial_state(initial_state_factory, character.state_schema)
+        state = build_initial_state(initial_state_factory, character.state_schema, character.scenes[0].initial_state)
         repository.add(StateSnapshot(chat_id=chat.id, character_id=character.id, content=state))
         return ChatService(repository).detail(chat.id)

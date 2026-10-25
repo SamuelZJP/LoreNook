@@ -108,7 +108,7 @@ const staged = computed(() => {
   if (ROUND_ORDERED.includes(name)) {
     const dir = prefs.dataNewestFirst ? -1 : 1
     out.sort((a, b) => dir * (roundOrder(name, a.row, lookup.value) - roundOrder(name, b.row, lookup.value)))
-  } else if (name === 'definitions') {
+  } else if (name === 'definitions' || name === 'character_scenes') {
     out.sort((a, b) => rowTitle(name, a.row, lookup.value).localeCompare(rowTitle(name, b.row, lookup.value), undefined, { numeric: true }))
   }
   return out
@@ -144,7 +144,7 @@ function openCreate(name = table.value) {
   if ('id' in props && !tpl.id) tpl.id = crypto.randomUUID()
   if (!isLibrary.value && scope.value && name !== 'chats') {
     if ('chat_id' in props) tpl.chat_id = scope.value
-    if (name === 'definitions' || name === 'state_snapshots') {
+    if (name === 'definitions' || name === 'state_snapshots' || name === 'character_scenes') {
       const character = (allStaged.value.characters ?? []).find((c) => c.row.chat_id === scope.value)
       if (character) tpl.character_id = character.row.id
     }

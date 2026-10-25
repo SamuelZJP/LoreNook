@@ -62,7 +62,7 @@ def test_first_message_episode_title_edit_and_memory(database, pending_episode):
     ids = pending_episode
     with database.transaction() as session:
         repo = Repository(session)
-        repo.get(Character, ids["character_id"]).first_message = "<report_nya~>开场报告不提供</report_nya~><content>开场事实{{user}}</content>"
+        repo.opening_scene(ids["character_id"]).first_message = "<report_nya~>开场报告不提供</report_nya~><content>开场事实{{user}}</content>"
         chat = repo.get(Chat, ids["chat_id"])
         chat.recent_rounds, chat.min_summaries = 0, 0
     def handler(request):
@@ -117,7 +117,7 @@ def test_bridge_is_reference_only_and_change_rejects_stale_generation(database, 
                 repo.save_decision(record.id)
         rid = record.id
         repo.save_decision(rid, start_round_id=ids["round_id"], end_round_id=repo.rounds(ids["chat_id"])[9].id)
-        repo.get(Character, ids["character_id"]).first_message = "首条消息不应再次提供"
+        repo.opening_scene(ids["character_id"]).first_message = "首条消息不应再次提供"
     def handler(request):
         prompt = json.loads(request.content)["contents"][0]["parts"][0]["text"]
         assert "跨事件边界的桥接上下文" in prompt and "[回合5AI] 完整 AI 正文5" in prompt

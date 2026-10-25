@@ -52,9 +52,9 @@ def validate_state(source: str, content: dict[str, JsonValue]) -> dict[str, Json
         raise StateSchemaError("状态 Schema 执行失败：" + str(error)[:1900]) from error
 
 
-def python_initial_state(source: str) -> dict[str, JsonValue]:
+def python_initial_state(source: str, overrides: dict[str, JsonValue] | None = None) -> dict[str, JsonValue]:
     try:
-        return validate_state(source, {})
+        return validate_state(source, overrides or {})
     except StateSchemaError as error:
         raise StateInitializationError(str(error)) from error
 

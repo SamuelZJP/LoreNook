@@ -94,10 +94,16 @@ def test_downgrade_refuses_to_discard_imported_history(database, managed_history
         service.apply(AdminBatch.model_validate({
             "expected_revision": service.snapshot().revision, "operations": [imported(ids)],
         }))
-    before = database_contents(database)
     database.dispose()
+    config = migration_config(tmp_path / "test.db")
+    command.downgrade(config, "e36b9c7210af")
+
+    def episodes():
+        with database.read() as session:
+            return session.execute(text("SELECT * FROM episodes ORDER BY id")).all()
+    before = episodes()
     with pytest.raises(ValueError, match="Cannot downgrade"):
-        command.downgrade(migration_config(tmp_path / "test.db"), "d49c370021ae")
-    assert database_contents(database) == before
+        command.downgrade(config, "d49c370021ae")
+    assert episodes() == before
     with database.read() as session:
         assert session.execute(text("SELECT version_num FROM alembic_version")).scalar_one() == "e36b9c7210af"

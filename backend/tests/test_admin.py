@@ -8,7 +8,7 @@ import pytest
 from backend.modules.admin.service import AdminService
 from backend.repository.admin import AdminRepository, TABLES
 from backend.repository.archive import ArchiveRepository
-from backend.repository.models import Character, ChatModelBinding, ModelConfig
+from backend.repository.models import Character, CharacterScene, ChatModelBinding, ModelConfig
 from backend.repository.queries import Repository
 from backend.schemas.admin import AdminBatch
 from backend.shared.errors import ConflictError
@@ -35,6 +35,7 @@ def managed_history(database, chat):
                                     base_url="https://provider.test/v1beta", api_key="admin-private-key", model="test"))
         repo.add(ChatModelBinding(chat_id=chat[0], purpose="writing", model_config_id=model.id))
         source = repo.add(Character(name="来源角色"))
+        repo.add(CharacterScene(character_id=source.id, name="默认"))
         return {"chat_id": chat[0], "character_id": chat[1], "rounds": ids, "states": state_ids,
                 "episode": episode_id, "model": model.id, "source": source.id}
 
@@ -61,7 +62,7 @@ def test_schema_and_full_snapshot_are_read_only_and_secrets_are_explicit(databas
     async def scenario(client):
         schema = (await client.get("/api/admin/schema")).json()
         assert {entry["name"] for entry in schema} == set(TABLES)
-        assert len(schema) == 10
+        assert len(schema) == 11
         bindings = next(entry for entry in schema if entry["name"] == "chat_model_bindings")
         assert bindings["primary_key"] == ["chat_id", "purpose"]
         assert "api_key" in next(entry for entry in schema if entry["name"] == "model_configs")["row_schema"]["properties"]
@@ -99,6 +100,7 @@ def test_create_complete_graph_in_one_batch_with_forward_references(database):
                base_url="待配置", api_key="explicit-secret", model="模型名", default_parameters={"a": [1, True, None]}),
         create("writing_presets", id="preset", chat_id="chat", name="预设", source="broken("),
         create("characters", id="character", chat_id="chat", name="角色", state_schema="broken schema"),
+        create("character_scenes", id="scene", character_id="character", name="开场", initial_state={"未校验": True}),
         create("user_identities", id="identity", chat_id="chat", name="身份"),
         create("chats", id="chat", title="完整聊天", writing_preset_id="preset", created_at="2026-10-19T08:00:00+08:00"),
     ]
@@ -189,7 +191,8 @@ def test_delete_chat_cascades_but_preserves_library(database, managed_history):
         assert result.status_code == 200, result.text
         snapshot = (await client.get("/api/admin/data")).json()["tables"]
         assert [row["id"] for row in snapshot["characters"]] == [ids["source"]]
-        assert not any(snapshot[name] for name in TABLES if name != "characters")
+        assert [row["character_id"] for row in snapshot["character_scenes"]] == [ids["source"]]
+        assert not any(snapshot[name] for name in TABLES if name not in ("characters", "character_scenes"))
     run_api(database, scenario)
 
 

@@ -22,6 +22,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/initial-state-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Initial State
+         * @description Compute a scene's full initial state from an unsaved Schema draft; nothing is stored.
+         */
+        post: operations["preview_initial_state_api_characters_initial_state_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}": {
         parameters: {
             query?: never;
@@ -974,7 +994,7 @@ export interface components {
              * Table
              * @enum {string}
              */
-            table: "chats" | "characters" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes";
+            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes";
             /** Key */
             key: {
                 [key: string]: string;
@@ -991,7 +1011,7 @@ export interface components {
              * Table
              * @enum {string}
              */
-            table: "chats" | "characters" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes";
+            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes";
             /** Values */
             values: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -1008,7 +1028,7 @@ export interface components {
              * Table
              * @enum {string}
              */
-            table: "chats" | "characters" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes";
+            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes";
             /** Key */
             key: {
                 [key: string]: string;
@@ -1031,7 +1051,7 @@ export interface components {
              * Name
              * @enum {string}
              */
-            name: "chats" | "characters" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes";
+            name: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes";
             /** Primary Key */
             primary_key: string[];
             /** Row Schema */
@@ -1050,7 +1070,7 @@ export interface components {
              * Table
              * @enum {string}
              */
-            table: "chats" | "characters" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes";
+            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes";
             /** Key */
             key: {
                 [key: string]: string;
@@ -1105,11 +1125,8 @@ export interface components {
             description: string;
             /** Definitions */
             definitions?: components["schemas"]["DefinitionInput"][];
-            /**
-             * First Message
-             * @default
-             */
-            first_message: string;
+            /** Scenes */
+            scenes?: components["schemas"]["SceneInput"][];
             /**
              * State Schema
              * @default
@@ -1136,8 +1153,8 @@ export interface components {
             description?: string | null;
             /** Definitions */
             definitions?: components["schemas"]["DefinitionInput"][] | null;
-            /** First Message */
-            first_message?: string | null;
+            /** Scenes */
+            scenes?: components["schemas"]["SceneInput"][] | null;
             /** State Schema */
             state_schema?: string | null;
             /** State Reference */
@@ -1158,11 +1175,8 @@ export interface components {
             description: string;
             /** Definitions */
             definitions: components["schemas"]["DefinitionRead"][];
-            /**
-             * First Message
-             * @default
-             */
-            first_message: string;
+            /** Scenes */
+            scenes: components["schemas"]["SceneRead"][];
             /**
              * State Schema
              * @default
@@ -1194,6 +1208,8 @@ export interface components {
             title: string;
             /** Character Id */
             character_id: string;
+            /** Scene Id */
+            scene_id?: string | null;
             /** User Identity Id */
             user_identity_id: string;
             /** Writing Preset Ids */
@@ -1532,6 +1548,18 @@ export interface components {
              */
             created_at: string;
         };
+        /** InitialStatePreview */
+        InitialStatePreview: {
+            /**
+             * State Schema
+             * @default
+             */
+            state_schema: string;
+            /** Initial State */
+            initial_state?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
         JsonValue: unknown;
         /** MemoryHistory */
         MemoryHistory: {
@@ -1736,6 +1764,58 @@ export interface components {
              */
             archive_step: "episode_decision";
         };
+        /** SceneInput */
+        SceneInput: {
+            /**
+             * Order
+             * @default 0
+             */
+            order: number;
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * First Message
+             * @default
+             */
+            first_message: string;
+            /** Initial State */
+            initial_state?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
+        /** SceneRead */
+        SceneRead: {
+            /**
+             * Order
+             * @default 0
+             */
+            order: number;
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * First Message
+             * @default
+             */
+            first_message: string;
+            /** Initial State */
+            initial_state?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Id */
+            id: string;
+            /** Character Id */
+            character_id: string;
+        };
         /** StateRead */
         StateRead: {
             /** Id */
@@ -1898,6 +1978,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CharacterRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_initial_state_api_characters_initial_state_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InitialStatePreview"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: components["schemas"]["JsonValue"];
+                    };
                 };
             };
             /** @description Validation Error */

@@ -259,7 +259,7 @@ def test_chat_preview_snapshot_and_archive_gate(database, chat):
         repo = Repository(session)
         preset = repo.add(WritingPreset(chat_id=chat[0], name="快照", source=source))
         repo.get(Chat, chat[0]).writing_preset_id = preset.id
-        repo.get(Character, chat[1]).first_message = "开场\r\n"
+        repo.opening_scene(chat[1]).first_message = "开场\r\n"
         definition = repo.add(Definition(character_id=chat[1], content="年龄{{ state['年龄'] }}", has_template=True))
         repo.add(Definition(character_id=chat[1], content="{{ missing }}", has_template=True, enabled=False))
         definition_id, preset_id = definition.id, preset.id
