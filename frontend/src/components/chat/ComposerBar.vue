@@ -80,6 +80,7 @@ function onKey(e: KeyboardEvent) {
 }
 function submit() {
   if (locked.value) return
+  if (props.flow.hasEdits.value && !confirm('重新生成会丢弃对候选回复的修改，继续？')) return
   props.flow.generate()
   resetHeight()
 }

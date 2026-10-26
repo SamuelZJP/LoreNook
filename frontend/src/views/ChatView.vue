@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, toRef, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import { PanelRight, Check, Trash2, Code2, Loader2, AlertTriangle, Settings2, ChevronUp } from 'lucide-vue-next'
+import { PanelRight, Check, Trash2, Code2, Loader2, AlertTriangle, Settings2, ChevronUp, Pencil, Undo2, X } from 'lucide-vue-next'
 import { api } from '@/api/endpoints'
 import { ApiError, isTemplateError } from '@/api/client'
 import { useRoundFlow } from '@/composables/roundFlow'
@@ -95,7 +95,15 @@ function toggle(set: Set<string>, id: string) {
 }
 
 const candidate = flow.candidate
-const candidateProblem = computed(() => (candidate.value ? contentProblem(candidate.value.ai_output) : null))
+const candidateProblem = computed(() => {
+  const text = flow.draft.value ?? candidate.value?.ai_output
+  return text === undefined ? null : contentProblem(text)
+})
+const vFocus = { mounted: (el: HTMLElement) => el.focus({ preventScroll: true }) }
+function discardCandidate() {
+  if (flow.hasEdits.value && !confirm('丢弃这条候选及其修改？')) return
+  flow.discardCandidate()
+}
 const generateError = computed(() => (flow.error.value?.action === 'generate' ? flow.error.value.error : null))
 /** Locate a failed template among the chat's own definitions. */
 const templateLocation = computed(() => {
@@ -202,14 +210,29 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
               <div class="plain user-text">{{ candidate.user_input || '（空输入）' }}</div>
             </MessageBubble>
             <MessageBubble side="ai" page :name="character?.name ?? 'AI'" :avatar="character?.avatar" pending>
-              <template #meta><span class="badge accent">未保存的候选</span></template>
-              <OutputView :text="candidate.ai_output" :raw="raw.has('candidate')" />
+              <template #meta>
+                <span class="badge accent">未保存的候选</span>
+                <span v-if="flow.edited.value" class="badge">已编辑</span>
+              </template>
+              <textarea
+                v-if="flow.editing.value" v-model="flow.draft.value" v-focus class="textarea candidate-editor" rows="16"
+                aria-label="编辑候选回复" @keydown.esc="flow.cancelEdit()"
+              />
+              <OutputView v-else :text="candidate.ai_output" :raw="raw.has('candidate')" />
               <template #actions>
-                <button class="btn primary small" type="button" :disabled="flow.phase.value !== 'candidate' || flow.inputChanged.value" @click="flow.confirm()">
-                  <Check /> 确认并归档
-                </button>
-                <button class="btn ghost small" type="button" @click="toggle(raw, 'candidate')"><Code2 /> {{ raw.has('candidate') ? '渲染' : '原文' }}</button>
-                <button class="btn ghost small danger" type="button" :disabled="flow.phase.value !== 'candidate'" @click="flow.discardCandidate()"><Trash2 /> 丢弃</button>
+                <template v-if="flow.editing.value">
+                  <button class="btn primary small" type="button" @click="flow.applyEdit()"><Check /> 完成编辑</button>
+                  <button class="btn ghost small" type="button" @click="flow.cancelEdit()"><X /> 取消</button>
+                </template>
+                <template v-else>
+                  <button class="btn primary small" type="button" :disabled="flow.phase.value !== 'candidate' || flow.inputChanged.value" @click="flow.confirm()">
+                    <Check /> 确认并归档
+                  </button>
+                  <button class="btn ghost small" type="button" :disabled="flow.phase.value !== 'candidate'" @click="flow.startEdit()"><Pencil /> 编辑</button>
+                  <button v-if="flow.edited.value" class="btn ghost small" type="button" :disabled="flow.phase.value !== 'candidate'" @click="flow.revertEdit()"><Undo2 /> 还原</button>
+                  <button class="btn ghost small" type="button" @click="toggle(raw, 'candidate')"><Code2 /> {{ raw.has('candidate') ? '渲染' : '原文' }}</button>
+                  <button class="btn ghost small danger" type="button" :disabled="flow.phase.value !== 'candidate'" @click="discardCandidate()"><Trash2 /> 丢弃</button>
+                </template>
               </template>
             </MessageBubble>
             <div v-if="flow.inputChanged.value && flow.phase.value === 'candidate'" class="notice warn indent">
@@ -263,6 +286,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 .dock { flex-shrink: 0; background: linear-gradient(to bottom, transparent, var(--bg) 18px); }
 .dock-inner { padding-top: 4px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); gap: 8px; }
 .indent { margin-left: 44px; }
+.candidate-editor { display: block; width: 760px; max-width: 100%; font-family: var(--font-mono); font-size: 13px; }
 .user-text { font-size: var(--reading-size); font-family: var(--font-reading); }
 .earlier { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; font-size: 12px; }
 .notice { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 12px; border-radius: var(--radius-m); background: var(--warn-soft); font-size: 13px; }

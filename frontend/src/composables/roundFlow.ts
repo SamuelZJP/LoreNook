@@ -29,6 +29,10 @@ export function useRoundFlow(chatId: Ref<string>) {
   const busy = ref<null | 'generating' | 'archiving' | 'checking'>(null)
   const error = ref<FlowError | null>(null)
   const startedAt = ref(0)
+  /** The model's own output for the current candidate, kept so user edits can be reverted. */
+  const original = ref<string | null>(null)
+  /** Text in the candidate editor; null while not editing. */
+  const draft = ref<string | null>(null)
 
   const archive = useQuery({
     queryKey: computed(() => ['archive', chatId.value]),
@@ -46,6 +50,30 @@ export function useRoundFlow(chatId: Ref<string>) {
 
   const latestRound = computed(() => archive.data.value?.round ?? null)
   const unfinished = computed(() => pendingStep(latestRound.value))
+
+  // Edits belong to one candidate: drop them once it is saved, discarded or replaced.
+  watch(candidate, (c) => {
+    if (!c) original.value = null
+    draft.value = null
+  })
+
+  const editing = computed(() => draft.value !== null)
+  const edited = computed(() => !!candidate.value && original.value !== null && candidate.value.ai_output !== original.value)
+  /** Regenerating or discarding now would throw away the user's edits. */
+  const hasEdits = computed(() => edited.value || (editing.value && draft.value !== candidate.value?.ai_output))
+
+  function startEdit() {
+    if (candidate.value) draft.value = candidate.value.ai_output
+  }
+  function applyEdit() {
+    if (candidate.value && draft.value !== null) candidate.value = { ...candidate.value, ai_output: draft.value }
+  }
+  function cancelEdit() {
+    draft.value = null
+  }
+  function revertEdit() {
+    if (candidate.value && original.value !== null) candidate.value = { ...candidate.value, ai_output: original.value }
+  }
 
   const phase = computed<Phase>(() => {
     if (busy.value === 'generating') return 'generating'
@@ -72,7 +100,9 @@ export function useRoundFlow(chatId: Ref<string>) {
     startedAt.value = Date.now()
     error.value = null
     try {
-      candidate.value = await api.write(chatId.value, input.value)
+      const result = await api.write(chatId.value, input.value)
+      candidate.value = result
+      original.value = result.ai_output
     } catch (e) {
       // A failed generation keeps the previous candidate (if any) and the typed input.
       error.value = { action: 'generate', error: e }
@@ -94,7 +124,7 @@ export function useRoundFlow(chatId: Ref<string>) {
 
   async function confirm() {
     const c = candidate.value
-    if (!c || busy.value || inputChanged.value) return
+    if (!c || busy.value || inputChanged.value || editing.value) return
     busy.value = 'archiving'
     startedAt.value = Date.now()
     error.value = null
@@ -192,7 +222,9 @@ export function useRoundFlow(chatId: Ref<string>) {
 
   return {
     input, candidate, phase, error, elapsed, inputChanged, archive, latestRound, unfinished,
+    draft, editing, edited, hasEdits,
     generate, confirm, retry, discardCandidate, checkProgress, refreshAll,
+    startEdit, applyEdit, cancelEdit, revertEdit,
   }
 }
 

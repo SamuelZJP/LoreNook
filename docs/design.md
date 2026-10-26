@@ -23,7 +23,7 @@ The concepts, rules and reasons behind the code. For *how* something is implemen
 ## Round lifecycle
 
 1. User sends input. Enabled definitions are rendered against the latest state, history is assembled, the preset builds a request, the model is called **once**, and the preset parses the response.
-2. The result is shown as an unconfirmed **candidate**. It lives only in browser memory — not in the database. The user can regenerate (optionally after editing the input).
+2. The result is shown as an unconfirmed **candidate**. It lives only in browser memory — not in the database. The user can edit the AI output (full raw text, tags included) or regenerate (optionally after editing the input). The edited text is what gets saved and archived.
 3. On confirm, the round text is saved and archiving runs:
 
 ```text
