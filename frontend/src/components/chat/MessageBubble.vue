@@ -10,11 +10,13 @@ defineProps<{
   pending?: boolean
   /** Paint the bubble as the reading page used for AI output. */
   page?: boolean
+  /** Take the full reading width instead of shrinking to the text, e.g. when it holds an illustration. */
+  wide?: boolean
 }>()
 </script>
 
 <template>
-  <div class="msg" :class="[side, { pending }]">
+  <div class="msg" :class="[side, { pending, wide }]">
     <AvatarBadge class="av" :name="name" :src="avatar" :size="34" />
     <div class="col">
       <div class="meta">
@@ -32,6 +34,7 @@ defineProps<{
 .msg.user { flex-direction: row-reverse; }
 .col { display: flex; flex-direction: column; gap: 4px; min-width: 0; max-width: min(760px, 86%); }
 .user .col { align-items: flex-end; }
+.wide .col { width: min(760px, 86%); }
 .meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-faint); flex-wrap: wrap; }
 .user .meta { flex-direction: row-reverse; }
 .name { font-weight: 600; color: var(--text-muted); }
@@ -49,6 +52,7 @@ defineProps<{
 @media (max-width: 640px) {
   .av { display: none; }
   .col { max-width: 94%; }
+  .wide .col { width: 94%; }
   .bubble.page-surface { padding: 14px 14px 12px; }
 }
 </style>

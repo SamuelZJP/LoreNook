@@ -174,6 +174,19 @@ const sample = `<think>她还不确定该不该提起那封信，也许先试探
           </div>
         </section>
 
+        <section class="card card-pad stack">
+          <h2>插图</h2>
+          <div class="field">
+            <label>氛围背景</label>
+            <div class="row wrap seg">
+              <label class="check"><input v-model="prefs.backdrop" type="radio" value="off" /> 关闭</label>
+              <label class="check"><input v-model="prefs.backdrop" type="radio" value="subtle" /> 淡</label>
+              <label class="check"><input v-model="prefs.backdrop" type="radio" value="strong" /> 浓</label>
+            </div>
+            <p class="hint">把最新一张插图模糊后铺在聊天背后。手机上始终关闭。是否生成插图在每个聊天的设置中选择。</p>
+          </div>
+        </section>
+
         <div><button class="btn" type="button" @click="reset"><RotateCcw /> 恢复默认</button></div>
       </div>
     </div>

@@ -113,7 +113,8 @@ export function templateFromSchema(schema: Record<string, any>): Row {
 
 export const TABLE_LABELS: Record<string, string> = {
   chats: '聊天', characters: '角色', character_scenes: '开场', user_identities: '用户身份', definitions: '定义', writing_presets: '写作预设',
-  model_configs: '模型配置', chat_model_bindings: '模型绑定', rounds: '回合', state_snapshots: '状态快照', episodes: '情节',
+  model_configs: '模型配置', chat_model_bindings: '模型绑定', image_workflows: '图像工作流', chat_illustration_settings: '插图设置',
+  rounds: '回合', state_snapshots: '状态快照', episodes: '情节', illustrations: '插图',
 }
 
 export function preview(value: unknown, max = 80): string {
@@ -128,13 +129,13 @@ export function preview(value: unknown, max = 80): string {
 export const LIBRARY = 'library'
 
 export const CHAT_TABLE_GROUPS: { label: string; tables: string[] }[] = [
-  { label: '历史', tables: ['rounds', 'state_snapshots', 'episodes'] },
-  { label: '聊天副本', tables: ['chats', 'characters', 'character_scenes', 'user_identities', 'definitions', 'writing_presets', 'model_configs', 'chat_model_bindings'] },
+  { label: '历史', tables: ['rounds', 'state_snapshots', 'episodes', 'illustrations'] },
+  { label: '聊天副本', tables: ['chats', 'characters', 'character_scenes', 'user_identities', 'definitions', 'writing_presets', 'model_configs', 'chat_model_bindings', 'image_workflows', 'chat_illustration_settings'] },
 ]
-export const LIBRARY_TABLES = ['characters', 'character_scenes', 'user_identities', 'definitions', 'writing_presets', 'model_configs']
+export const LIBRARY_TABLES = ['characters', 'character_scenes', 'user_identities', 'definitions', 'writing_presets', 'model_configs', 'image_workflows']
 
 /** Tables whose rows are ordered by round and can be sorted either way. */
-export const ROUND_ORDERED = ['rounds', 'state_snapshots', 'episodes']
+export const ROUND_ORDERED = ['rounds', 'state_snapshots', 'episodes', 'illustrations']
 
 /** Rows of every table as staged, used to resolve references for titles and scopes. */
 export type Lookup = Record<string, Map<string, Row>>
@@ -172,6 +173,7 @@ export function roundOrder(table: string, row: Row, lookup: Lookup): number {
   if (table === 'rounds') return Number(row.round_no ?? 0)
   if (table === 'state_snapshots') return row.round_id == null ? 0 : (roundNo(lookup, row.round_id) ?? 0)
   if (table === 'episodes') return roundNo(lookup, row.start_round_id) ?? 0
+  if (table === 'illustrations') return roundNo(lookup, row.round_id) ?? 0
   return 0
 }
 
@@ -200,6 +202,8 @@ export function rowTitle(table: string, row: Row, lookup: Lookup): string {
       return n == null ? '未知回合后' : `第 ${n} 回合后`
     }
     case 'episodes': return String(row.title || '未命名情节')
+    case 'illustrations': return `第 ${roundNo(lookup, row.round_id) ?? '?'} 回合插图`
+    case 'chat_illustration_settings': return '插图设置'
     default: return String(row.name || '未命名')
   }
 }
@@ -232,6 +236,9 @@ export function rowDetails(table: string, row: Row, lookup: Lookup): Detail[] {
     ]
     case 'state_snapshots': return [d('世界', worldLine(row.content)), d('角色', nameOf(lookupRow(lookup, 'characters', row.character_id)) || null)]
     case 'episodes': return [d('范围', roundRange(lookup, row.start_round_id, row.end_round_id)), d('摘要', row.summary)]
+    case 'image_workflows': return [d('地址', row.base_url), d('尺寸', `${row.width}×${row.height}`)]
+    case 'chat_illustration_settings': return [d('时机', row.mode), d('工作流', nameOf(lookupRow(lookup, 'image_workflows', row.image_workflow_id)) || null), d('提示词模型', nameOf(lookupRow(lookup, 'model_configs', row.model_config_id)) || null)]
+    case 'illustrations': return [d('状态', row.status), ...(row.error ? [d('错误', row.error)] : []), d('隐藏', row.hidden ? '是' : '否')]
     default: return []
   }
 }

@@ -2,7 +2,8 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
-import { api, MODEL_PURPOSES, type ModelPurpose } from '@/api/endpoints'
+import { api, MODEL_PURPOSES, type IllustrationMode, type ModelPurpose } from '@/api/endpoints'
+import { MODE_LABELS } from '@/lib/illustrations'
 import { PURPOSE_LABELS } from '@/lib/archive'
 import ModalDialog from './ModalDialog.vue'
 import ProfilePicker from './ProfilePicker.vue'
@@ -17,6 +18,7 @@ const characters = useQuery({ queryKey: ['characters'], queryFn: api.characters 
 const identities = useQuery({ queryKey: ['identities'], queryFn: api.identities })
 const presets = useQuery({ queryKey: ['presets', null], queryFn: () => api.presets({ chatId: null }) })
 const models = useQuery({ queryKey: ['models', null], queryFn: () => api.models({ chatId: null }) })
+const workflows = useQuery({ queryKey: ['workflows', null], queryFn: () => api.workflows({ chatId: null }) })
 
 const form = reactive({
   title: '',
@@ -27,6 +29,7 @@ const form = reactive({
   extraPresets: [] as string[],
   bindings: { writing: '', state_update: '', round_summary: '', episode_summary: '' } as Record<ModelPurpose, string>,
   extraModels: [] as string[],
+  illustration: { mode: 'off' as IllustrationMode, image_workflow_id: '', model_config_id: '' },
   recent_rounds: 5,
   min_summaries: 6,
 })
@@ -71,6 +74,11 @@ const create = useMutation({
       writing_preset_ids: form.extraPresets,
       model_config_ids: form.extraModels,
       model_bindings,
+      illustration: {
+        mode: form.illustration.mode,
+        image_workflow_id: form.illustration.mode !== 'off' ? form.illustration.image_workflow_id || null : null,
+        model_config_id: form.illustration.mode !== 'off' ? form.illustration.model_config_id || null : null,
+      },
       recent_rounds: form.recent_rounds,
       min_summaries: form.min_summaries,
     })
@@ -153,6 +161,31 @@ const create = useMutation({
           </label>
         </div>
       </details>
+
+      <h3>插图</h3>
+      <div class="field">
+        <label>生成时机</label>
+        <select v-model="form.illustration.mode" class="select">
+          <option v-for="(label, mode) in MODE_LABELS" :key="mode" :value="mode">{{ label }}</option>
+        </select>
+      </div>
+      <div v-if="form.illustration.mode !== 'off'" class="grid-2">
+        <div class="field">
+          <label>图像工作流</label>
+          <select v-model="form.illustration.image_workflow_id" class="select">
+            <option value="">（未选择）</option>
+            <option v-for="w in workflows.data.value" :key="w.id" :value="w.id">{{ w.name }}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>提示词模型</label>
+          <select v-model="form.illustration.model_config_id" class="select">
+            <option value="">（未选择）</option>
+            <option v-for="m in models.data.value" :key="m.id" :value="m.id">{{ m.name }} · {{ m.model }}</option>
+          </select>
+        </div>
+      </div>
+      <p v-if="form.illustration.mode !== 'off' && !workflows.data.value?.length" class="hint">资源库中还没有图像工作流，可以先在资源库创建，或稍后在聊天资源中添加。</p>
 
       <h3>记忆</h3>
       <div class="grid-2">

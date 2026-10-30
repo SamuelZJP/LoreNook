@@ -89,7 +89,7 @@ export function useRoundFlow(chatId: Ref<string>) {
 
   function refreshAll() {
     const id = chatId.value
-    for (const key of ['archive', 'rounds', 'chat', 'episodes', 'state', 'memory']) {
+    for (const key of ['archive', 'rounds', 'chat', 'episodes', 'state', 'memory', 'illustrations']) {
       qc.invalidateQueries({ queryKey: [key, id] })
     }
   }
