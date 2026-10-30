@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, toRef, watch } from 'vue'
-import { useQuery, useQueryClient } from '@tanstack/vue-query'
-import { PanelRight, Check, Trash2, Code2, Loader2, AlertTriangle, Settings2, ChevronUp, Pencil, Undo2, X, ImagePlus } from 'lucide-vue-next'
-import { api, type Illustration } from '@/api/endpoints'
+import { useQuery } from '@tanstack/vue-query'
+import { PanelRight, Check, Trash2, Code2, Loader2, AlertTriangle, Settings2, ChevronUp, Pencil, Undo2, X } from 'lucide-vue-next'
+import { api } from '@/api/endpoints'
 import { ApiError, isTemplateError } from '@/api/client'
 import { useRoundFlow } from '@/composables/roundFlow'
 import { contentProblem } from '@/lib/sections'
 import { STEP_LABELS } from '@/lib/archive'
 import { prefs } from '@/lib/prefs'
 import { substituteNames } from '@/lib/format'
-import { gallery, isActive, splitSummary, useIllustrations } from '@/lib/illustrations'
-import { toast } from '@/composables/toast'
+import { provideChatIllustrations } from '@/features/illustrations/useChatIllustrations'
+import RoundIllustration from '@/features/illustrations/components/RoundIllustration.vue'
+import RoundIllustrationAction from '@/features/illustrations/components/RoundIllustrationAction.vue'
+import ChatIllustrationBackdrop from '@/features/illustrations/components/ChatIllustrationBackdrop.vue'
+import ChatIllustrationOverlays from '@/features/illustrations/components/ChatIllustrationOverlays.vue'
 import { isWide } from '@/composables/layout'
 import TopBar from '@/components/TopBar.vue'
 import ErrorBox from '@/components/ErrorBox.vue'
@@ -20,9 +23,6 @@ import ComposerBar from '@/components/chat/ComposerBar.vue'
 import ArchiveBanner from '@/components/chat/ArchiveBanner.vue'
 import RoundSummaryBlock from '@/components/chat/RoundSummaryBlock.vue'
 import EpisodeCard from '@/components/chat/EpisodeCard.vue'
-import IllustrationPlate from '@/components/chat/IllustrationPlate.vue'
-import SceneViewer from '@/components/chat/SceneViewer.vue'
-import PromptDialog from '@/components/chat/PromptDialog.vue'
 import ChatPanel from '@/components/panel/ChatPanel.vue'
 import type { PanelTab } from '@/components/panel/ChatPanel.vue'
 
@@ -33,8 +33,6 @@ const chat = useQuery({ queryKey: computed(() => ['chat', chatId.value]), queryF
 const rounds = useQuery({ queryKey: computed(() => ['rounds', chatId.value]), queryFn: () => api.rounds(chatId.value) })
 const episodes = useQuery({ queryKey: computed(() => ['episodes', chatId.value]), queryFn: () => api.episodes(chatId.value) })
 const flow = useRoundFlow(chatId)
-const qc = useQueryClient()
-const { byRound } = useIllustrations(chatId)
 
 const panelOpen = ref(isWide.value && localPanelPref())
 const panelTab = ref<PanelTab>('state')
@@ -56,6 +54,7 @@ const rawFirstMessage = computed(() => character.value?.scenes[0]?.first_message
 const firstMessage = computed(() =>
   character.value && identity.value ? substituteNames(rawFirstMessage.value, identity.value.name, character.value.name) : '')
 const roundList = computed(() => rounds.data.value ?? [])
+const illustrations = provideChatIllustrations(chatId, roundList)
 const roundNo = computed(() => new Map(roundList.value.map((r) => [r.id, r.round_no])))
 const latest = computed(() => roundList.value.at(-1) ?? null)
 const latestComplete = computed(() => !latest.value || latest.value.archive_step === 'complete')
@@ -91,43 +90,6 @@ const readiness = computed(() => {
   if (!c.model_bindings.writing) return '尚未绑定写作模型'
   return null
 })
-
-// ---- Illustrations ----
-const illustrationOn = computed(() => (chat.data.value?.illustration.mode ?? 'off') !== 'off')
-const shownGallery = computed(() => gallery(roundList.value, byRound.value))
-const backdrop = computed(() => (prefs.backdrop === 'off' ? null : shownGallery.value.at(-1)?.illustration ?? null))
-const viewing = ref<string | null>(null)
-const promptOf = ref<Illustration | null>(null)
-const requesting = reactive(new Set<string>())
-const caption = (summary: string | null) => splitSummary(summary).caption
-function refreshIllustrations() {
-  qc.invalidateQueries({ queryKey: ['illustrations', chatId.value] })
-}
-async function illustrate(roundId: string) {
-  if (requesting.has(roundId)) return
-  requesting.add(roundId)
-  try {
-    await api.illustrate(chatId.value, roundId)
-  } catch (e) {
-    toast(e instanceof Error ? e.message : String(e), 'error')
-  } finally {
-    requesting.delete(roundId)
-    refreshIllustrations()
-  }
-}
-async function setHidden(item: Illustration, hidden: boolean) {
-  try {
-    await api.patchIllustration(chatId.value, item.id, { hidden })
-  } catch (e) {
-    toast(e instanceof Error ? e.message : String(e), 'error')
-  } finally {
-    refreshIllustrations()
-  }
-}
-function showPrompt(roundId: string) {
-  promptOf.value = byRound.value.get(roundId) ?? null
-}
-const busyRound = (id: string) => requesting.has(id) || (byRound.value.get(id) ? isActive(byRound.value.get(id)!) : false)
 
 const raw = reactive(new Set<string>())
 /** Summaries toggled away from the `showSummaries` default. */
@@ -181,9 +143,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 <template>
   <div class="chat-view" :class="{ 'with-panel': panelOpen }">
     <section class="conversation">
-      <div v-if="backdrop" class="backdrop" :class="prefs.backdrop" aria-hidden="true">
-        <img :key="backdrop.id" :src="api.illustrationImage(chatId, backdrop.id)" alt="" />
-      </div>
+      <ChatIllustrationBackdrop />
       <TopBar>
         <div class="grow title-wrap">
           <h1 class="ellipsis">{{ chat.data.value?.title ?? '…' }}</h1>
@@ -220,26 +180,18 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
               <template #meta><span v-if="prefs.showFloorNumbers">#{{ r.round_no }}</span></template>
               <div class="plain user-text">{{ r.user_input || '（空输入）' }}</div>
             </MessageBubble>
-            <MessageBubble side="ai" page :wide="byRound.get(r.id)?.hidden === false && !raw.has(r.id)" :name="character?.name ?? 'AI'" :avatar="character?.avatar">
+            <MessageBubble side="ai" page :wide="illustrations.occupies(r.id) && !raw.has(r.id)" :name="character?.name ?? 'AI'" :avatar="character?.avatar">
               <template #meta>
                 <span v-if="prefs.showFloorNumbers">#{{ r.round_no }}</span>
                 <span v-if="r.archive_step !== 'complete'" class="badge warn">
                   已保存 · 待{{ STEP_LABELS[r.archive_step] }}
                 </span>
               </template>
-              <IllustrationPlate
-                v-if="byRound.get(r.id) && !raw.has(r.id)" :chat-id="chatId" :illustration="byRound.get(r.id)!"
-                :caption="caption(r.summary)" :busy="busyRound(r.id)"
-                @open="viewing = byRound.get(r.id)!.id" @regenerate="illustrate(r.id)" @prompt="showPrompt(r.id)"
-                @hide="setHidden(byRound.get(r.id)!, $event)"
-              />
+              <RoundIllustration v-if="!raw.has(r.id)" :round="r" />
               <OutputView :text="r.ai_output" :raw="raw.has(r.id)" />
               <template #actions>
                 <button class="btn ghost small" type="button" @click="toggle(raw, r.id)"><Code2 /> {{ raw.has(r.id) ? '渲染' : '原文' }}</button>
-                <button
-                  v-if="illustrationOn && r.archive_step === 'complete' && !byRound.get(r.id)" class="btn ghost small" type="button"
-                  :disabled="requesting.has(r.id)" @click="illustrate(r.id)"
-                ><ImagePlus /> 插图</button>
+                <RoundIllustrationAction :round="r" />
                 <button
                   v-if="r.summary || r.archive_step !== 'state_update'" class="btn ghost small" type="button"
                   :aria-expanded="summaryOpen(r.id)" :aria-controls="`summary-${r.id}`" @click="toggle(openSummaries, r.id)"
@@ -323,11 +275,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
       </div>
     </section>
 
-    <SceneViewer
-      v-if="viewing && shownGallery.length" :chat-id="chatId" :items="shownGallery" :start-id="viewing"
-      @close="viewing = null" @prompt="showPrompt" @regenerate="(id) => { viewing = null; illustrate(id) }"
-    />
-    <PromptDialog v-if="promptOf" :illustration="promptOf" @close="promptOf = null" />
+    <ChatIllustrationOverlays />
 
     <ChatPanel
       v-if="panelOpen && chat.data.value" class="panel" :chat="chat.data.value" :flow="flow"
@@ -338,13 +286,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 
 <style scoped>
 .chat-view { display: flex; height: 100%; }
-.conversation { flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100%; position: relative; }
-.conversation > :not(.backdrop) { position: relative; z-index: 1; }
-.backdrop { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
-.backdrop img { position: absolute; inset: -80px; width: calc(100% + 160px); height: calc(100% + 160px); object-fit: cover; filter: blur(56px) saturate(1.15); opacity: 0.22; animation: fade-in 1.2s ease; }
-.backdrop.strong img { opacity: 0.45; }
-.backdrop::after { content: ''; position: absolute; inset: 0; background: color-mix(in srgb, var(--bg) 35%, transparent); }
-@keyframes fade-in { from { opacity: 0; } }
+.conversation { flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100%; position: relative; isolation: isolate; }
 .title-wrap { min-width: 0; }
 .title-wrap h1 { font-size: 16px; }
 .sub { font-size: 12px; }
@@ -372,7 +314,6 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
   .panel { position: fixed; inset: 0; z-index: 60; width: auto; border: 0; }
 }
 @media (max-width: 640px) {
-  .backdrop { display: none; }
   .indent { margin-left: 0; }
   .timeline-inner { padding: 14px 10px; }
   .dock-inner { padding-left: 8px; padding-right: 8px; }

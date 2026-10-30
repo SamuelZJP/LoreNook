@@ -21,7 +21,7 @@ def list_chats(database: DatabaseDependency):
 
 @router.post("", response_model=ChatDetail, status_code=201)
 def create(payload: ChatCreate, request: Request, database: DatabaseDependency):
-    return create_chat(database, payload, request.app.state.initial_state_factory)
+    return create_chat(database, payload, request.app.state.initial_state_factory, request.app.state.hooks.chat_created)
 
 
 @router.get("/{chat_id}", response_model=ChatDetail)
@@ -40,7 +40,8 @@ def update(chat_id: str, payload: ChatPatch, database: DatabaseDependency):
 def delete(chat_id: str, request: Request, database: DatabaseDependency):
     with database.transaction() as session:
         ChatService(Repository(session)).delete(chat_id)
-    request.app.state.image_storage.remove_chat(chat_id)
+    hooks = request.app.state.hooks
+    hooks.notify(hooks.chat_deleted, chat_id)
     return Response(status_code=204)
 
 

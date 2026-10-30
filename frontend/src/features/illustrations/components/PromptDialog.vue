@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Illustration } from '@/api/endpoints'
-import ModalDialog from '../ModalDialog.vue'
+import ModalDialog from '@/components/ModalDialog.vue'
+import type { Illustration } from '../api'
 
 defineProps<{ illustration: Illustration }>()
 const emit = defineEmits<{ close: [] }>()
@@ -13,6 +13,7 @@ const emit = defineEmits<{ close: [] }>()
         <label><code>{{ name }}</code></label>
         <pre class="value">{{ value || '（空）' }}</pre>
       </div>
+      <p v-if="illustration.focus.length" class="hint">主要人物：{{ illustration.focus.map((p) => p.name).join('、') }}</p>
       <p class="hint">种子 {{ illustration.seed }} · {{ illustration.width }}×{{ illustration.height }}</p>
     </div>
   </ModalDialog>

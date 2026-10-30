@@ -2,13 +2,14 @@
 
 import json
 
+from backend.illustrations.errors import IllustrationError
+from backend.illustrations.schemas import IllustrationContext
+from backend.illustrations.templates import SYSTEM, render_prompt
 from backend.llm.client import ModelClient
 from backend.llm.generation import response_text, text_request
-from backend.modules.definitions.renderer import DefinitionRenderer, substitute_names
-from backend.modules.illustrations.prompts import SYSTEM, render_prompt
-from backend.schemas.illustrations import IllustrationContext
+from backend.modules.definitions.renderer import DefinitionRenderer
 from backend.shared.content import extract_content
-from backend.shared.errors import IllustrationError, StateUpdateError
+from backend.shared.errors import StateUpdateError
 
 
 def _parse(text: str, fields: list[str]) -> dict[str, str]:
@@ -31,15 +32,27 @@ def _parse(text: str, fields: list[str]) -> dict[str, str]:
     return result
 
 
+def template_variables(context: IllustrationContext, content: str) -> dict:
+    definitions = DefinitionRenderer().resolve(context.character_definitions, context.user_definitions, context.state,
+                                               user_name=context.user_name, character_name=context.character_name)
+    return {
+        "char": context.character_name, "user": context.user_name, "state": context.state,
+        "round": {"no": context.round_no, "user_input": context.user_input, "content": content,
+                  "summary": context.summary},
+        "focus": [person.model_dump() for person in context.focus],
+        "others": [person.model_dump() for person in context.others],
+        "definitions": {"character": [item.content for item in definitions.character_definitions],
+                        "user": [item.content for item in definitions.user_definitions]},
+        "image_inputs": context.image_inputs, "width": context.width, "height": context.height,
+    }
+
+
 def generate_fields(context: IllustrationContext, client: ModelClient) -> dict[str, str]:
     try:
         content = extract_content(context.ai_output)
     except StateUpdateError as error:
         raise IllustrationError(str(error)) from error
-    names = {"user_name": context.user_name, "character_name": context.character_name}
-    definitions = DefinitionRenderer().resolve(context.character_definitions, context.user_definitions,
-                                               context.state, **names)
-    prompt = render_prompt(context, content, definitions, substitute_names(context.instructions, **names))
+    prompt = render_prompt(context.prompt_template, context.fields, template_variables(context, content))
     request = text_request(context.connection.api_type, SYSTEM, prompt, json_output=True)
     response = client.invoke(context.connection, request).response
     try:

@@ -5,7 +5,6 @@ from pydantic import Field, JsonValue
 
 from backend.schemas.catalog import CharacterRead, IdentityRead
 from backend.schemas.common import Contract, Name, NonnegativeInt, PatchContract
-from backend.schemas.illustrations import IllustrationSettings, ImageWorkflowRead
 from backend.schemas.presets import PresetRead
 from backend.schemas.models import ModelConfigRead
 
@@ -22,9 +21,6 @@ class ChatCreate(Contract):
     writing_preset_id: str | None = None
     model_config_ids: list[str] = Field(default_factory=list)
     model_bindings: dict[ModelPurpose, str] = Field(default_factory=dict)
-    image_workflow_ids: list[str] = Field(default_factory=list)
-    # Library IDs; the referenced workflow and model config are copied into the chat.
-    illustration: IllustrationSettings = Field(default_factory=IllustrationSettings)
     recent_rounds: NonnegativeInt = 5
     min_summaries: NonnegativeInt = 6
 
@@ -36,7 +32,6 @@ class ChatPatch(PatchContract):
     min_summaries: NonnegativeInt | None = None
     writing_preset_id: str | None = None
     model_bindings: dict[ModelPurpose, str] | None = None
-    illustration: IllustrationSettings | None = None
 
 
 class ChatRead(Contract):
@@ -62,6 +57,4 @@ class ChatDetail(ChatRead):
     writing_presets: list[PresetRead]
     model_configs: list[ModelConfigRead]
     model_bindings: dict[ModelPurpose, str]
-    image_workflows: list[ImageWorkflowRead]
-    illustration: IllustrationSettings
     latest_state: StateRead

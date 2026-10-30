@@ -18,7 +18,7 @@ python3 -m venv .venv
 .venv/bin/python -m uvicorn backend.main:app --reload
 ```
 
-The database defaults to `data/lorenook.db`; set `LORENOOK_DATABASE_URL` (e.g. `sqlite:///data/dev.db`) to use another. Relative paths resolve from the project root. Illustrations are stored under `LORENOOK_IMAGE_DIRECTORY` (default `data/images`). Startup never migrates — run `alembic upgrade head` yourself.
+The database defaults to `data/lorenook.db`; set `LORENOOK_DATABASE_URL` (e.g. `sqlite:///data/dev.db`) to use another. Relative paths resolve from the project root. Uploaded images are stored under `LORENOOK_MEDIA_DIRECTORY` (default `data/media`), generated illustrations under `LORENOOK_IMAGE_DIRECTORY` (default `data/images`). Startup never migrates — run `alembic upgrade head` yourself.
 
 Frontend (proxies `/api` to `LORENOOK_BACKEND`, default `http://127.0.0.1:8000`):
 

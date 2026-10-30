@@ -948,6 +948,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload
+         * @description The request body is the image itself.
+         */
+        post: operations["upload_api_media_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/media/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read */
+        get: operations["read_api_media__name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/image-workflows/default-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Default Templates */
+        get: operations["default_templates_api_image_workflows_default_templates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chats/{chat_id}/image-workflows/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Workflow */
+        post: operations["import_workflow_api_chats__chat_id__image_workflows_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/image-workflows": {
         parameters: {
             query?: never;
@@ -1020,6 +1091,130 @@ export interface paths {
         head?: never;
         /** Update */
         patch: operations["update_api_chats__chat_id__image_workflows__workflow_id__patch"];
+        trace?: never;
+    };
+    "/api/characters/{owner_id}/cast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Cast */
+        get: operations["read_cast_api_characters__owner_id__cast_get"];
+        /** Replace Cast */
+        put: operations["replace_cast_api_characters__owner_id__cast_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chats/{owner_id}/cast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Chat Cast */
+        get: operations["read_chat_cast_api_chats__owner_id__cast_get"];
+        /** Replace Chat Cast */
+        put: operations["replace_chat_cast_api_chats__owner_id__cast_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/user-identities/{owner_id}/appearance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Appearance */
+        get: operations["read_appearance_api_user_identities__owner_id__appearance_get"];
+        /** Set Appearance */
+        put: operations["set_appearance_api_user_identities__owner_id__appearance_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chats/{owner_id}/appearance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Chat Appearance */
+        get: operations["read_chat_appearance_api_chats__owner_id__appearance_get"];
+        /** Set Chat Appearance */
+        put: operations["set_chat_appearance_api_chats__owner_id__appearance_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chats/{chat_id}/focus-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Focus Options */
+        get: operations["focus_options_api_chats__chat_id__focus_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chats/{chat_id}/illustration-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Settings */
+        get: operations["read_settings_api_chats__chat_id__illustration_settings_get"];
+        /** Replace Settings */
+        put: operations["replace_settings_api_chats__chat_id__illustration_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chats/{chat_id}/illustration-setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Setup */
+        post: operations["setup_api_chats__chat_id__illustration_setup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/chats/{chat_id}/illustrations": {
@@ -1156,7 +1351,7 @@ export interface components {
              * Table
              * @enum {string}
              */
-            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "image_workflows" | "chat_illustration_settings" | "rounds" | "state_snapshots" | "episodes" | "illustrations";
+            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes" | "image_workflows" | "chat_illustration_settings" | "cast_members" | "identity_appearances" | "illustrations";
             /** Key */
             key: {
                 [key: string]: string;
@@ -1173,7 +1368,7 @@ export interface components {
              * Table
              * @enum {string}
              */
-            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "image_workflows" | "chat_illustration_settings" | "rounds" | "state_snapshots" | "episodes" | "illustrations";
+            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes" | "image_workflows" | "chat_illustration_settings" | "cast_members" | "identity_appearances" | "illustrations";
             /** Values */
             values: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -1190,7 +1385,7 @@ export interface components {
              * Table
              * @enum {string}
              */
-            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "image_workflows" | "chat_illustration_settings" | "rounds" | "state_snapshots" | "episodes" | "illustrations";
+            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes" | "image_workflows" | "chat_illustration_settings" | "cast_members" | "identity_appearances" | "illustrations";
             /** Key */
             key: {
                 [key: string]: string;
@@ -1213,7 +1408,7 @@ export interface components {
              * Name
              * @enum {string}
              */
-            name: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "image_workflows" | "chat_illustration_settings" | "rounds" | "state_snapshots" | "episodes" | "illustrations";
+            name: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes" | "image_workflows" | "chat_illustration_settings" | "cast_members" | "identity_appearances" | "illustrations";
             /** Primary Key */
             primary_key: string[];
             /** Row Schema */
@@ -1232,7 +1427,7 @@ export interface components {
              * Table
              * @enum {string}
              */
-            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "image_workflows" | "chat_illustration_settings" | "rounds" | "state_snapshots" | "episodes" | "illustrations";
+            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes" | "image_workflows" | "chat_illustration_settings" | "cast_members" | "identity_appearances" | "illustrations";
             /** Key */
             key: {
                 [key: string]: string;
@@ -1241,6 +1436,16 @@ export interface components {
             values: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+        };
+        /** AppearanceInput */
+        AppearanceInput: {
+            /**
+             * Appearance
+             * @default
+             */
+            appearance: string;
+            /** Reference Image */
+            reference_image?: string | null;
         };
         /** ArchiveConfirm */
         ArchiveConfirm: {
@@ -1273,6 +1478,36 @@ export interface components {
             body: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+        };
+        /** CastMemberInput */
+        CastMemberInput: {
+            /** Id */
+            id?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Appearance
+             * @default
+             */
+            appearance: string;
+            /** Reference Image */
+            reference_image?: string | null;
+        };
+        /** CastMemberRead */
+        CastMemberRead: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Appearance */
+            appearance: string;
+            /** Reference Image */
+            reference_image: string | null;
+        };
+        /** CastReplace */
+        CastReplace: {
+            /** Members */
+            members: components["schemas"]["CastMemberInput"][];
         };
         /** CharacterCreate */
         CharacterCreate: {
@@ -1384,9 +1619,6 @@ export interface components {
             model_bindings?: {
                 [key: string]: string;
             };
-            /** Image Workflow Ids */
-            image_workflow_ids?: string[];
-            illustration?: components["schemas"]["IllustrationSettings"];
             /**
              * Recent Rounds
              * @default 5
@@ -1425,9 +1657,6 @@ export interface components {
             model_bindings: {
                 [key: string]: string;
             };
-            /** Image Workflows */
-            image_workflows: components["schemas"]["ImageWorkflowRead"][];
-            illustration: components["schemas"]["IllustrationSettings"];
             latest_state: components["schemas"]["StateRead"];
         };
         /** ChatMemory */
@@ -1462,7 +1691,6 @@ export interface components {
             model_bindings?: {
                 [key: string]: string;
             } | null;
-            illustration?: components["schemas"]["IllustrationSettings"] | null;
         };
         /** ChatRead */
         ChatRead: {
@@ -1492,6 +1720,13 @@ export interface components {
             chat_id: string;
             /** State Snapshot Id */
             state_snapshot_id: string;
+        };
+        /** DefaultTemplates */
+        DefaultTemplates: {
+            /** Text To Image */
+            text_to_image: string;
+            /** Image To Image */
+            image_to_image: string;
         };
         /** DefinitionInput */
         DefinitionInput: {
@@ -1648,6 +1883,25 @@ export interface components {
             archive_step: "complete";
             episode: components["schemas"]["EpisodeRead"];
         };
+        /** FocusOption */
+        FocusOption: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Has Reference */
+            has_reference: boolean;
+        };
+        /**
+         * FocusOptions
+         * @description Everyone who can be a main character in this chat, and who is the current default.
+         */
+        FocusOptions: {
+            /** Options */
+            options: components["schemas"]["FocusOption"][];
+            /** Default */
+            default: string[];
+        };
         /** FullRoundMemory */
         FullRoundMemory: {
             /**
@@ -1726,6 +1980,8 @@ export interface components {
         IllustrationPrompt: {
             /** Image Workflow Id */
             image_workflow_id: string;
+            /** Focus */
+            focus: string[];
             /** Fields */
             fields: {
                 [key: string]: string;
@@ -1746,6 +2002,10 @@ export interface components {
             status: "pending" | "prompting" | "rendering" | "ready" | "failed";
             /** Seed */
             seed: number;
+            /** Focus */
+            focus: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
             /** Prompt */
             prompt: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -1766,11 +2026,33 @@ export interface components {
              */
             created_at: string;
         };
+        /** IllustrationRequest */
+        IllustrationRequest: {
+            /** Focus */
+            focus?: string[] | null;
+        };
         /** IllustrationSettings */
         IllustrationSettings: {
             /**
              * Mode
              * @default off
+             * @enum {string}
+             */
+            mode: "off" | "every_round" | "scene_change" | "manual";
+            /** Image Workflow Id */
+            image_workflow_id?: string | null;
+            /** Model Config Id */
+            model_config_id?: string | null;
+            /** Focus */
+            focus?: string[];
+        };
+        /**
+         * IllustrationSetup
+         * @description Library resources for a new chat; the workflow and model config are copied into it.
+         */
+        IllustrationSetup: {
+            /**
+             * Mode
              * @enum {string}
              */
             mode: "off" | "every_round" | "scene_change" | "manual";
@@ -1790,10 +2072,10 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             };
             /**
-             * Instructions
+             * Prompt Template
              * @default
              */
-            instructions: string;
+            prompt_template: string;
             /**
              * Width
              * @default 1344
@@ -1805,6 +2087,11 @@ export interface components {
              */
             height: number;
         };
+        /** ImageWorkflowImport */
+        ImageWorkflowImport: {
+            /** Source Id */
+            source_id: string;
+        };
         /** ImageWorkflowPatch */
         ImageWorkflowPatch: {
             /** Name */
@@ -1815,8 +2102,8 @@ export interface components {
             workflow?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
-            /** Instructions */
-            instructions?: string | null;
+            /** Prompt Template */
+            prompt_template?: string | null;
             /** Width */
             width?: number | null;
             /** Height */
@@ -1836,14 +2123,16 @@ export interface components {
             workflow: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
-            /** Instructions */
-            instructions: string;
+            /** Prompt Template */
+            prompt_template: string;
             /** Width */
             width: number;
             /** Height */
             height: number;
             /** Prompt Fields */
             prompt_fields: string[];
+            /** Image Inputs */
+            image_inputs: string[];
             /**
              * Created At
              * Format: date-time
@@ -1863,6 +2152,13 @@ export interface components {
             };
         };
         JsonValue: unknown;
+        /** MediaRead */
+        MediaRead: {
+            /** Name */
+            name: string;
+            /** Url */
+            url: string;
+        };
         /** MemoryHistory */
         MemoryHistory: {
             /** Recent Rounds */
@@ -5226,6 +5522,112 @@ export interface operations {
             };
         };
     };
+    upload_api_media_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaRead"];
+                };
+            };
+        };
+    };
+    read_api_media__name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    default_templates_api_image_workflows_default_templates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefaultTemplates"];
+                };
+            };
+        };
+    };
+    import_workflow_api_chats__chat_id__image_workflows_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImageWorkflowImport"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageWorkflowRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_workflows_api_image_workflows_get: {
         parameters: {
             query?: never;
@@ -5538,6 +5940,402 @@ export interface operations {
             };
         };
     };
+    read_cast_api_characters__owner_id__cast_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                owner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CastMemberRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_cast_api_characters__owner_id__cast_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                owner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CastReplace"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CastMemberRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_chat_cast_api_chats__owner_id__cast_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                owner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CastMemberRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_chat_cast_api_chats__owner_id__cast_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                owner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CastReplace"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CastMemberRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_appearance_api_user_identities__owner_id__appearance_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                owner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppearanceInput"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_appearance_api_user_identities__owner_id__appearance_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                owner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppearanceInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppearanceInput"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_chat_appearance_api_chats__owner_id__appearance_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                owner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppearanceInput"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_chat_appearance_api_chats__owner_id__appearance_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                owner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppearanceInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppearanceInput"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    focus_options_api_chats__chat_id__focus_options_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FocusOptions"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_settings_api_chats__chat_id__illustration_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IllustrationSettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_settings_api_chats__chat_id__illustration_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IllustrationSettings"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IllustrationSettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    setup_api_chats__chat_id__illustration_setup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IllustrationSetup"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IllustrationSettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_illustrations_api_chats__chat_id__illustrations_get: {
         parameters: {
             query?: never;
@@ -5579,7 +6377,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["IllustrationRequest"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             202: {
@@ -5611,7 +6413,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["IllustrationRequest"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

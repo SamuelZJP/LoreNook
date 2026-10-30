@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ChevronLeft, ChevronRight, X, Download, FileText, RefreshCw } from 'lucide-vue-next'
-import { api, type Illustration, type RoundRead } from '@/api/endpoints'
-import { splitSummary } from '@/lib/illustrations'
+import type { RoundRead } from '@/api/endpoints'
+import { illustrationApi, type Illustration } from '../api'
+import { splitSummary } from '../lib'
 
 /** Full-screen view of the chat's illustrations in round order. */
 const props = defineProps<{ chatId: string; items: { round: RoundRead; illustration: Illustration }[]; startId: string }>()
@@ -12,7 +13,7 @@ const index = ref(Math.max(0, props.items.findIndex((i) => i.illustration.id ===
 watch(() => props.items.length, (n) => { if (index.value >= n) index.value = Math.max(0, n - 1) })
 const current = computed(() => props.items[index.value])
 const text = computed(() => splitSummary(current.value?.round.summary))
-const src = (i: Illustration) => api.illustrationImage(props.chatId, i.id)
+const src = (i: Illustration) => illustrationApi.image(props.chatId, i.id)
 
 function go(step: number) {
   const n = props.items.length

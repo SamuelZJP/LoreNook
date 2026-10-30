@@ -6,6 +6,8 @@ import { api, definitionBase, type Character, type Identity, type SceneInput } f
 import CodeEditor from '../CodeEditor.vue'
 import ErrorBox from '../ErrorBox.vue'
 import AvatarBadge from '../AvatarBadge.vue'
+import ImageUpload from '../ImageUpload.vue'
+import PortraitEditor from '@/features/illustrations/components/PortraitEditor.vue'
 import ScopeNote from './ScopeNote.vue'
 import DefinitionsEditor from './DefinitionsEditor.vue'
 import ScenesEditor, { newScene, type SceneDraft } from './ScenesEditor.vue'
@@ -148,14 +150,17 @@ async function remove() {
   }
 }
 
-type Tab = 'basic' | 'scenes' | 'state' | 'definitions'
+type Tab = 'basic' | 'scenes' | 'state' | 'definitions' | 'portrait'
 const tab = ref<Tab>('basic')
 const tabs = computed(() => [
   { id: 'basic' as const, label: '基本信息', fields: ['name', 'avatar', 'description'] as Field[] },
   ...(isCharacter.value ? [{ id: 'scenes' as const, label: '开场', fields: [] as Field[] }] : []),
   ...(isCharacter.value ? [{ id: 'state' as const, label: '状态', fields: ['state_schema', 'state_reference', 'state_update_rules'] as Field[] }] : []),
   { id: 'definitions' as const, label: `${noun.value}定义`, fields: [] as Field[] },
+  { id: 'portrait' as const, label: '画像', fields: [] as Field[] },
 ])
+// These tabs save on their own, so the profile's save row doesn't apply to them.
+const ownSave = computed(() => tab.value === 'definitions' || tab.value === 'portrait')
 watch(() => props.kind, () => { if (!tabs.value.some((t) => t.id === tab.value)) tab.value = 'basic' })
 const tabDirty = (id: Tab, fs: Field[]) =>
   !creating.value && (fs.some((f) => changed.value.includes(f)) || (id === 'scenes' && scenesChanged.value))
@@ -184,9 +189,11 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
           </div>
         </div>
         <div class="field">
-          <label>头像引用</label>
-          <input v-model="draft.avatar" class="input" placeholder="图片 URL 或路径（可留空）" />
-          <span class="hint">后端只保存引用文本，没有上传功能。</span>
+          <label>头像</label>
+          <div class="row avatar-row">
+            <ImageUpload :model-value="draft.avatar || null" label="上传头像" value="url" :size="72" @update:model-value="draft.avatar = $event ?? ''" />
+            <input v-model="draft.avatar" class="input grow" placeholder="或填写图片 URL（可留空）" aria-label="头像 URL" />
+          </div>
         </div>
         <div class="field"><label>描述</label><textarea v-model="draft.description" class="textarea" rows="3" /></div>
       </section>
@@ -212,8 +219,8 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
         <div class="field"><label>状态更新规则</label><textarea v-model="draft.state_update_rules" class="textarea" rows="4" /></div>
       </section>
 
-      <ErrorBox v-if="saveError && tab !== 'definitions'" :error="saveError" title="保存失败" />
-      <div v-show="tab !== 'definitions'" class="row actions">
+      <ErrorBox v-if="saveError && !ownSave" :error="saveError" title="保存失败" />
+      <div v-show="!ownSave" class="row actions">
         <button v-if="id && !chatId" class="btn danger" type="button" @click="remove"><Trash2 /> 删除</button>
         <span class="spacer" />
         <span v-if="scenesInvalid" class="hint bad">开场需要名称和有效的 JSON 初始变量</span>
@@ -230,6 +237,11 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
           <p class="hint">创建后可以添加定义条目。</p>
         </template>
       </section>
+
+      <section v-if="tab === 'portrait'" class="stack">
+        <PortraitEditor v-if="original" :kind="kind" :owner-id="original.id" :chat-id="chatId" />
+        <p v-else class="hint">创建后可以设置画像。</p>
+      </section>
     </template>
   </div>
 </template>
@@ -237,5 +249,6 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
 <style scoped>
 .dot { display: inline-block; width: 6px; height: 6px; margin-left: 5px; border-radius: 50%; background: var(--warn); vertical-align: middle; }
 .bad { color: var(--danger); }
+.avatar-row { align-items: flex-start; }
 .actions { position: sticky; bottom: 0; background: var(--bg-elev); padding: 8px 0; z-index: 1; }
 </style>

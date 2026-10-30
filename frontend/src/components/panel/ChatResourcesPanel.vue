@@ -7,13 +7,13 @@ import AvatarBadge from '../AvatarBadge.vue'
 import ProfileEditor from '../editors/ProfileEditor.vue'
 import PresetEditor from '../editors/PresetEditor.vue'
 import ModelEditor from '../editors/ModelEditor.vue'
-import WorkflowEditor from '../editors/WorkflowEditor.vue'
+import ChatWorkflowList from '@/features/illustrations/components/ChatWorkflowList.vue'
 
 defineProps<{ chat: ChatDetail }>()
 
-type Editing = { kind: 'character' | 'identity' | 'preset' | 'model' | 'workflow'; id?: string | null }
+type Editing = { kind: 'character' | 'identity' | 'preset' | 'model'; id?: string | null }
 const editing = ref<Editing | null>(null)
-const titles = { character: '编辑本聊天角色', identity: '编辑本聊天身份', preset: '本聊天的写作预设', model: '本聊天的模型配置', workflow: '本聊天的图像工作流' }
+const titles = { character: '编辑本聊天角色', identity: '编辑本聊天身份', preset: '本聊天的写作预设', model: '本聊天的模型配置' }
 </script>
 
 <template>
@@ -50,21 +50,11 @@ const titles = { character: '编辑本聊天角色', identity: '编辑本聊天�
       <Pencil class="ic" />
     </button>
 
-    <div class="row"><h3 class="grow">图像工作流</h3><button class="btn small" type="button" @click="editing = { kind: 'workflow', id: null }"><Plus /> 新增</button></div>
-    <div v-if="!chat.image_workflows.length" class="empty">没有图像工作流</div>
-    <button v-for="w in chat.image_workflows" :key="w.id" class="list-item card" type="button" @click="editing = { kind: 'workflow', id: w.id }">
-      <div class="grow">
-        <div class="ellipsis">{{ w.name }}</div>
-        <div class="faint ellipsis mono small">{{ w.width }}×{{ w.height }} · {{ w.prompt_fields.join(', ') }}</div>
-      </div>
-      <span v-if="w.id === chat.illustration.image_workflow_id" class="badge accent">使用中</span>
-      <Pencil class="ic" />
-    </button>
+    <ChatWorkflowList :chat-id="chat.id" />
 
     <ModalDialog v-if="editing" :title="titles[editing.kind]" width="860px" @close="editing = null">
       <ProfileEditor v-if="editing.kind === 'character' || editing.kind === 'identity'" :kind="editing.kind" :id="null" :chat-id="chat.id" />
       <PresetEditor v-else-if="editing.kind === 'preset'" :id="editing.id ?? null" :chat-id="chat.id" @saved="(id) => (editing = { kind: 'preset', id })" @deleted="editing = null" />
-      <WorkflowEditor v-else-if="editing.kind === 'workflow'" :id="editing.id ?? null" :chat-id="chat.id" @saved="(id) => (editing = { kind: 'workflow', id })" @deleted="editing = null" />
       <ModelEditor v-else :id="editing.id ?? null" :chat-id="chat.id" @saved="(id) => (editing = { kind: 'model', id })" @deleted="editing = null" />
     </ModalDialog>
   </div>

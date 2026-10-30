@@ -10,7 +10,8 @@ import ErrorBox from '@/components/ErrorBox.vue'
 import ProfileEditor from '@/components/editors/ProfileEditor.vue'
 import PresetEditor from '@/components/editors/PresetEditor.vue'
 import ModelEditor from '@/components/editors/ModelEditor.vue'
-import WorkflowEditor from '@/components/editors/WorkflowEditor.vue'
+import WorkflowEditor from '@/features/illustrations/components/WorkflowEditor.vue'
+import { illustrationApi } from '@/features/illustrations/api'
 
 type Tab = 'characters' | 'identities' | 'presets' | 'models' | 'workflows'
 const route = useRoute()
@@ -31,7 +32,7 @@ const characters = useQuery({ queryKey: ['characters'], queryFn: api.characters 
 const identities = useQuery({ queryKey: ['identities'], queryFn: api.identities })
 const presets = useQuery({ queryKey: ['presets', null], queryFn: () => api.presets({ chatId: null }) })
 const models = useQuery({ queryKey: ['models', null], queryFn: () => api.models({ chatId: null }) })
-const workflows = useQuery({ queryKey: ['workflows', null], queryFn: () => api.workflows({ chatId: null }) })
+const workflows = useQuery({ queryKey: ['workflows', null], queryFn: () => illustrationApi.workflows({ chatId: null }) })
 
 const current = computed(() => ({ characters, identities, presets, models, workflows })[tab.value])
 const items = computed(() => {
@@ -39,7 +40,7 @@ const items = computed(() => {
     case 'characters': return (characters.data.value ?? []).map((c) => ({ id: c.id, name: c.name, avatar: c.avatar, sub: c.description }))
     case 'identities': return (identities.data.value ?? []).map((c) => ({ id: c.id, name: c.name, avatar: c.avatar, sub: c.description }))
     case 'presets': return (presets.data.value ?? []).map((p) => ({ id: p.id, name: p.name, avatar: undefined, sub: `${p.source.length} 字符` }))
-    case 'workflows': return (workflows.data.value ?? []).map((w) => ({ id: w.id, name: w.name, avatar: undefined, sub: `${w.width}×${w.height} · ${w.prompt_fields.join(', ')}` }))
+    case 'workflows': return (workflows.data.value ?? []).map((w) => ({ id: w.id, name: w.name, avatar: undefined, sub: `${w.image_inputs.length ? '图生图' : '文生图'} · ${w.width}×${w.height}` }))
     default: return (models.data.value ?? []).map((m) => ({ id: m.id, name: m.name, avatar: undefined, sub: `${m.api_type} · ${m.model}`, key: m.has_api_key }))
   }
 })

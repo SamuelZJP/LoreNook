@@ -74,7 +74,3 @@ class DefinitionTemplateError(ValueError):
         self.message = message
         self.line = line
         super().__init__(f"Definition {definition_id}: {message}")
-
-
-class IllustrationError(ValueError):
-    """An image workflow, generated image prompt or image platform result is invalid."""

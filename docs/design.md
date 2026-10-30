@@ -17,6 +17,9 @@ The concepts, rules and reasons behind the code. For *how* something is implemen
 | Episode | Title + ~200–300-character summary of a continuous range of rounds. |
 | Writing preset | JavaScript that builds the model request and parses/validates the response. |
 | Archiving | The steps that run after the user confirms a round: state → round summary → episode. |
+| Image workflow | A ComfyUI workflow with placeholders and the prompt template that fits its model. |
+| Cast | The people on a character card who can be drawn, each with an appearance and optional reference image. |
+| Main characters | Who an illustration centers on, chosen from the cast and the user identity. |
 
 **Chats are fully independent.** Creating a chat copies the selected character (with only the selected scene), identity, definitions, presets and model configs into chat-owned records with new IDs. Editing a library resource never changes an existing chat. Library records have `chat_id = NULL`.
 
@@ -144,28 +147,41 @@ function parse(response)  { return 'full AI output text'; }  // throw Error to f
 
 An optional illustration per archived round: a model call turns the round into an image prompt, a local ComfyUI renders it, the chat shows it. Only locally deployed ComfyUI is supported.
 
+It is a separate feature: `backend/illustrations/` and `frontend/src/features/illustrations/`. The feature depends on the core, never the reverse. The core connects to it only at `main.py`, the generic hooks in `shared/hooks.py` (round archived, chat created, chat deleted), the migration environment, and the data-management table registry. On the frontend, core views place a few of its components and otherwise know nothing about it. It keeps its own tables and endpoints; chat responses don't include it.
+
 ### Image workflows
 
-An image workflow is a library resource (copied into chats like the others) holding a ComfyUI **API-format** workflow, the ComfyUI address, the image size, and **instructions** — the prompt style that workflow needs (language, tag format, what each field means). Different workflows need different prompts; the instructions carry that difference, not the code.
+An image workflow is a library resource (imported into chats as a copy) holding a ComfyUI **API-format** workflow, the ComfyUI address, the image size and a **prompt template**. Models differ in what they want — natural language, tags, a mix, edit instructions — so that difference lives in each workflow's template and placeholders, not in the code.
 
-- Any string in the workflow may contain `{{name}}` placeholders. `seed`, `width`, `height` are filled by LoreNook; every other name is a **prompt field** the model must return. A string that is exactly one placeholder takes the raw value (a seed stays an integer); otherwise it's text substitution.
-- The model gets the instructions, the field list, character/user definitions (rendered), the round's state, summary, input and AI body, and returns one JSON object with every field as a string. A missing field fails the job before ComfyUI is called.
-- The first output image is kept (an `output`-type image preferred over previews).
+- **Placeholders** go in any workflow string. `{{seed}}`, `{{width}}`, `{{height}}` are filled by LoreNook. `{{image:focus_N}}` is main character N's reference image. Every other name is a **prompt field** the model must return, so a model needing both tags and a caption just uses two fields. A string that is exactly one placeholder takes the raw value (a seed stays an integer); otherwise it's text substitution.
+- **Text-to-image or image-to-image** isn't a setting: a workflow with an image placeholder is image-to-image.
+- **The prompt template** is Jinja2 and writes the whole request to the model (variables are listed in the editor). The output format is appended by the code, so a template can't lose it. An empty template selects the default for the workflow's kind. The model returns one JSON object with every field as a string; a missing field fails the attempt before ComfyUI is called.
+
+### Cast and main characters
+
+- A **cast** (画像人物) belongs to a character card: name, appearance, optional reference image. A multi-protagonist card lists each protagonist; the card's own name isn't a person. A user identity has one appearance and optional reference image. Both are copied into chats with their owner.
+- **Main characters** decide who the prompt centers on. The default is the first cast member, or the card itself if it has no cast. A chat's manual choice overrides the default, and one attempt can override both when regenerating.
+- **More than two is allowed and warned about**: models usually do best with one or two.
+- Reference images map to main characters by position. If the workflow needs one that's missing, the attempt fails with that reason before any model call.
+
+### Uploads
+
+Avatars and reference images are uploaded through `/api/media` (PNG, JPEG, WebP; validated by content; up to 16 MB) and stored under `LORENOOK_MEDIA_DIRECTORY` (default `data/media`). Files are named by content hash, so copies in chats share one file; files nothing points at are left in place. Avatars may still be plain URLs. This is core, since avatars don't depend on illustrations.
 
 ### Jobs
 
-- Per-chat settings: mode (`off` / `every_round` / `scene_change` / `manual`), the image workflow, and the model config for the prompt. Manual generation needs any mode except `off`.
+- Per-chat settings: mode (`off` / `every_round` / `scene_change` / `manual`), image workflow, the model config for the prompt, main characters. Manual generation needs any mode except `off`.
 - `scene_change` triggers when `世界.地点` or `世界.日期` differs from the previous round's state (the initial state for round 1), or when the chat has no illustration yet.
 - A job runs after its archive completes, in a single in-process queue (`pending → prompting → rendering → ready | failed`). **It never blocks the next round** and never shows as an archive error. One active job per round. Jobs don't survive a restart; unfinished ones are marked failed at startup.
 - Regenerate adds a new attempt; earlier attempts are kept and the newest is shown.
-- Files live under `LORENOOK_IMAGE_DIRECTORY` (default `data/images`), one folder per chat, removed with the chat.
+- Generated files live under `LORENOOK_IMAGE_DIRECTORY` (default `data/images`), one folder per chat, removed with the chat.
 
 ### Display
 
-- **Inline plate.** The image is shown at the head of its round, inside the reading page, framed like a book plate, with a caption built from that round's `世界` (date · time · place). Space is reserved at the workflow's aspect ratio, so the page doesn't jump when the image arrives.
+- **Inline plate.** The image is shown at the head of its round, inside the reading page, framed like a book plate, with a caption from the round summary's date—time—place header. Space is reserved at the workflow's aspect ratio, so the page doesn't jump when the image arrives.
 - **Full-screen scene view.** Clicking a plate opens it full-screen with the caption and round summary; the chat's illustrations can be browsed in round order.
-- **Ambient backdrop** (preference: off / subtle / strong): the latest illustration, blurred and dimmed, behind the chat column. Off on phones by default.
-- Per-plate actions: regenerate, hide, view prompt.
+- **Ambient backdrop** (preference: off / subtle / strong): the latest illustration, blurred and dimmed, behind the chat column. Always off on phones.
+- Per-plate actions: regenerate, change main characters, hide, view prompt.
 
 ## Data management
 
@@ -181,4 +197,4 @@ There is no built-in login, state Schemas execute arbitrary Python, and the admi
 
 ## Out of scope
 
-Saving candidates across reloads, streaming, multi-user accounts, avatar upload, speech generation, regenerating an already-archived round.
+Saving candidates across reloads, streaming, multi-user accounts, speech generation, regenerating an already-archived round.

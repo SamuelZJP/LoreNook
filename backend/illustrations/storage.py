@@ -4,8 +4,9 @@ from pathlib import Path
 import re
 import shutil
 
-from backend.modules.illustrations.comfyui import MEDIA_TYPES, RenderedImage
-from backend.shared.errors import IllustrationError, NotFoundError
+from backend.illustrations.comfyui import MEDIA_TYPES, RenderedImage
+from backend.illustrations.errors import IllustrationError
+from backend.shared.errors import NotFoundError
 
 SAFE_NAME = re.compile(r"[A-Za-z0-9_-]+")
 

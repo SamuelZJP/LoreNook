@@ -32,8 +32,6 @@ export interface Prefs {
   showSummaries: boolean
   /** Most recent floors rendered in a chat; `null` renders all. Display only. */
   floorLimit: number | null
-  /** The latest illustration, blurred behind the chat. Always off on phones. */
-  backdrop: 'off' | 'subtle' | 'strong'
   /** Data management: list round-ordered rows newest first. */
   dataNewestFirst: boolean
   /** Stored-format version; see `load`. */
@@ -58,7 +56,6 @@ const defaults: Prefs = {
   showFloorNumbers: true,
   showSummaries: false,
   floorLimit: 100,
-  backdrop: 'subtle',
   dataNewestFirst: true,
   version: VERSION,
   sections: {
@@ -109,7 +106,6 @@ function load(): Prefs {
       zhFont: ZH_FONTS.some((f) => f.id === stored.zhFont) ? stored.zhFont : defaults.zhFont,
       enFont: EN_FONTS.some((f) => f.id === stored.enFont) ? stored.enFont : defaults.enFont,
       floorLimit: toFloorLimit(stored.floorLimit),
-      backdrop: ['off', 'subtle', 'strong'].includes(stored.backdrop) ? stored.backdrop : defaults.backdrop,
       version: VERSION,
     }
   } catch {

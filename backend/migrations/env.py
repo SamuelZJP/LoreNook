@@ -4,6 +4,7 @@ from alembic import context
 
 from backend.config import Settings
 from backend.repository.database import Database
+from backend.illustrations import models as _illustration_tables  # noqa: F401  (registers its tables)
 from backend.repository.models import Base, UTCDateTime
 
 

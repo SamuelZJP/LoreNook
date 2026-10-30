@@ -32,12 +32,6 @@ export type AdminTableInfo = Schemas['AdminTableInfo']
 export type AdminSnapshot = Schemas['AdminSnapshot']
 export type AdminBatch = Schemas['AdminBatch']
 export type AdminBatchResult = Schemas['AdminBatchResult']
-export type ImageWorkflow = Schemas['ImageWorkflowRead']
-export type ImageWorkflowCreate = Schemas['ImageWorkflowCreate']
-export type ImageWorkflowPatch = Schemas['ImageWorkflowPatch']
-export type Illustration = Schemas['IllustrationRead']
-export type IllustrationSettings = Schemas['IllustrationSettings']
-export type IllustrationMode = IllustrationSettings['mode']
 export type ModelPurpose = 'writing' | 'state_update' | 'round_summary' | 'episode_summary'
 export type PendingStep = Schemas['ArchiveRetry']['expected_step']
 
@@ -113,20 +107,8 @@ export const api = {
   invokeModel: (s: Scope, id: string, body: BuiltRequest) =>
     request<Schemas['ModelResponse']>(`${modelBase(s)}/${id}/invoke`, json('POST', body)),
 
-  // Image workflows (source or chat scope) and illustrations
-  workflows: (s: Scope) => request<ImageWorkflow[]>(workflowBase(s)),
-  createWorkflow: (s: Scope, body: ImageWorkflowCreate) => request<ImageWorkflow>(workflowBase(s), json('POST', body)),
-  patchWorkflow: (s: Scope, id: string, body: ImageWorkflowPatch) =>
-    request<ImageWorkflow>(`${workflowBase(s)}/${id}`, json('PATCH', body)),
-  deleteWorkflow: (s: Scope, id: string) => request<void>(`${workflowBase(s)}/${id}`, json('DELETE')),
-  illustrations: (chatId: string) => request<Illustration[]>(`/api/chats/${chatId}/illustrations`),
-  illustrate: (chatId: string, roundId: string) =>
-    request<Illustration>(`/api/chats/${chatId}/rounds/${roundId}/illustrations`, json('POST')),
-  illustrationPrompt: (chatId: string, roundId: string) =>
-    request<Schemas['IllustrationPrompt']>(`/api/chats/${chatId}/rounds/${roundId}/illustration-prompt`, json('POST')),
-  patchIllustration: (chatId: string, id: string, body: Schemas['IllustrationPatch']) =>
-    request<Illustration>(`/api/chats/${chatId}/illustrations/${id}`, json('PATCH', body)),
-  illustrationImage: (chatId: string, id: string) => `/api/chats/${chatId}/illustrations/${id}/image`,
+  // Uploaded images
+  uploadMedia: (file: Blob) => request<Schemas['MediaRead']>('/api/media', { method: 'POST', file }),
 
   // Writing and archiving
   write: (chatId: string, userInput: string) =>
@@ -156,9 +138,6 @@ export const api = {
 
 function presetBase(s: Scope) {
   return s.chatId ? `/api/chats/${s.chatId}/writing-presets` : '/api/writing-presets'
-}
-function workflowBase(s: Scope) {
-  return s.chatId ? `/api/chats/${s.chatId}/image-workflows` : '/api/image-workflows'
 }
 function modelBase(s: Scope) {
   return s.chatId ? `/api/chats/${s.chatId}/model-configs` : '/api/model-configs'

@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Maximize2, RefreshCw, FileText, EyeOff, Image as ImageIcon, AlertTriangle, PenTool, Sparkles } from 'lucide-vue-next'
-import { api, type Illustration } from '@/api/endpoints'
+import { Maximize2, RefreshCw, FileText, EyeOff, Image as ImageIcon, AlertTriangle, PenTool, Sparkles, Users } from 'lucide-vue-next'
+import { illustrationApi, type Illustration } from '../api'
 
 /** One round's illustration, framed as a book plate at the head of its reading page. */
 const props = defineProps<{ chatId: string; illustration: Illustration; caption: string; busy?: boolean }>()
-const emit = defineEmits<{ open: []; regenerate: []; prompt: []; hide: [hidden: boolean] }>()
+const emit = defineEmits<{ open: []; regenerate: []; focus: []; prompt: []; hide: [hidden: boolean] }>()
 
 const it = computed(() => props.illustration)
 const ratio = computed(() => `${it.value.width} / ${it.value.height}`)
-const src = computed(() => api.illustrationImage(props.chatId, it.value.id))
+const src = computed(() => illustrationApi.image(props.chatId, it.value.id))
 const loaded = ref(false)
 watch(src, () => { loaded.value = false })
 
@@ -34,6 +34,7 @@ const steps = computed(() => {
     <AlertTriangle class="warn-ic" />
     <span class="grow">插图未能生成 · <span class="muted-ink">{{ it.error }}</span></span>
     <button class="btn small paper" type="button" :disabled="busy" @click="emit('regenerate')">重试</button>
+    <button class="btn ghost small paper-ghost" type="button" :disabled="busy" @click="emit('focus')">换人物</button>
     <button v-if="it.prompt" class="btn ghost small paper-ghost" type="button" @click="emit('prompt')">提示词</button>
     <button class="btn ghost small paper-ghost" type="button" @click="emit('hide', true)">隐藏</button>
   </div>
@@ -60,6 +61,7 @@ const steps = computed(() => {
       <div v-if="it.status === 'ready'" class="actions">
         <button type="button" aria-label="全屏查看" title="全屏查看" @click="emit('open')"><Maximize2 /></button>
         <button type="button" aria-label="重新生成" title="重新生成" :disabled="busy" @click="emit('regenerate')"><RefreshCw /></button>
+        <button type="button" aria-label="换人物重新生成" title="换人物重新生成" :disabled="busy" @click="emit('focus')"><Users /></button>
         <button type="button" aria-label="查看提示词" title="查看提示词" @click="emit('prompt')"><FileText /></button>
         <button type="button" aria-label="隐藏插图" title="隐藏插图" @click="emit('hide', true)"><EyeOff /></button>
       </div>

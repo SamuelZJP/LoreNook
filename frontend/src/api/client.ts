@@ -66,6 +66,8 @@ export interface RequestOptions {
   body?: unknown
   query?: Record<string, string | number | boolean | undefined>
   signal?: AbortSignal
+  /** Sent as the request body as-is, instead of `body` as JSON. */
+  file?: Blob
 }
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -81,7 +83,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     response = await fetch(url, {
       method: options.method ?? 'GET',
       headers: options.body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      body: options.file ?? (options.body !== undefined ? JSON.stringify(options.body) : undefined),
       signal: options.signal,
     })
   } catch (error) {

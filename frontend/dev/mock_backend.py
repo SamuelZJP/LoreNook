@@ -15,7 +15,7 @@ Markers in the user input control the mock models (they reach every prompt that 
     [[fail-image]]            the mock ComfyUI rejects the workflow for this round
 
 Illustrations go to a mock ComfyUI that draws a gradient after a few seconds; images are kept in
-data/mock-images.
+data/mock-images and uploads in data/mock-media.
 """
 
 import argparse
@@ -158,6 +158,8 @@ def png(width: int, height: int, seed: int) -> bytes:
 
 
 def comfy_handler(request: httpx.Request) -> httpx.Response:
+    if request.url.path == "/upload/image":
+        return httpx.Response(200, json={"name": "mock-reference.png", "subfolder": "", "type": "input"})
     if request.method == "POST" and request.url.path == "/prompt":
         workflow = json.loads(request.content)["prompt"]
         if "[[fail-image]]" in json.dumps(workflow, ensure_ascii=False):
@@ -205,7 +207,10 @@ def seed(app) -> None:
         if not client.get("/api/image-workflows").json():
             client.post("/api/image-workflows", json={
                 "name": "模拟 SDXL", "base_url": "http://127.0.0.1:8188", "workflow": MOCK_WORKFLOW,
-                "instructions": "prompt：英文 danbooru 标签。negative_prompt：需要避免的内容。",
+            }).raise_for_status()
+            client.post("/api/image-workflows", json={
+                "name": "模拟 图生图", "base_url": "http://127.0.0.1:8188", "width": 832, "height": 1216,
+                "workflow": {**MOCK_WORKFLOW, "10": {"class_type": "LoadImage", "inputs": {"image": "{{image:focus_1}}"}}},
             }).raise_for_status()
             print("Seeded mock image workflow.")
         if client.get("/api/characters").json():
@@ -253,8 +258,8 @@ def main() -> None:
     from backend.config import Settings
     from backend.main import create_app
 
-    images = str(ROOT / "data" / "mock-images")
-    app = create_app(Settings(database_url=url, image_directory=images, comfyui_poll_seconds=0.5),
+    images, media = str(ROOT / "data" / "mock-images"), str(ROOT / "data" / "mock-media")
+    app = create_app(Settings(database_url=url, image_directory=images, media_directory=media, comfyui_poll_seconds=0.5),
                      llm_transport=httpx.MockTransport(handler), comfyui_transport=httpx.MockTransport(comfy_handler))
     if not args.no_seed:
         seed(app)

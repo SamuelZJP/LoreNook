@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, aliased
 
 from backend.repository.models import (
-    Base, Character, CharacterScene, Chat, ChatModelBinding, Definition, Episode, ImageWorkflow, ModelConfig, Round,
+    Base, Character, CharacterScene, Chat, ChatModelBinding, Definition, Episode, ModelConfig, Round,
     StateSnapshot, UserIdentity, WritingPreset,
 )
 from backend.shared.errors import NotFoundError
@@ -57,7 +57,7 @@ class Repository:
         return self.session.get(ChatModelBinding, (chat_id, purpose))
 
     def list_owned(
-        self, model: type[Character | UserIdentity | WritingPreset | ModelConfig | ImageWorkflow],
+        self, model: type[Character | UserIdentity | WritingPreset | ModelConfig],
         chat_id: str | None,
     ) -> list:
         """None selects library sources; an ID selects only that chat's copies."""

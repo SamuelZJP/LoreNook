@@ -10,11 +10,12 @@ from pydantic import AwareDatetime, BeforeValidator, Field, JsonValue, TypeAdapt
 from backend.schemas.archive import ArchiveStep
 from backend.schemas.chats import ModelPurpose
 from backend.schemas.common import Contract, Name, NonnegativeInt
-from backend.schemas.illustrations import IllustrationMode, IllustrationStatus, ImageSize
+from backend.illustrations.schemas import IllustrationMode, IllustrationStatus, ImageSize
 
 TableName = Literal["chats", "characters", "character_scenes", "user_identities", "definitions", "writing_presets",
-                    "model_configs", "chat_model_bindings", "image_workflows", "chat_illustration_settings",
-                    "rounds", "state_snapshots", "episodes", "illustrations"]
+                    "model_configs", "chat_model_bindings", "rounds", "state_snapshots", "episodes",
+                    "image_workflows", "chat_illustration_settings", "cast_members", "identity_appearances",
+                    "illustrations"]
 RecordId = Annotated[Name, Field(max_length=36)]
 
 
@@ -100,7 +101,7 @@ class ImageWorkflowRow(TimestampedRow):
     name: Name
     base_url: str
     workflow: dict[str, JsonValue]
-    instructions: str = ""
+    prompt_template: str = ""
     width: ImageSize = 1344
     height: ImageSize = 768
 
@@ -110,6 +111,21 @@ class IllustrationSettingsRow(Contract):
     mode: IllustrationMode = "off"
     image_workflow_id: RecordId | None = None
     model_config_id: RecordId | None = None
+    focus: list[str] = Field(default_factory=list)
+
+
+class CastMemberRow(IdentifiedRow):
+    character_id: RecordId
+    order: NonnegativeInt = 0
+    name: Name
+    appearance: str = ""
+    reference_image: str | None = None
+
+
+class IdentityAppearanceRow(Contract):
+    user_identity_id: RecordId
+    appearance: str = ""
+    reference_image: str | None = None
 
 
 class RoundRow(TimestampedRow):
@@ -146,6 +162,7 @@ class IllustrationRow(TimestampedRow):
     round_id: RecordId
     status: IllustrationStatus = "pending"
     seed: Annotated[int, Field(ge=0)]
+    focus: list[dict[str, JsonValue]] = Field(default_factory=list)
     prompt: dict[str, JsonValue] | None = None
     error: str | None = None
     file_name: str | None = None
@@ -210,4 +227,5 @@ ROW_SCHEMAS = {
     "chat_model_bindings": BindingRow, "image_workflows": ImageWorkflowRow,
     "chat_illustration_settings": IllustrationSettingsRow, "rounds": RoundRow,
     "state_snapshots": StateRow, "episodes": EpisodeRow, "illustrations": IllustrationRow,
+    "cast_members": CastMemberRow, "identity_appearances": IdentityAppearanceRow,
 }

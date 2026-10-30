@@ -1,4 +1,4 @@
-"""Local ComfyUI over its HTTP API: queue a workflow, wait in history, download the first image."""
+"""Local ComfyUI over its HTTP API: upload inputs, queue a workflow, wait in history, download the first image."""
 
 from dataclasses import dataclass
 import time
@@ -6,8 +6,9 @@ from uuid import uuid4
 
 import httpx
 
+from backend.illustrations.errors import IllustrationError
 from backend.schemas.models import validate_base_url
-from backend.shared.errors import IllustrationError, ModelConfigurationError
+from backend.shared.errors import ModelConfigurationError
 
 MEDIA_TYPES = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"}
 
@@ -64,11 +65,33 @@ class ComfyUIClient:
     def close(self) -> None:
         self.http.close()
 
-    def render(self, base_url: str, workflow: dict) -> RenderedImage:
+    @staticmethod
+    def _base(base_url: str) -> str:
         try:
-            base = validate_base_url(base_url).rstrip("/")
+            return validate_base_url(base_url).rstrip("/")
         except ModelConfigurationError:
             raise IllustrationError("ComfyUI 地址必须是 HTTP(S) 根地址") from None
+
+    def upload_image(self, base_url: str, name: str, data: bytes, media_type: str) -> str:
+        """Returns the value a LoadImage node expects. Same name, same bytes: overwriting is harmless."""
+        try:
+            response = self.http.post(f"{self._base(base_url)}/upload/image", data={"overwrite": "true"},
+                                      files={"image": (name, data, media_type)})
+        except httpx.TimeoutException:
+            raise IllustrationError("ComfyUI 请求超时") from None
+        except httpx.HTTPError:
+            raise IllustrationError("无法连接 ComfyUI") from None
+        if not response.is_success:
+            raise IllustrationError(f"ComfyUI 上传参考图失败：HTTP {response.status_code}")
+        body = self._json(response)
+        uploaded = body.get("name") if isinstance(body, dict) else None
+        if not isinstance(uploaded, str) or not uploaded:
+            raise IllustrationError("ComfyUI 上传参考图后没有返回文件名")
+        subfolder = body.get("subfolder")
+        return f"{subfolder}/{uploaded}" if subfolder else uploaded
+
+    def render(self, base_url: str, workflow: dict) -> RenderedImage:
+        base = self._base(base_url)
         try:
             prompt_id = self._queue(base, workflow)
             outputs = self._wait(base, prompt_id)

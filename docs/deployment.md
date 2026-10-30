@@ -11,7 +11,7 @@ https://lorenook.cryingstray.cn
       └─ /api, /health, /docs → Uvicorn 127.0.0.1:18780 → data/lorenook.db
 ```
 
-Machine-local files (not in Git): `deploy/lorenook.env`, `deploy/lorenook.service`, `data/` (database and `data/images/`), `backups/`. Their contents are reproduced below for reconstruction.
+Machine-local files (not in Git): `deploy/lorenook.env`, `deploy/lorenook.service`, `data/` (database, `data/images/`, `data/media/`), `backups/`. Their contents are reproduced below for reconstruction.
 
 ## Update
 
@@ -54,7 +54,7 @@ There is no scheduled backup. Take one manually when needed (the update procedur
 cd ~/LoreNook && umask 077 && sqlite3 data/lorenook.db ".backup 'backups/manual-$(date +%Y%m%d-%H%M%S).db'"
 ```
 
-Database backups don't include `data/images/`; copy that folder separately to keep the illustrations.
+Database backups don't include `data/images/` (illustrations) or `data/media/` (uploaded avatars and reference images); copy those folders separately. Keep Caddy's request size limit, if any, above 16 MB so uploads pass.
 
 Backups contain model API keys. They are kept on the same machine only.
 
