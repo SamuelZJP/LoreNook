@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, Request, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 from backend.api.dependencies import DatabaseDependency, ModelClientDependency
 from backend.illustrations.jobs import preview_prompt, request_illustration
 from backend.illustrations.models import Illustration
+from backend.illustrations.progress import progress_events
 from backend.illustrations.schemas import (
     AppearanceInput, CastMemberRead, CastReplace, DefaultTemplates, FocusOptions, IllustrationPatch, IllustrationPrompt,
     IllustrationRead, IllustrationRequest, IllustrationSettings, IllustrationSetup, ImageWorkflowCreate,
@@ -12,7 +13,7 @@ from backend.illustrations.schemas import (
 from backend.illustrations.service import CastService, IllustrationService, ImageWorkflowService
 from backend.illustrations.templates import IMAGE_TO_IMAGE, TEXT_TO_IMAGE
 from backend.modules.chats.service import ChatService
-from backend.repository.models import Character, UserIdentity
+from backend.repository.models import Character, Chat, UserIdentity
 from backend.repository.queries import Repository
 from backend.shared.errors import NotFoundError
 
@@ -188,12 +189,23 @@ def list_illustrations(chat_id: str, database: DatabaseDependency):
         return IllustrationService(Repository(session)).list(chat_id)
 
 
+@chat.get("/illustrations/progress", response_class=StreamingResponse)
+def progress(chat_id: str, request: Request, database: DatabaseDependency):
+    """Server-sent events: {illustration id: IllustrationProgress} for the chat's running jobs."""
+    with database.read() as session:
+        Repository(session).get(Chat, chat_id)
+    # no-transform keeps proxies from compressing, and so holding back, the small events.
+    return StreamingResponse(progress_events(request.app.state.illustration_progress, chat_id),
+                             media_type="text/event-stream",
+                             headers={"cache-control": "no-cache, no-transform", "x-accel-buffering": "no"})
+
+
 @chat.post("/rounds/{round_id}/illustrations", response_model=IllustrationRead, status_code=202)
 def generate(chat_id: str, round_id: str, request: Request, database: DatabaseDependency,
              payload: IllustrationRequest | None = None):
     """Queue a new attempt; earlier attempts are kept and the newest is shown."""
     record = request_illustration(database, chat_id, round_id, payload.focus if payload else None)
-    request.app.state.illustrations.submit(record.id)
+    request.app.state.illustrations.submit(record)
     return record
 
 

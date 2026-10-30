@@ -7,11 +7,13 @@ import pytest
 
 from backend.config import Settings
 from backend.main import create_app
-from backend.illustrations.comfyui import ComfyUIClient
+from backend.illustrations.comfyui import ComfyUIClient, RenderProgress
 from backend.illustrations.errors import IllustrationError
 from backend.illustrations.jobs import auto_illustration
 from backend.illustrations.models import Illustration
 from backend.illustrations.placeholders import fill_workflow, image_inputs, prompt_fields, validate_workflow
+from backend.illustrations.progress import ProgressBoard, progress_events
+from backend.illustrations.schemas import IllustrationProgress
 from backend.illustrations.templates import IMAGE_TO_IMAGE, TEXT_TO_IMAGE
 from backend.repository.archive import ArchiveRepository
 from backend.repository.models import ModelConfig
@@ -287,6 +289,131 @@ def test_comfyui_timeout_and_bad_output():
         raise httpx.ConnectError("refused")
     with pytest.raises(IllustrationError, match="无法连接 ComfyUI"):
         ComfyUIClient(transport=httpx.MockTransport(unreachable)).render("http://127.0.0.1:8188", WORKFLOW)
+
+
+class FakeSocket:
+    def __init__(self, messages):
+        self.messages, self.closed = list(messages), False
+
+    def recv(self, timeout):
+        if not self.messages:
+            raise TimeoutError
+        item = self.messages.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item
+
+    def close(self):
+        self.closed = True
+
+
+def finishing_comfy(request):
+    if request.url.path == "/prompt":
+        return httpx.Response(200, json={"prompt_id": "p"})
+    if request.url.path == "/history/p":
+        return httpx.Response(200, json={"p": {"outputs": {"9": {"images": [{"filename": "a.png"}]}}}} if finishing_comfy.done else {})
+    return httpx.Response(200, content=PNG, headers={"content-type": "image/png"})
+
+
+def event(kind, **data):
+    return json.dumps({"type": kind, "data": {"prompt_id": "p", **data}})
+
+
+def render_with_socket(socket, connect=None):
+    reports, polls = [], []
+
+    def report(progress):
+        reports.append(progress)
+
+    def comfy(request):
+        if request.url.path == "/history/p":
+            polls.append(1)
+            finishing_comfy.done = len(polls) > 1
+        return finishing_comfy(request)
+    client = ComfyUIClient(transport=httpx.MockTransport(comfy), poll_seconds=0.01, connect=connect or (lambda url: socket))
+    image = client.render("http://127.0.0.1:8188", {
+        "164": {"class_type": "KSampler", "inputs": {}, "_meta": {"title": "K采样器"}},
+        "169": {"class_type": "VAEDecode", "inputs": {}},
+    }, report)
+    assert image.data == PNG
+    return reports
+
+
+def test_socket_reports_progress_of_this_prompt_only():
+    socket = FakeSocket([
+        event("execution_start"),
+        event("executing", node="164"),
+        event("progress", node="164", value=3, max=12),
+        json.dumps({"type": "progress", "data": {"prompt_id": "other", "node": "164", "value": 9, "max": 9}}),
+        b"\x00\x00\x00\x01preview",
+        "not json",
+        event("executing", node="169"),
+        event("executing", node=None),
+    ])
+    assert render_with_socket(socket) == [
+        RenderProgress(queued=True), RenderProgress(), RenderProgress(node="K采样器"),
+        RenderProgress(node="K采样器", value=3, max=12), RenderProgress(node="VAEDecode"),
+    ]
+    assert socket.closed
+
+
+def test_lost_or_missing_socket_still_finishes_from_history():
+    socket = FakeSocket([event("progress", node="164", value=1, max=12), OSError("gone")])
+    assert render_with_socket(socket)[-1] == RenderProgress()  # The display doesn't freeze on the last step.
+    assert socket.closed
+
+    def refuse(url):
+        assert url.startswith("ws://127.0.0.1:8188/ws?clientId=lorenook-")
+        raise ConnectionRefusedError
+    assert render_with_socket(None, refuse) == []
+
+
+def test_interrupted_job_says_so():
+    def comfy(request):
+        if request.url.path == "/prompt":
+            return httpx.Response(200, json={"prompt_id": "p"})
+        return httpx.Response(200, json={"p": {"outputs": {}, "status": {"status_str": "error", "messages": [
+            ["execution_interrupted", {"node_type": "KSampler"}]]}}})
+    with pytest.raises(IllustrationError, match="被中断"):
+        ComfyUIClient(transport=httpx.MockTransport(comfy)).render("http://127.0.0.1:8188", WORKFLOW)
+
+
+def test_progress_stream_follows_the_board_and_ends_when_idle():
+    board = ProgressBoard()
+    board.set("job", "chat", IllustrationProgress(status="rendering", node="K采样器", value=1, max=12))
+    board.set("elsewhere", "other", IllustrationProgress(status="pending"))
+
+    async def main():
+        stream = progress_events(board, "chat")
+        first = json.loads((await anext(stream)).removeprefix("data: "))
+        assert first == {"job": {"status": "rendering", "queued": False, "node": "K采样器", "value": 1, "max": 12}}
+        # From another thread, as the worker does.
+        await asyncio.to_thread(board.set, "job", "chat", IllustrationProgress(status="rendering", value=2, max=12))
+        second = json.loads((await asyncio.wait_for(anext(stream), 2)).removeprefix("data: "))
+        assert second["job"]["value"] == 2
+        await asyncio.to_thread(board.clear, "job")
+        assert json.loads((await asyncio.wait_for(anext(stream), 2)).removeprefix("data: ")) == {}
+        with pytest.raises(StopAsyncIteration):
+            await anext(stream)
+    asyncio.run(main())
+    assert board._listeners == set()
+
+
+def test_progress_endpoint_and_job_lifecycle(database, illustrated_chat, tmp_path):
+    ids = illustrated_chat
+    round_id = archived_round(database, ids["chat_id"])
+
+    async def scenario(client):
+        await setup_workflow(client, ids["chat_id"], ids["model_id"])
+        missing = await client.get("/api/chats/nope/illustrations/progress")
+        assert missing.status_code == 404
+        await client.post(f"/api/chats/{ids['chat_id']}/rounds/{round_id}/illustrations")
+        # The inline job has finished, so the board is empty again and the stream ends at once.
+        stream = await client.get(f"/api/chats/{ids['chat_id']}/illustrations/progress")
+        assert stream.status_code == 200 and stream.text == "data: {}\n\n"
+        assert stream.headers["content-type"].startswith("text/event-stream")
+        assert "no-transform" in stream.headers["cache-control"]
+    run(database, tmp_path, scenario, llm=llm_handler([]), comfy=comfy_handler([]))
 
 
 def test_chat_setup_import_and_cast_copy(database, tmp_path):

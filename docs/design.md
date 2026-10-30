@@ -154,6 +154,7 @@ It is a separate feature: `backend/illustrations/` and `frontend/src/features/il
 An image workflow is a library resource (imported into chats as a copy) holding a ComfyUI **API-format** workflow, the ComfyUI address, the image size and a **prompt template**. Models differ in what they want — natural language, tags, a mix, edit instructions — so that difference lives in each workflow's template and placeholders, not in the code.
 
 - **Placeholders** go in any workflow string. `{{seed}}`, `{{width}}`, `{{height}}` are filled by LoreNook. `{{image:focus_N}}` is main character N's reference image. Every other name is a **prompt field** the model must return, so a model needing both tags and a caption just uses two fields. A string that is exactly one placeholder takes the raw value (a seed stays an integer); otherwise it's text substitution.
+- **Size**: the workflow's width and height fields reserve the plate's space, so a workflow should take its size from `{{width}}` and `{{height}}` rather than fix its own. The editor warns otherwise.
 - **Text-to-image or image-to-image** isn't a setting: a workflow with an image placeholder is image-to-image.
 - **The prompt template** is Jinja2 and writes the whole request to the model (variables are listed in the editor). The output format is appended by the code, so a template can't lose it. An empty template selects the default for the workflow's kind. The model returns one JSON object with every field as a string; a missing field fails the attempt before ComfyUI is called.
 
@@ -173,12 +174,13 @@ Avatars and reference images are uploaded through `/api/media` (PNG, JPEG, WebP;
 - Per-chat settings: mode (`off` / `every_round` / `scene_change` / `manual`), image workflow, the model config for the prompt, main characters. Manual generation needs any mode except `off`.
 - `scene_change` triggers when `世界.地点` or `世界.日期` differs from the previous round's state (the initial state for round 1), or when the chat has no illustration yet.
 - A job runs after its archive completes, in a single in-process queue (`pending → prompting → rendering → ready | failed`). **It never blocks the next round** and never shows as an archive error. One active job per round. Jobs don't survive a restart; unfinished ones are marked failed at startup.
+- **Live progress.** While rendering, the backend reads ComfyUI's WebSocket (current node, sampler steps) and streams each running job's state to the open chat as server-sent events. Progress is in memory only and purely informative: the outcome always comes from ComfyUI's history, so without a socket a job still finishes, just without the bar. The stream is open only while a job runs, and a slow list refetch covers a stream that can't get through.
 - Regenerate adds a new attempt; earlier attempts are kept and the newest is shown.
 - Generated files live under `LORENOOK_IMAGE_DIRECTORY` (default `data/images`), one folder per chat, removed with the chat.
 
 ### Display
 
-- **Inline plate.** The image is shown at the head of its round, inside the reading page, framed like a book plate, with a caption from the round summary's date—time—place header. Space is reserved at the workflow's aspect ratio, so the page doesn't jump when the image arrives.
+- **Inline plate.** The image is shown at the head of its round, inside the reading page, framed like a book plate, with a caption from the round summary's date—time—place header. Space is reserved at the workflow's aspect ratio, so the page doesn't jump when the image arrives; a portrait image narrows the plate rather than being cropped.
 - **Full-screen scene view.** Clicking a plate opens it full-screen with the caption and round summary; the chat's illustrations can be browsed in round order.
 - **Ambient backdrop** (preference: off / subtle / strong): the latest illustration, blurred and dimmed, behind the chat column. Always off on phones.
 - Per-plate actions: regenerate, change main characters, hide, view prompt.

@@ -38,6 +38,7 @@ def create_app(
     *, llm_transport: httpx.BaseTransport | None = None,
     state_validator: StateValidator = validate_state,
     comfyui_transport: httpx.BaseTransport | None = None,
+    comfyui_connect=None,
     illustration_executor: Executor | None = None,
 ) -> FastAPI:
     @asynccontextmanager
@@ -56,7 +57,8 @@ def create_app(
         app.state.media = MediaStorage(configuration.resolved_media_directory())
         app.state.hooks = AppHooks()
         stop_illustrations = illustrations.start(app, configuration, database, client,
-                                                 comfyui_transport=comfyui_transport, executor=illustration_executor)
+                                                 comfyui_transport=comfyui_transport, comfyui_connect=comfyui_connect,
+                                                 executor=illustration_executor)
         try:
             yield
         finally:

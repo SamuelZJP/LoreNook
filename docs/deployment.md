@@ -15,7 +15,7 @@ Machine-local files (not in Git): `deploy/lorenook.env`, `deploy/lorenook.servic
 
 ## Update
 
-Wait for running generation/archive work to finish first. Illustration jobs still running at shutdown are marked failed on the next start. Uvicorn must run a single worker: the illustration queue is in-process.
+Wait for running generation/archive work to finish first. Illustration jobs still running at shutdown are marked failed on the next start. Uvicorn must run a single worker: the illustration queue and its live progress are in-process.
 
 ```bash
 cd ~/LoreNook
@@ -147,7 +147,7 @@ handle @lorenook {
 }
 ```
 
-Don't strip `/api` (no `handle_path`). Generation and archiving can take minutes — no short timeouts or automatic retries anywhere in the proxy chain.
+Don't strip `/api` (no `handle_path`). Generation and archiving can take minutes — no short timeouts or automatic retries anywhere in the proxy chain. Illustration progress is a server-sent event stream (`/api/chats/{id}/illustrations/progress`) and must not be buffered; it sends `Cache-Control: no-transform` so `encode` leaves it alone.
 
 ```bash
 sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile && sudo systemctl reload caddy

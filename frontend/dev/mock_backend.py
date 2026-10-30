@@ -157,18 +157,52 @@ def png(width: int, height: int, seed: int) -> bytes:
     return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) + chunk(b"IDAT", zlib.compress(bytes(rows), 6)) + chunk(b"IEND", b"")
 
 
+class MockComfySocket:
+    """Plays a job's ComfyUI events on the same timeline as the mock history."""
+
+    STEPS = 12
+
+    def __init__(self, url: str):
+        self.client_id = url.rsplit("clientId=", 1)[1]
+        self.sent = 0
+
+    def _events(self, job: str) -> list[tuple[float, dict]]:
+        events = [(0.0, {"type": "execution_start", "data": {"prompt_id": job}}),
+                  (0.1, {"type": "executing", "data": {"node": "4", "prompt_id": job}}),
+                  (0.8, {"type": "executing", "data": {"node": "3", "prompt_id": job}})]
+        events += [(0.8 + i * 0.2, {"type": "progress", "data": {"value": i, "max": self.STEPS, "node": "3", "prompt_id": job}})
+                   for i in range(1, self.STEPS + 1)]
+        return events + [(3.4, {"type": "executing", "data": {"node": "8", "prompt_id": job}})]
+
+    def recv(self, timeout: float) -> str:
+        found = next(((job, data) for job, data in comfy_jobs.items() if data["client_id"] == self.client_id), None)
+        if found is not None and self.sent < len(events := self._events(found[0])):
+            at, event = events[self.sent]
+            wait = found[1]["at"] + at - time.monotonic()
+            if wait <= timeout:
+                time.sleep(max(wait, 0))
+                self.sent += 1
+                return json.dumps(event)
+        time.sleep(timeout)
+        raise TimeoutError
+
+    def close(self) -> None:
+        pass
+
+
 def comfy_handler(request: httpx.Request) -> httpx.Response:
     if request.url.path == "/upload/image":
         return httpx.Response(200, json={"name": "mock-reference.png", "subfolder": "", "type": "input"})
     if request.method == "POST" and request.url.path == "/prompt":
-        workflow = json.loads(request.content)["prompt"]
+        body = json.loads(request.content)
+        workflow = body["prompt"]
         if "[[fail-image]]" in json.dumps(workflow, ensure_ascii=False):
             return httpx.Response(400, json={"error": {"message": "Prompt outputs failed validation"},
                                              "node_errors": {"4": {"class_type": "CheckpointLoaderSimple", "errors": [
                                                  {"message": "Value not in list", "details": "ckpt_name: 'mock.safetensors'"}]}}})
         latent = workflow.get("5", {}).get("inputs", {})
         job = f"mock-{len(comfy_jobs) + 1}"
-        comfy_jobs[job] = {"at": time.monotonic(), "seed": workflow.get("3", {}).get("inputs", {}).get("seed", 0),
+        comfy_jobs[job] = {"at": time.monotonic(), "client_id": body["client_id"], "seed": workflow.get("3", {}).get("inputs", {}).get("seed", 0),
                            "width": latent.get("width", 1344), "height": latent.get("height", 768)}
         return httpx.Response(200, json={"prompt_id": job, "number": 1, "node_errors": {}})
     if request.url.path.startswith("/history/"):
@@ -260,7 +294,8 @@ def main() -> None:
 
     images, media = str(ROOT / "data" / "mock-images"), str(ROOT / "data" / "mock-media")
     app = create_app(Settings(database_url=url, image_directory=images, media_directory=media, comfyui_poll_seconds=0.5),
-                     llm_transport=httpx.MockTransport(handler), comfyui_transport=httpx.MockTransport(comfy_handler))
+                     llm_transport=httpx.MockTransport(handler), comfyui_transport=httpx.MockTransport(comfy_handler),
+                     comfyui_connect=MockComfySocket)
     if not args.no_seed:
         seed(app)
     print(f"Mock backend on http://127.0.0.1:{args.port} using {db_path}")

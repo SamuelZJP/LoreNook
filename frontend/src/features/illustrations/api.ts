@@ -4,6 +4,14 @@ export type ImageWorkflow = Schemas['ImageWorkflowRead']
 export type ImageWorkflowCreate = Schemas['ImageWorkflowCreate']
 export type ImageWorkflowPatch = Schemas['ImageWorkflowPatch']
 export type Illustration = Schemas['IllustrationRead']
+/** One event of the progress stream; not in the OpenAPI schema because it is not a JSON response. */
+export type IllustrationProgress = {
+  status: Illustration['status']
+  queued: boolean
+  node: string | null
+  value: number | null
+  max: number | null
+}
 export type IllustrationSettings = Schemas['IllustrationSettings']
 export type IllustrationMode = IllustrationSettings['mode']
 export type CastMember = Schemas['CastMemberRead']
@@ -41,6 +49,7 @@ export const illustrationApi = {
   putAppearance: (owner: string, body: Appearance) => request<Appearance>(`${owner}/appearance`, json('PUT', body)),
 
   illustrations: (chatId: string) => request<Illustration[]>(`/api/chats/${chatId}/illustrations`),
+  progressUrl: (chatId: string) => `/api/chats/${chatId}/illustrations/progress`,
   illustrate: (chatId: string, roundId: string, focus?: string[]) =>
     request<Illustration>(`/api/chats/${chatId}/rounds/${roundId}/illustrations`, json('POST', focus ? { focus } : undefined)),
   patchIllustration: (chatId: string, id: string, body: Schemas['IllustrationPatch']) =>

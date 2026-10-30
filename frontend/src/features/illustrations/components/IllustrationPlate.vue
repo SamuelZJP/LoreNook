@@ -1,20 +1,34 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { Maximize2, RefreshCw, FileText, EyeOff, Image as ImageIcon, AlertTriangle, PenTool, Sparkles, Users } from 'lucide-vue-next'
-import { illustrationApi, type Illustration } from '../api'
+import { illustrationApi, type Illustration, type IllustrationProgress } from '../api'
 
 /** One round's illustration, framed as a book plate at the head of its reading page. */
-const props = defineProps<{ chatId: string; illustration: Illustration; caption: string; busy?: boolean }>()
+const props = defineProps<{ chatId: string; illustration: Illustration; progress?: IllustrationProgress; caption: string; busy?: boolean }>()
 const emit = defineEmits<{ open: []; regenerate: []; focus: []; prompt: []; hide: [hidden: boolean] }>()
 
 const it = computed(() => props.illustration)
-const ratio = computed(() => `${it.value.width} / ${it.value.height}`)
+const frameStyle = computed(() => ({ aspectRatio: `${it.value.width} / ${it.value.height}`, '--plate-ratio': it.value.width / it.value.height }))
 const src = computed(() => illustrationApi.image(props.chatId, it.value.id))
 const loaded = ref(false)
 watch(src, () => { loaded.value = false })
 
+// The stream is ahead of the list by up to one refetch.
+const status = computed(() => props.progress?.status ?? it.value.status)
+const percent = computed(() => {
+  const { value, max } = props.progress ?? {}
+  return value != null && max ? Math.min(100, Math.round((value / max) * 100)) : null
+})
+const detail = computed(() => {
+  const p = props.progress
+  if (status.value !== 'rendering' || !p) return ''
+  if (p.queued) return '在 ComfyUI 中排队'
+  const count = p.value != null && p.max ? `${p.value} / ${p.max}` : ''
+  return [p.node, count].filter(Boolean).join(' · ')
+})
+
 const steps = computed(() => {
-  const s = it.value.status
+  const s = status.value
   return [
     { label: '整理上下文', done: s !== 'pending', active: s === 'pending' },
     { label: '生成提示词', done: s === 'rendering', active: s === 'prompting' },
@@ -41,7 +55,7 @@ const steps = computed(() => {
 
   <figure v-else class="plate">
     <div class="frame">
-      <div class="image" :style="{ aspectRatio: ratio }">
+      <div class="image" :style="frameStyle">
         <template v-if="it.status === 'ready'">
           <button class="open" type="button" aria-label="全屏查看插图" @click="emit('open')">
             <img :src="src" :class="{ loaded }" alt="" loading="lazy" decoding="async" @load="loaded = true" />
@@ -49,13 +63,15 @@ const steps = computed(() => {
           <span class="vignette" aria-hidden="true" />
         </template>
         <div v-else class="working" role="status">
-          <PenTool v-if="it.status === 'rendering'" class="pulse" />
+          <PenTool v-if="status === 'rendering'" class="pulse" />
           <Sparkles v-else class="pulse" />
-          <span class="working-title">{{ it.status === 'rendering' ? '正在绘制插图' : '正在构思画面' }}</span>
+          <span class="working-title">{{ status === 'rendering' ? '正在绘制插图' : '正在构思画面' }}</span>
           <span class="steps">
             <span v-for="s in steps" :key="s.label" :class="{ active: s.active }">{{ s.label }}{{ s.done ? ' ✓' : '' }}</span>
           </span>
-          <span class="bar" aria-hidden="true" />
+          <span v-if="detail" class="detail">{{ detail }}</span>
+          <span v-if="percent !== null" class="meter" role="progressbar" :aria-valuenow="percent" aria-valuemin="0" aria-valuemax="100" aria-label="绘制进度"><span :style="{ width: `${percent}%` }" /></span>
+          <span v-else class="bar" aria-hidden="true" />
         </div>
       </div>
       <div v-if="it.status === 'ready'" class="actions">
@@ -73,7 +89,8 @@ const steps = computed(() => {
 <style scoped>
 .plate { margin: 2px 0 18px; display: flex; flex-direction: column; gap: 10px; }
 .frame { position: relative; padding: 5px; border: 1px solid var(--page-border); border-radius: 4px; background: var(--page-bg); box-shadow: 0 1px 3px rgb(60 40 20 / 10%); }
-.image { position: relative; overflow: hidden; border-radius: 2px; background: var(--page-rule); max-height: min(62vh, 560px); width: 100%; }
+/* The width follows the height limit, so a portrait image keeps its ratio instead of being cropped to the column. */
+.image { --plate-max: min(62vh, 560px); position: relative; overflow: hidden; border-radius: 2px; background: var(--page-rule); max-height: var(--plate-max); width: min(100%, calc(var(--plate-max) * var(--plate-ratio))); margin-inline: auto; }
 .open { display: block; width: 100%; height: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; }
 img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 35%; opacity: 0; transition: opacity 0.6s ease; }
 img.loaded { opacity: 1; }
@@ -102,6 +119,9 @@ img.loaded { opacity: 1; }
 .steps { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; font-size: 12px; opacity: 0.8; padding: 0 12px; }
 .steps .active { color: var(--page-em); font-weight: 600; opacity: 1; }
 .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--page-muted), transparent); background-size: 40% 100%; background-repeat: no-repeat; animation: shimmer 1.8s linear infinite; opacity: 0.5; }
+.detail { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--page-em); padding: 0 12px; text-align: center; }
+.meter { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: color-mix(in srgb, var(--page-muted) 20%, transparent); }
+.meter span { display: block; height: 100%; background: var(--page-em); transition: width 0.3s ease; }
 .pulse { animation: pulse 1.8s ease-in-out infinite; }
 @keyframes shimmer { 0% { background-position: -60% 0; } 100% { background-position: 160% 0; } }
 @keyframes pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
@@ -131,7 +151,7 @@ figcaption { display: flex; align-items: center; gap: 12px; font-family: var(--f
   /* Full-bleed inside the page bubble on phones. */
   .plate { margin: -14px -14px 14px; gap: 8px; }
   .frame { padding: 0; border: 0; border-radius: 0; box-shadow: none; }
-  .image { border-radius: 4px 16px 0 0; max-height: 70vh; }
+  .image { --plate-max: 70vh; border-radius: 4px 16px 0 0; }
   figcaption { padding: 0 14px; }
 }
 </style>

@@ -60,6 +60,7 @@ function insertTemplate(kind: 'text_to_image' | 'image_to_image') {
 }
 /** A UI-format export has `nodes` and `links`; the API format is a map of node id to node. */
 const uiFormat = computed(() => !!parsed.value && Array.isArray(parsed.value.nodes))
+const fixedSize = computed(() => !!parsed.value && !uiFormat.value && !/\{\{\s*(width|height)\s*\}\}/.test(workflow.value))
 const sizeOk = computed(() => [form.value.width, form.value.height].every((n) => Number.isInteger(n) && n >= 64 && n <= 8192))
 const valid = computed(() => !!form.value.name.trim() && !!form.value.base_url.trim() && !!parsed.value && !uiFormat.value && fields.value.length > 0 && sizeOk.value)
 
@@ -123,6 +124,7 @@ async function remove() {
       <p class="hint">尺寸填入 <code v-pre>{{width}}</code> <code v-pre>{{height}}</code>，也决定聊天中插图的预留比例。</p>
 
       <JsonField v-model="workflow" label="工作流（API 格式）" min-height="200px" />
+      <p v-if="fixedSize" class="warn-note">工作流没有使用 <code v-pre>{{width}}</code> <code v-pre>{{height}}</code>。请确认上面的宽高与实际输出一致，否则插图的预留比例会不对。</p>
       <div class="hint stack tight">
         <span>在 ComfyUI 中使用 “Save (API Format)” 导出。在需要替换的字符串里写占位符，例如把正向提示词改成 <code v-pre>"masterpiece, {{prompt}}"</code>，把种子改成 <code v-pre>"{{seed}}"</code>。</span>
         <span><code v-pre>{{seed}}</code> <code v-pre>{{width}}</code> <code v-pre>{{height}}</code> 由 LoreNook 填入；其余占位符都是需要模型输出的提示词字段。</span>
@@ -173,4 +175,5 @@ async function remove() {
 .vars ul { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
 .fields { gap: 6px; }
 .bad { font-size: 12px; color: var(--danger); }
+.warn-note { font-size: 12px; color: var(--warn); }
 </style>

@@ -7,6 +7,7 @@ from backend.illustrations.api import router
 from backend.illustrations.comfyui import ComfyUIClient
 from backend.illustrations.errors import IllustrationError
 from backend.illustrations.jobs import IllustrationRunner, interrupt_unfinished
+from backend.illustrations.progress import ProgressBoard
 from backend.illustrations.service import CastService
 from backend.illustrations.storage import ImageStorage
 from backend.repository.queries import Repository
@@ -20,13 +21,15 @@ def install(app: FastAPI) -> None:
         return JSONResponse(status_code=422, content={"detail": str(error)})
 
 
-def start(app: FastAPI, configuration, database, client, *, comfyui_transport=None, executor=None):
+def start(app: FastAPI, configuration, database, client, *, comfyui_transport=None, comfyui_connect=None, executor=None):
     """Returns the matching shutdown function."""
     comfy = ComfyUIClient(transport=comfyui_transport, timeout_seconds=configuration.comfyui_timeout_seconds,
-                          poll_seconds=configuration.comfyui_poll_seconds)
+                          poll_seconds=configuration.comfyui_poll_seconds, connect=comfyui_connect)
     storage = ImageStorage(configuration.resolved_image_directory())
     interrupt_unfinished(database)
-    runner = IllustrationRunner(database, client, comfy, storage, app.state.media, executor)
+    board = ProgressBoard()
+    runner = IllustrationRunner(database, client, comfy, storage, app.state.media, board, executor)
+    app.state.illustration_progress = board
     app.state.image_storage = storage
     app.state.illustrations = runner
 

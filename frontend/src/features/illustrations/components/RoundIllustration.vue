@@ -13,7 +13,7 @@ const item = computed(() => c.byRound.value.get(props.round.id))
 
 <template>
   <IllustrationPlate
-    v-if="item" :chat-id="c.chatId.value" :illustration="item" :caption="splitSummary(round.summary).caption" :busy="c.busy(round.id)"
+    v-if="item" :chat-id="c.chatId.value" :illustration="item" :progress="c.progress.value[item.id]" :caption="splitSummary(round.summary).caption" :busy="c.busy(round.id)"
     @open="c.viewing.value = item!.id" @regenerate="c.illustrate(round.id)" @prompt="c.promptOf.value = item!"
     @focus="c.choosingFocus.value = round.id" @hide="c.setHidden(item!, $event)"
   />

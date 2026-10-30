@@ -6,14 +6,15 @@ import secrets
 
 from sqlalchemy import inspect, select, update
 
-from backend.illustrations.comfyui import ComfyUIClient
+from backend.illustrations.comfyui import ComfyUIClient, RenderProgress
 from backend.illustrations.errors import IllustrationError
 from backend.illustrations.generate import generate_fields
 from backend.illustrations.models import Illustration, ImageWorkflow
 from backend.illustrations.placeholders import IMAGE_INPUT, fill_workflow, image_inputs, prompt_fields
 from backend.illustrations.schemas import (
-    ACTIVE_STATUSES, FOCUS_CHAR, IllustrationContext, IllustrationPrompt, IllustrationRead,
+    ACTIVE_STATUSES, FOCUS_CHAR, IllustrationContext, IllustrationProgress, IllustrationPrompt, IllustrationRead,
 )
+from backend.illustrations.progress import ProgressBoard
 from backend.illustrations.service import CastService, IllustrationService
 from backend.illustrations.storage import ImageStorage
 from backend.llm.client import ModelClient
@@ -161,7 +162,7 @@ def _fail(database: Database, illustration_id: str, message: str) -> None:
 
 
 def run_illustration(database: Database, client: ModelClient, comfy: ComfyUIClient, storage: ImageStorage,
-                     media: MediaStorage, illustration_id: str) -> None:
+                     media: MediaStorage, board: ProgressBoard, illustration_id: str) -> None:
     try:
         with database.read() as session:
             record = session.get(Illustration, illustration_id)
@@ -172,13 +173,20 @@ def run_illustration(database: Database, client: ModelClient, comfy: ComfyUIClie
             context = _context(Repository(session), chat_id, round_id, focus_ids)
         references = _reference_images(context)
         _advance(database, illustration_id, "pending", status="prompting")
+        board.set(illustration_id, chat_id, IllustrationProgress(status="prompting"))
         fields = _prompt_fields(database, client, chat_id, round_id, context)
         _advance(database, illustration_id, "prompting", status="rendering", prompt=fields)
+        board.set(illustration_id, chat_id, IllustrationProgress(status="rendering"))
         uploaded = {placeholder: comfy.upload_image(context.base_url, name, media.read(name), media_type_of(name))
                     for placeholder, name in references.items()}
         workflow = fill_workflow(context.workflow, {**fields, **uploaded, "seed": seed, "width": context.width,
                                                     "height": context.height})
-        image = comfy.render(context.base_url, workflow)
+
+        def report(progress: RenderProgress) -> None:
+            board.set(illustration_id, chat_id, IllustrationProgress(
+                status="rendering", queued=progress.queued, node=progress.node, value=progress.value, max=progress.max))
+
+        image = comfy.render(context.base_url, workflow, report)
         file_name = storage.save(chat_id, illustration_id, image)
         _advance(database, illustration_id, "rendering", status="ready", file_name=file_name,
                  media_type=image.media_type)
@@ -190,6 +198,9 @@ def run_illustration(database: Database, client: ModelClient, comfy: ComfyUIClie
     except Exception:
         logger.exception("Illustration %s failed", illustration_id)
         _fail(database, illustration_id, "插图生成发生内部错误")
+    finally:
+        # After the final status is committed, so a browser reacting to this reads the outcome.
+        board.clear(illustration_id)
 
 
 def interrupt_unfinished(database: Database) -> None:
@@ -205,18 +216,20 @@ class IllustrationRunner:
     """In-process queue: one job at a time, matching a single local ComfyUI."""
 
     def __init__(self, database: Database, client: ModelClient, comfy: ComfyUIClient, storage: ImageStorage,
-                 media: MediaStorage, executor: Executor | None = None):
+                 media: MediaStorage, board: ProgressBoard, executor: Executor | None = None):
         self.database, self.client, self.comfy, self.storage, self.media = database, client, comfy, storage, media
+        self.board = board
         self.executor = executor or ThreadPoolExecutor(max_workers=1, thread_name_prefix="illustration")
 
-    def submit(self, illustration_id: str):
+    def submit(self, job: IllustrationRead):
+        self.board.set(job.id, job.chat_id, IllustrationProgress(status=job.status))
         return self.executor.submit(run_illustration, self.database, self.client, self.comfy, self.storage, self.media,
-                                    illustration_id)
+                                    self.board, job.id)
 
     def round_archived(self, chat_id: str, round_id: str) -> None:
         job = auto_illustration(self.database, chat_id, round_id)
         if job is not None:
-            self.submit(job.id)
+            self.submit(job)
 
     def close(self) -> None:
         self.executor.shutdown(wait=False, cancel_futures=True)

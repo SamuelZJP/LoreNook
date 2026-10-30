@@ -1,8 +1,8 @@
-import { computed, inject, provide, reactive, ref, watch, type InjectionKey, type Ref } from 'vue'
+import { computed, inject, onScopeDispose, provide, reactive, ref, watch, type InjectionKey, type Ref } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import type { RoundRead } from '@/api/endpoints'
 import { toast } from '@/composables/toast'
-import { illustrationApi, type Illustration } from './api'
+import { illustrationApi, type Illustration, type IllustrationProgress } from './api'
 import { isActive, illustrationPrefs } from './lib'
 
 /** The illustration state of one open chat, shared by the pieces placed inside the chat view. */
@@ -11,14 +11,39 @@ export function provideChatIllustrations(chatId: Ref<string>, rounds: Ref<RoundR
   const query = useQuery({
     queryKey: computed(() => ['illustrations', chatId.value]),
     queryFn: () => illustrationApi.illustrations(chatId.value),
-    // Poll only while a job runs.
-    refetchInterval: (q) => ((q.state.data ?? []).some(isActive) ? 2000 : false),
+    // The progress stream drives updates; this only covers a stream that can't get through.
+    refetchInterval: (q) => ((q.state.data ?? []).some(isActive) ? 15000 : false),
   })
   const settings = useQuery({
     queryKey: computed(() => ['illustration-settings', chatId.value]),
     queryFn: () => illustrationApi.settings(chatId.value),
   })
   const refresh = () => qc.invalidateQueries({ queryKey: ['illustrations', chatId.value] })
+
+  /** Live state of running jobs by illustration id, while the stream is open. */
+  const progress = ref<Record<string, IllustrationProgress>>({})
+  let stream: EventSource | null = null
+  function closeStream() {
+    stream?.close()
+    stream = null
+    progress.value = {}
+  }
+  function openStream() {
+    stream = new EventSource(illustrationApi.progressUrl(chatId.value))
+    stream.onmessage = (event) => {
+      const next: Record<string, IllustrationProgress> = JSON.parse(event.data)
+      const before = progress.value
+      progress.value = next
+      // A job started, advanced or ended: the list holds its stored fields.
+      if ([...Object.keys(before), ...Object.keys(next)].some((id) => before[id]?.status !== next[id]?.status)) refresh()
+    }
+  }
+  const running = computed(() => (query.data.value ?? []).some(isActive))
+  watch([running, chatId], ([on]) => {
+    closeStream()
+    if (on) openStream()
+  }, { immediate: true })
+  onScopeDispose(closeStream)
 
   // An archive that just completed may have queued a job.
   const latestArchived = computed(() => rounds.value.filter((r) => r.archive_step === 'complete').at(-1)?.id)
@@ -72,7 +97,7 @@ export function provideChatIllustrations(chatId: Ref<string>, rounds: Ref<RoundR
   /** The round's page should take the full reading width to hold a plate. */
   const occupies = (roundId: string) => byRound.value.get(roundId)?.hidden === false
 
-  const state = { chatId, byRound, enabled, gallery, backdrop, viewing, promptOf, choosingFocus, illustrate, setHidden, busy, occupies }
+  const state = { chatId, byRound, progress, enabled, gallery, backdrop, viewing, promptOf, choosingFocus, illustrate, setHidden, busy, occupies }
   provide(KEY, state)
   return state
 }

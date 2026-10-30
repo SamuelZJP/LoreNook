@@ -163,6 +163,15 @@ class IllustrationRead(Contract):
     created_at: datetime
 
 
+class IllustrationProgress(Contract):
+    """A running job's live state. Kept in memory only, never in the database."""
+    status: IllustrationStatus
+    queued: bool = False
+    node: str | None = None
+    value: int | None = None
+    max: int | None = None
+
+
 class IllustrationPatch(PatchContract):
     hidden: bool | None = None
 
