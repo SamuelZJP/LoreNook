@@ -948,6 +948,168 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/image-workflows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Workflows */
+        get: operations["list_workflows_api_image_workflows_get"];
+        put?: never;
+        /** Create */
+        post: operations["create_api_image_workflows_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/image-workflows/{workflow_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read */
+        get: operations["read_api_image_workflows__workflow_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete */
+        delete: operations["delete_api_image_workflows__workflow_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update */
+        patch: operations["update_api_image_workflows__workflow_id__patch"];
+        trace?: never;
+    };
+    "/api/chats/{chat_id}/image-workflows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Workflows */
+        get: operations["list_workflows_api_chats__chat_id__image_workflows_get"];
+        put?: never;
+        /** Create */
+        post: operations["create_api_chats__chat_id__image_workflows_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chats/{chat_id}/image-workflows/{workflow_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read */
+        get: operations["read_api_chats__chat_id__image_workflows__workflow_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete */
+        delete: operations["delete_api_chats__chat_id__image_workflows__workflow_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update */
+        patch: operations["update_api_chats__chat_id__image_workflows__workflow_id__patch"];
+        trace?: never;
+    };
+    "/api/chats/{chat_id}/illustrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Illustrations */
+        get: operations["list_illustrations_api_chats__chat_id__illustrations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chats/{chat_id}/rounds/{round_id}/illustrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate
+         * @description Queue a new attempt; earlier attempts are kept and the newest is shown.
+         */
+        post: operations["generate_api_chats__chat_id__rounds__round_id__illustrations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chats/{chat_id}/rounds/{round_id}/illustration-prompt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Prompt */
+        post: operations["prompt_api_chats__chat_id__rounds__round_id__illustration_prompt_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chats/{chat_id}/illustrations/{illustration_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update */
+        patch: operations["update_api_chats__chat_id__illustrations__illustration_id__patch"];
+        trace?: never;
+    };
+    "/api/chats/{chat_id}/illustrations/{illustration_id}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Image */
+        get: operations["image_api_chats__chat_id__illustrations__illustration_id__image_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -994,7 +1156,7 @@ export interface components {
              * Table
              * @enum {string}
              */
-            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes";
+            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "image_workflows" | "chat_illustration_settings" | "rounds" | "state_snapshots" | "episodes" | "illustrations";
             /** Key */
             key: {
                 [key: string]: string;
@@ -1011,7 +1173,7 @@ export interface components {
              * Table
              * @enum {string}
              */
-            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes";
+            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "image_workflows" | "chat_illustration_settings" | "rounds" | "state_snapshots" | "episodes" | "illustrations";
             /** Values */
             values: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -1028,7 +1190,7 @@ export interface components {
              * Table
              * @enum {string}
              */
-            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes";
+            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "image_workflows" | "chat_illustration_settings" | "rounds" | "state_snapshots" | "episodes" | "illustrations";
             /** Key */
             key: {
                 [key: string]: string;
@@ -1051,7 +1213,7 @@ export interface components {
              * Name
              * @enum {string}
              */
-            name: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes";
+            name: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "image_workflows" | "chat_illustration_settings" | "rounds" | "state_snapshots" | "episodes" | "illustrations";
             /** Primary Key */
             primary_key: string[];
             /** Row Schema */
@@ -1070,7 +1232,7 @@ export interface components {
              * Table
              * @enum {string}
              */
-            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes";
+            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "image_workflows" | "chat_illustration_settings" | "rounds" | "state_snapshots" | "episodes" | "illustrations";
             /** Key */
             key: {
                 [key: string]: string;
@@ -1222,6 +1384,9 @@ export interface components {
             model_bindings?: {
                 [key: string]: string;
             };
+            /** Image Workflow Ids */
+            image_workflow_ids?: string[];
+            illustration?: components["schemas"]["IllustrationSettings"];
             /**
              * Recent Rounds
              * @default 5
@@ -1260,6 +1425,9 @@ export interface components {
             model_bindings: {
                 [key: string]: string;
             };
+            /** Image Workflows */
+            image_workflows: components["schemas"]["ImageWorkflowRead"][];
+            illustration: components["schemas"]["IllustrationSettings"];
             latest_state: components["schemas"]["StateRead"];
         };
         /** ChatMemory */
@@ -1294,6 +1462,7 @@ export interface components {
             model_bindings?: {
                 [key: string]: string;
             } | null;
+            illustration?: components["schemas"]["IllustrationSettings"] | null;
         };
         /** ChatRead */
         ChatRead: {
@@ -1542,6 +1711,139 @@ export interface components {
             id: string;
             /** Chat Id */
             chat_id: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** IllustrationPatch */
+        IllustrationPatch: {
+            /** Hidden */
+            hidden?: boolean | null;
+        };
+        /** IllustrationPrompt */
+        IllustrationPrompt: {
+            /** Image Workflow Id */
+            image_workflow_id: string;
+            /** Fields */
+            fields: {
+                [key: string]: string;
+            };
+        };
+        /** IllustrationRead */
+        IllustrationRead: {
+            /** Id */
+            id: string;
+            /** Chat Id */
+            chat_id: string;
+            /** Round Id */
+            round_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "prompting" | "rendering" | "ready" | "failed";
+            /** Seed */
+            seed: number;
+            /** Prompt */
+            prompt: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Error */
+            error: string | null;
+            /** Media Type */
+            media_type: string | null;
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+            /** Hidden */
+            hidden: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** IllustrationSettings */
+        IllustrationSettings: {
+            /**
+             * Mode
+             * @default off
+             * @enum {string}
+             */
+            mode: "off" | "every_round" | "scene_change" | "manual";
+            /** Image Workflow Id */
+            image_workflow_id?: string | null;
+            /** Model Config Id */
+            model_config_id?: string | null;
+        };
+        /** ImageWorkflowCreate */
+        ImageWorkflowCreate: {
+            /** Name */
+            name: string;
+            /** Base Url */
+            base_url: string;
+            /** Workflow */
+            workflow: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Instructions
+             * @default
+             */
+            instructions: string;
+            /**
+             * Width
+             * @default 1344
+             */
+            width: number;
+            /**
+             * Height
+             * @default 768
+             */
+            height: number;
+        };
+        /** ImageWorkflowPatch */
+        ImageWorkflowPatch: {
+            /** Name */
+            name?: string | null;
+            /** Base Url */
+            base_url?: string | null;
+            /** Workflow */
+            workflow?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Instructions */
+            instructions?: string | null;
+            /** Width */
+            width?: number | null;
+            /** Height */
+            height?: number | null;
+        };
+        /** ImageWorkflowRead */
+        ImageWorkflowRead: {
+            /** Id */
+            id: string;
+            /** Chat Id */
+            chat_id: string | null;
+            /** Name */
+            name: string;
+            /** Base Url */
+            base_url: string;
+            /** Workflow */
+            workflow: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Instructions */
+            instructions: string;
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+            /** Prompt Fields */
+            prompt_fields: string[];
             /**
              * Created At
              * Format: date-time
@@ -4911,6 +5213,481 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminBatchResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_workflows_api_image_workflows_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageWorkflowRead"][];
+                };
+            };
+        };
+    };
+    create_api_image_workflows_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImageWorkflowCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageWorkflowRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_api_image_workflows__workflow_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workflow_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageWorkflowRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_api_image_workflows__workflow_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workflow_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_api_image_workflows__workflow_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workflow_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImageWorkflowPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageWorkflowRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_workflows_api_chats__chat_id__image_workflows_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageWorkflowRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_api_chats__chat_id__image_workflows_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImageWorkflowCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageWorkflowRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_api_chats__chat_id__image_workflows__workflow_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workflow_id: string;
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageWorkflowRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_api_chats__chat_id__image_workflows__workflow_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workflow_id: string;
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_api_chats__chat_id__image_workflows__workflow_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workflow_id: string;
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImageWorkflowPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageWorkflowRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_illustrations_api_chats__chat_id__illustrations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IllustrationRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_api_chats__chat_id__rounds__round_id__illustrations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+                round_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IllustrationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    prompt_api_chats__chat_id__rounds__round_id__illustration_prompt_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+                round_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IllustrationPrompt"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_api_chats__chat_id__illustrations__illustration_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+                illustration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IllustrationPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IllustrationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    image_api_chats__chat_id__illustrations__illustration_id__image_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+                illustration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

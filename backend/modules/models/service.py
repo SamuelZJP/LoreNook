@@ -50,6 +50,9 @@ class ModelService:
         return values
 
     def delete(self, config_id: str) -> None:
+        from backend.modules.illustrations.service import IllustrationService
+        if self.chat_id is not None and IllustrationService(self.repository).settings(self.chat_id).model_config_id == config_id:
+            raise ConflictError("请先在插图设置中切换或清空该提示词模型")
         self.repository.delete(self.repository.get_owned(ModelConfig, config_id, self.chat_id))
 
     def connection(self, config_id: str) -> ModelConnection:

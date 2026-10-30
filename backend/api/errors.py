@@ -10,7 +10,7 @@ from backend.shared.errors import (
     AdminDataError, ArchiveExecutionError, ConflictError, DefinitionTemplateError, ModelCallError, ModelConfigurationError,
     NotFoundError, PresetExecutionError, StateInitializationError,
     StateSchemaError, StateUpdateError,
-    RoundSummaryError, EpisodeDecisionError, EpisodeSummaryError,
+    RoundSummaryError, EpisodeDecisionError, EpisodeSummaryError, IllustrationError,
 )
 
 
@@ -31,6 +31,7 @@ def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(RoundSummaryError)
     @app.exception_handler(EpisodeDecisionError)
     @app.exception_handler(EpisodeSummaryError)
+    @app.exception_handler(IllustrationError)
     async def state_error(request: Request, error: ValueError):
         return JSONResponse(status_code=422, content={"detail": str(error)})
 

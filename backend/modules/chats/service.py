@@ -1,6 +1,7 @@
 from backend.modules.characters.service import CharacterService
+from backend.modules.illustrations.service import IllustrationService, read_workflow
 from backend.modules.users.service import IdentityService
-from backend.repository.models import Character, Chat, ChatModelBinding, ModelConfig, UserIdentity, WritingPreset
+from backend.repository.models import Character, Chat, ChatModelBinding, ImageWorkflow, ModelConfig, UserIdentity, WritingPreset
 from backend.repository.queries import Repository
 from backend.schemas.chats import ChatDetail, ChatPatch, ChatRead, ModelConfigRead, PresetRead, StateRead
 from backend.shared.errors import ConflictError
@@ -38,6 +39,8 @@ class ChatService:
             writing_presets=[PresetRead.model_validate(record) for record in self.repository.list_owned(WritingPreset, chat_id)],
             model_configs=configs,
             model_bindings={binding.purpose: binding.model_config_id for binding in self.repository.model_bindings(chat_id)},
+            image_workflows=[read_workflow(record) for record in self.repository.list_owned(ImageWorkflow, chat_id)],
+            illustration=IllustrationService(self.repository).settings(chat_id),
             latest_state=StateRead.model_validate(state),
         )
 
@@ -52,7 +55,9 @@ class ChatService:
                 self.repository.delete(binding)
             for purpose, config_id in payload.model_bindings.items():
                 self.repository.add(ChatModelBinding(chat_id=chat_id, purpose=purpose, model_config_id=config_id))
-        for name, value in payload.model_dump(exclude_unset=True, exclude={"model_bindings"}).items():
+        if payload.illustration is not None:
+            IllustrationService(self.repository).replace_settings(chat_id, payload.illustration)
+        for name, value in payload.model_dump(exclude_unset=True, exclude={"model_bindings", "illustration"}).items():
             setattr(chat, name, value)
         self.repository.session.flush()
         return self.detail(chat_id)

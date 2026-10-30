@@ -11,11 +11,11 @@ https://lorenook.cryingstray.cn
       └─ /api, /health, /docs → Uvicorn 127.0.0.1:18780 → data/lorenook.db
 ```
 
-Machine-local files (not in Git): `deploy/lorenook.env`, `deploy/lorenook.service`, `data/`, `backups/`. Their contents are reproduced below for reconstruction.
+Machine-local files (not in Git): `deploy/lorenook.env`, `deploy/lorenook.service`, `data/` (database and `data/images/`), `backups/`. Their contents are reproduced below for reconstruction.
 
 ## Update
 
-Wait for running generation/archive work to finish first.
+Wait for running generation/archive work to finish first. Illustration jobs still running at shutdown are marked failed on the next start. Uvicorn must run a single worker: the illustration queue is in-process.
 
 ```bash
 cd ~/LoreNook
@@ -53,6 +53,8 @@ There is no scheduled backup. Take one manually when needed (the update procedur
 ```bash
 cd ~/LoreNook && umask 077 && sqlite3 data/lorenook.db ".backup 'backups/manual-$(date +%Y%m%d-%H%M%S).db'"
 ```
+
+Database backups don't include `data/images/`; copy that folder separately to keep the illustrations.
 
 Backups contain model API keys. They are kept on the same machine only.
 

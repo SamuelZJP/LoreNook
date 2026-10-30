@@ -4,14 +4,14 @@ from sqlalchemy import and_, delete, insert, select, text, update
 from sqlalchemy.orm import Session
 
 from backend.repository.models import (
-    Character, CharacterScene, Chat, ChatModelBinding, Definition, Episode, ModelConfig, Round,
-    StateSnapshot, UserIdentity, WritingPreset,
+    Character, CharacterScene, Chat, ChatIllustrationSettings, ChatModelBinding, Definition, Episode,
+    Illustration, ImageWorkflow, ModelConfig, Round, StateSnapshot, UserIdentity, WritingPreset,
 )
 from backend.shared.errors import AdminDataError, ConflictError, NotFoundError
 
 TABLES = {model.__tablename__: model.__table__ for model in (
     Chat, Character, CharacterScene, UserIdentity, Definition, WritingPreset, ModelConfig, ChatModelBinding,
-    Round, StateSnapshot, Episode,
+    ImageWorkflow, ChatIllustrationSettings, Round, StateSnapshot, Episode, Illustration,
 )}
 
 

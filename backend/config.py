@@ -20,6 +20,13 @@ class Settings:
     llm_recording_directory: str | None = field(default_factory=lambda: os.getenv("LORENOOK_LLM_RECORDING_DIRECTORY"))
     state_recent_summaries: int = 3
     round_summary_recent_summaries: int = 3
+    image_directory: str = field(default_factory=lambda: os.getenv("LORENOOK_IMAGE_DIRECTORY", "data/images"))
+    comfyui_timeout_seconds: float = 600.0
+    comfyui_poll_seconds: float = 1.0
+
+    def resolved_image_directory(self) -> Path:
+        path = Path(self.image_directory)
+        return (path if path.is_absolute() else PROJECT_ROOT / path).resolve()
 
     def resolved_database_url(self) -> str:
         url = make_url(self.database_url)

@@ -62,7 +62,7 @@ def test_schema_and_full_snapshot_are_read_only_and_secrets_are_explicit(databas
     async def scenario(client):
         schema = (await client.get("/api/admin/schema")).json()
         assert {entry["name"] for entry in schema} == set(TABLES)
-        assert len(schema) == 11
+        assert len(schema) == 14
         bindings = next(entry for entry in schema if entry["name"] == "chat_model_bindings")
         assert bindings["primary_key"] == ["chat_id", "purpose"]
         assert "api_key" in next(entry for entry in schema if entry["name"] == "model_configs")["row_schema"]["properties"]
@@ -99,6 +99,11 @@ def test_create_complete_graph_in_one_batch_with_forward_references(database):
         create("model_configs", id="model", chat_id="chat", name="模型", api_type="自由接口",
                base_url="待配置", api_key="explicit-secret", model="模型名", default_parameters={"a": [1, True, None]}),
         create("writing_presets", id="preset", chat_id="chat", name="预设", source="broken("),
+        create("image_workflows", id="workflow", chat_id="chat", name="工作流", base_url="待配置", workflow={"未校验": 1}),
+        create("chat_illustration_settings", chat_id="chat", mode="manual", image_workflow_id="workflow",
+               model_config_id="model"),
+        create("illustrations", id="illustration", chat_id="chat", round_id="r1", status="failed", seed=7,
+               error="失败", width=1344, height=768),
         create("characters", id="character", chat_id="chat", name="角色", state_schema="broken schema"),
         create("character_scenes", id="scene", character_id="character", name="开场", initial_state={"未校验": True}),
         create("user_identities", id="identity", chat_id="chat", name="身份"),

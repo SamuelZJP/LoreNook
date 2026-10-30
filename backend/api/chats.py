@@ -37,9 +37,10 @@ def update(chat_id: str, payload: ChatPatch, database: DatabaseDependency):
 
 
 @router.delete("/{chat_id}", status_code=204)
-def delete(chat_id: str, database: DatabaseDependency):
+def delete(chat_id: str, request: Request, database: DatabaseDependency):
     with database.transaction() as session:
         ChatService(Repository(session)).delete(chat_id)
+    request.app.state.image_storage.remove_chat(chat_id)
     return Response(status_code=204)
 
 

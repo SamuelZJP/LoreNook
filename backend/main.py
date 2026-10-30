@@ -2,6 +2,8 @@
 
 from contextlib import asynccontextmanager
 
+from concurrent.futures import Executor
+
 from fastapi import FastAPI
 import httpx
 
@@ -18,12 +20,16 @@ from backend.api.episode_decision import router as episode_decision_router
 from backend.api.episode_summary import router as episode_summary_router
 from backend.api.archive import router as archive_router
 from backend.api.admin import router as admin_router
+from backend.api.illustrations import router as illustrations_router
 from backend.api.errors import register_error_handlers
 from backend.config import Settings
 from backend.llm.client import ModelClient
+from backend.modules.illustrations.comfyui import ComfyUIClient
+from backend.modules.illustrations.storage import ImageStorage
 from backend.modules.state.initial import InitialStateFactory
 from backend.modules.state.schema import StateValidator, python_initial_state, validate_state
 from backend.repository.database import Database
+from backend.workflows.illustration import IllustrationRunner, interrupt_unfinished
 
 
 def create_app(
@@ -31,6 +37,8 @@ def create_app(
     initial_state_factory: InitialStateFactory = python_initial_state,
     *, llm_transport: httpx.BaseTransport | None = None,
     state_validator: StateValidator = validate_state,
+    comfyui_transport: httpx.BaseTransport | None = None,
+    illustration_executor: Executor | None = None,
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -45,9 +53,18 @@ def create_app(
                              max_response_bytes=configuration.llm_max_response_bytes,
                              recording_directory=configuration.llm_recording_directory)
         app.state.model_client = client
+        comfy = ComfyUIClient(transport=comfyui_transport, timeout_seconds=configuration.comfyui_timeout_seconds,
+                              poll_seconds=configuration.comfyui_poll_seconds)
+        storage = ImageStorage(configuration.resolved_image_directory())
+        app.state.image_storage = storage
+        interrupt_unfinished(database)
+        runner = IllustrationRunner(database, client, comfy, storage, illustration_executor)
+        app.state.illustrations = runner
         try:
             yield
         finally:
+            runner.close()
+            comfy.close()
             client.close()
             database.dispose()
 
@@ -66,6 +83,7 @@ def create_app(
     app.include_router(episode_summary_router)
     app.include_router(archive_router)
     app.include_router(admin_router)
+    app.include_router(illustrations_router)
 
     @app.get("/health", tags=["health"])
     def health() -> dict[str, str]:

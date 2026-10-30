@@ -140,6 +140,33 @@ function parse(response)  { return 'full AI output text'; }  // throw Error to f
 - Each chat binds a config to each purpose: `writing`, `state_update`, `round_summary`, `episode_summary`. Purposes may share a config.
 - `LORENOOK_LLM_RECORDING_DIRECTORY` (optional) records full requests/responses. Off by default; records contain chat content. The HTTP client ignores `HTTP(S)_PROXY`.
 
+## Illustrations
+
+An optional illustration per archived round: a model call turns the round into an image prompt, a local ComfyUI renders it, the chat shows it. Only locally deployed ComfyUI is supported.
+
+### Image workflows
+
+An image workflow is a library resource (copied into chats like the others) holding a ComfyUI **API-format** workflow, the ComfyUI address, the image size, and **instructions** — the prompt style that workflow needs (language, tag format, what each field means). Different workflows need different prompts; the instructions carry that difference, not the code.
+
+- Any string in the workflow may contain `{{name}}` placeholders. `seed`, `width`, `height` are filled by LoreNook; every other name is a **prompt field** the model must return. A string that is exactly one placeholder takes the raw value (a seed stays an integer); otherwise it's text substitution.
+- The model gets the instructions, the field list, character/user definitions (rendered), the round's state, summary, input and AI body, and returns one JSON object with every field as a string. A missing field fails the job before ComfyUI is called.
+- The first output image is kept (an `output`-type image preferred over previews).
+
+### Jobs
+
+- Per-chat settings: mode (`off` / `every_round` / `scene_change` / `manual`), the image workflow, and the model config for the prompt. Manual generation needs any mode except `off`.
+- `scene_change` triggers when `世界.地点` or `世界.日期` differs from the previous round's state (the initial state for round 1), or when the chat has no illustration yet.
+- A job runs after its archive completes, in a single in-process queue (`pending → prompting → rendering → ready | failed`). **It never blocks the next round** and never shows as an archive error. One active job per round. Jobs don't survive a restart; unfinished ones are marked failed at startup.
+- Regenerate adds a new attempt; earlier attempts are kept and the newest is shown.
+- Files live under `LORENOOK_IMAGE_DIRECTORY` (default `data/images`), one folder per chat, removed with the chat.
+
+### Display
+
+- **Inline plate.** The image is shown at the head of its round, inside the reading page, framed like a book plate, with a caption built from that round's `世界` (date · time · place). Space is reserved at the workflow's aspect ratio, so the page doesn't jump when the image arrives.
+- **Full-screen scene view.** Clicking a plate opens it full-screen with the caption and round summary; the chat's illustrations can be browsed in round order.
+- **Ambient backdrop** (preference: off / subtle / strong): the latest illustration, blurred and dimmed, behind the chat column. Off on phones by default.
+- Per-plate actions: regenerate, hide, view prompt.
+
 ## Data management
 
 `/api/admin/data` reads and batch-edits every business table, including history. A batch commits or rolls back as a whole, guarded by a read revision against stale writes. Final consistency is checked (references, continuous round numbers, complete archive results, gap-free non-overlapping episode coverage). No models, Schemas, templates or presets run.
@@ -154,4 +181,4 @@ There is no built-in login, state Schemas execute arbitrary Python, and the admi
 
 ## Out of scope
 
-Saving candidates across reloads, streaming, multi-user accounts, avatar upload, image/speech generation, regenerating an already-archived round.
+Saving candidates across reloads, streaming, multi-user accounts, avatar upload, speech generation, regenerating an already-archived round.

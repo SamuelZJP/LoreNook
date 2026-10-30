@@ -10,9 +10,11 @@ from pydantic import AwareDatetime, BeforeValidator, Field, JsonValue, TypeAdapt
 from backend.schemas.archive import ArchiveStep
 from backend.schemas.chats import ModelPurpose
 from backend.schemas.common import Contract, Name, NonnegativeInt
+from backend.schemas.illustrations import IllustrationMode, IllustrationStatus, ImageSize
 
 TableName = Literal["chats", "characters", "character_scenes", "user_identities", "definitions", "writing_presets",
-                    "model_configs", "chat_model_bindings", "rounds", "state_snapshots", "episodes"]
+                    "model_configs", "chat_model_bindings", "image_workflows", "chat_illustration_settings",
+                    "rounds", "state_snapshots", "episodes", "illustrations"]
 RecordId = Annotated[Name, Field(max_length=36)]
 
 
@@ -93,6 +95,23 @@ class BindingRow(Contract):
     model_config_id: RecordId
 
 
+class ImageWorkflowRow(TimestampedRow):
+    chat_id: RecordId | None = None
+    name: Name
+    base_url: str
+    workflow: dict[str, JsonValue]
+    instructions: str = ""
+    width: ImageSize = 1344
+    height: ImageSize = 768
+
+
+class IllustrationSettingsRow(Contract):
+    chat_id: RecordId
+    mode: IllustrationMode = "off"
+    image_workflow_id: RecordId | None = None
+    model_config_id: RecordId | None = None
+
+
 class RoundRow(TimestampedRow):
     chat_id: RecordId
     round_no: Annotated[int, Field(ge=1)]
@@ -120,6 +139,20 @@ class EpisodeRow(TimestampedRow):
     end_round_id: RecordId
     summary: Name
     created_by_round_id: RecordId | None = None
+
+
+class IllustrationRow(TimestampedRow):
+    chat_id: RecordId
+    round_id: RecordId
+    status: IllustrationStatus = "pending"
+    seed: Annotated[int, Field(ge=0)]
+    prompt: dict[str, JsonValue] | None = None
+    error: str | None = None
+    file_name: str | None = None
+    media_type: str | None = None
+    width: ImageSize
+    height: ImageSize
+    hidden: bool = False
 
 
 class AdminCreate(Contract):
@@ -174,6 +207,7 @@ class AdminTableInfo(Contract):
 ROW_SCHEMAS = {
     "chats": ChatRow, "characters": CharacterRow, "character_scenes": SceneRow, "user_identities": IdentityRow,
     "definitions": DefinitionRow, "writing_presets": PresetRow, "model_configs": ModelRow,
-    "chat_model_bindings": BindingRow, "rounds": RoundRow,
-    "state_snapshots": StateRow, "episodes": EpisodeRow,
+    "chat_model_bindings": BindingRow, "image_workflows": ImageWorkflowRow,
+    "chat_illustration_settings": IllustrationSettingsRow, "rounds": RoundRow,
+    "state_snapshots": StateRow, "episodes": EpisodeRow, "illustrations": IllustrationRow,
 }
