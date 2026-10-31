@@ -9,5 +9,6 @@ Importing it also registers the feature's tables with the metadata and with data
 """
 
 from backend.illustrations import feature as illustrations
+from backend.recall import feature as recall
 
-FEATURES = (illustrations,)
+FEATURES = (illustrations, recall)

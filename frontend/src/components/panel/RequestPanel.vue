@@ -15,7 +15,7 @@ async function build() {
   error.value = null
   building.value = true
   try {
-    const r = await api.writingPreview(props.chat.id, props.flow.input.value, props.flow.instruction.value)
+    const r = await api.writingPreview(props.chat.id, props.flow.input.value, props.flow.instruction.value, props.flow.preparedLayout())
     preview.value = pretty(r.request)
   } catch (e) {
     preview.value = null

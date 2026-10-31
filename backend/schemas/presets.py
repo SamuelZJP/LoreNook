@@ -5,7 +5,7 @@ import yaml
 
 from backend.schemas.common import Contract, Name, PatchContract
 from backend.schemas.definitions import ResolvedDefinition
-from backend.schemas.memory import MemoryMaterials
+from backend.schemas.memory import MemoryLayout, MemoryMaterials
 
 
 class PresetCreate(Contract):
@@ -57,6 +57,7 @@ class ParsedOutput(Contract):
 class WritingPreviewInput(Contract):
     user_input: str
     instruction: str = ""
+    layout: MemoryLayout | None = None
 
 
 class WritingPreview(Contract):

@@ -10,6 +10,8 @@ Markers in the user input control the mock models (they reach every prompt that 
     [[fail-round_summary]]    first round-summary call fails; retry succeeds
     [[fail-episode_summary]]  first episode-summary call fails; retry succeeds
     [[bad-output]]            writing returns text without <content> (preset parse rejects it)
+    [[recall]]                memory recall picks the first candidate of each pass
+    [[fail-memory_recall]]    first memory-recall call fails; retry succeeds
     [[newday]]                state update advances 世界.日期 by one day (drives episode decisions)
     [[slow]]                  each model call for this input waits 15 seconds
     [[fail-image]]            the mock ComfyUI rejects the workflow for this round
@@ -56,6 +58,8 @@ def text_of(body: dict) -> tuple[str, str]:
 def classify(body: dict, system: str) -> str:
     if "插图提示词助手" in system:
         return "image_prompt"
+    if "记忆召回器" in system:
+        return "memory_recall"
     if "JSON Patch" in system or "JSONPatch" in system:
         return "state_update"
     if "连续回合" in system:
@@ -106,6 +110,10 @@ def handler(request: httpx.Request) -> httpx.Response:
             content = (f"<report_nya~>模拟报告 #{write_count}</report_nya~>\n"
                        f"<content>（模拟回复 #{write_count}）她点了点头。\n\n“我明白了，**继续吧**。”</content>")
         return google(call=content) if is_google else deepseek(content)
+    if step == "memory_recall":
+        labels = re.findall(r"^\[([ER]\d+)\]", rest, re.MULTILINE) if "[[recall]]" in rest else []
+        text = json.dumps({"reason": "模拟召回。", "ids": labels[:1]}, ensure_ascii=False)
+        return google(text) if is_google else deepseek(text)
     if step == "image_prompt":
         line = next((l for l in rest.splitlines() if "恰好包含这些字符串字段" in l), "")
         fields = re.findall(r'"([A-Za-z_][A-Za-z0-9_]*)"', line) or ["prompt"]

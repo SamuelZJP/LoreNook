@@ -2,15 +2,17 @@
 import { computed, ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { RefreshCw, ChevronRight, ChevronsUpDown } from 'lucide-vue-next'
-import { api, type ChatDetail } from '@/api/endpoints'
+import { api, type ChatDetail, type ChatMemory } from '@/api/endpoints'
 import ErrorBox from '../ErrorBox.vue'
 import { contentBody } from '@/lib/sections'
 
-const props = defineProps<{ chat: ChatDetail }>()
+/** `timeline` replaces the assembled history for the current request; what differs is highlighted. */
+const props = defineProps<{ chat: ChatDetail; timeline?: ChatMemory | null; preparing?: string }>()
 const memory = useQuery({ queryKey: computed(() => ['memory', props.chat.id]), queryFn: () => api.memory(props.chat.id) })
 
 type Item = NonNullable<typeof memory.data.value>['items'][number]
-const items = computed(() => memory.data.value?.items ?? [])
+const shown = computed(() => props.timeline ?? memory.data.value)
+const items = computed(() => shown.value?.items ?? [])
 const counts = computed(() => ({
   episode: items.value.filter((i) => i.kind === 'episode').length,
   summary: items.value.filter((i) => i.kind === 'summary').length,
@@ -18,6 +20,11 @@ const counts = computed(() => ({
 }))
 
 const keyOf = (item: Item) => item.kind + item.id
+const expanded = computed(() => {
+  if (!props.timeline || !memory.data.value) return new Set<string>()
+  const assembled = new Set(memory.data.value.items.map(keyOf))
+  return new Set(items.value.map(keyOf).filter((k) => !assembled.has(k)))
+})
 const open = ref(new Set<string>())
 function toggle(item: Item) {
   const next = new Set(open.value)
@@ -48,18 +55,20 @@ function previewOf(item: Item) {
       <button class="btn ghost icon small" type="button" :title="allOpen ? '全部收起' : '全部展开'" :disabled="!items.length" @click="toggleAll"><ChevronsUpDown /></button>
       <button class="btn ghost icon small" type="button" title="刷新" @click="memory.refetch()"><RefreshCw /></button>
     </div>
-    <p class="hint">由后端选择，每个已归档回合只使用一种表示。这里只读。</p>
+    <p class="hint">由后端选择，每个已归档回合只使用一种表示。高亮的是本次发送时展开的记忆。这里只读。</p>
     <ErrorBox v-if="memory.error.value" :error="memory.error.value" />
-    <template v-if="memory.data.value">
+    <template v-if="shown">
       <div class="row wrap">
-        <span class="badge">共 {{ memory.data.value.total_rounds }} 回合</span>
+        <span class="badge">共 {{ shown.total_rounds }} 回合</span>
         <span class="badge accent">情节 {{ counts.episode }}</span>
         <span class="badge accent">摘要 {{ counts.summary }}</span>
         <span class="badge accent">完整 {{ counts.round }}</span>
+        <span v-if="preparing" class="badge">{{ preparing }}</span>
+        <span v-else-if="expanded.size" class="badge accent">本次展开 {{ expanded.size }}</span>
       </div>
       <div v-if="!items.length" class="empty">还没有已归档的回合</div>
       <ol class="items">
-        <li v-for="item in items" :key="keyOf(item)" :class="[item.kind, { open: open.has(keyOf(item)) }]">
+        <li v-for="item in items" :key="keyOf(item)" :class="[item.kind, { open: open.has(keyOf(item)), expanded: expanded.has(keyOf(item)) }]">
           <button class="head" type="button" :aria-expanded="open.has(keyOf(item))" @click="toggle(item)">
             <ChevronRight class="chevron" />
             <span class="kind">{{ kindLabel[item.kind] }}</span>
@@ -89,6 +98,7 @@ function previewOf(item: Item) {
 .items li.episode { border-left-color: var(--accent); }
 .items li.summary { border-left-color: var(--warn); }
 .items li.round { border-left-color: var(--ok); }
+.items li.expanded { background: var(--accent-soft); }
 .head {
   display: flex; align-items: center; gap: 6px; width: 100%; height: 34px; padding: 0 8px;
   border: 0; background: none; color: inherit; font: inherit; font-size: 12px; text-align: left; cursor: pointer;

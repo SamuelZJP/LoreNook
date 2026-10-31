@@ -1,12 +1,24 @@
 """Read memory sources from the caller's consistent database snapshot."""
 
-from backend.modules.memory.layout import plan_layout
+from dataclasses import dataclass
+
+from backend.modules.memory.layout import plan_layout, validate_layout
 from backend.modules.memory.render import render_materials, render_timeline
 from backend.modules.memory.sources import MemorySources
 from backend.repository.models import Chat
 from backend.repository.queries import Repository
-from backend.schemas.memory import ArchivedRound, ChatMemory, EpisodeMemory, MemoryMaterials, MemorySettings
+from backend.schemas.memory import (
+    ArchivedRound, ChatMemory, EpisodeMemory, MemoryLayout, MemoryMaterials, MemorySettings,
+)
 from backend.shared.errors import ConflictError
+
+
+@dataclass(frozen=True)
+class MemorySnapshot:
+    """Plain data, still usable after the session closes. `layout` is the assembled one."""
+    settings: MemorySettings
+    sources: MemorySources
+    layout: MemoryLayout
 
 
 class MemoryService:
@@ -28,17 +40,20 @@ class MemoryService:
             ))
         return MemorySources.build(rounds, episodes)
 
-    def _settings(self, chat_id: str) -> MemorySettings:
+    def snapshot(self, chat_id: str) -> MemorySnapshot:
         chat = self.repository.get(Chat, chat_id)
-        return MemorySettings(recent_rounds=chat.recent_rounds, min_summaries=chat.min_summaries)
-
-    def materials(self, chat_id: str) -> MemoryMaterials:
-        settings = self._settings(chat_id)
+        settings = MemorySettings(recent_rounds=chat.recent_rounds, min_summaries=chat.min_summaries)
         sources = self._sources(chat_id)
-        return render_materials(plan_layout(sources, settings), sources)
+        return MemorySnapshot(settings, sources, plan_layout(sources, settings))
+
+    def materials(self, chat_id: str, layout: MemoryLayout | None = None) -> MemoryMaterials:
+        """`layout` lets a caller replace the assembled layout for one request."""
+        snapshot = self.snapshot(chat_id)
+        if layout is not None:
+            validate_layout(layout, snapshot.layout, snapshot.sources)
+        return render_materials(layout or snapshot.layout, snapshot.sources)
 
     def timeline(self, chat_id: str) -> ChatMemory:
-        settings = self._settings(chat_id)
-        sources = self._sources(chat_id)
-        timeline = render_timeline(plan_layout(sources, settings), sources, settings)
+        snapshot = self.snapshot(chat_id)
+        timeline = render_timeline(snapshot.layout, snapshot.sources, snapshot.settings)
         return ChatMemory(chat_id=chat_id, **timeline.model_dump())

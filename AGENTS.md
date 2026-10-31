@@ -25,5 +25,6 @@ Backend dependencies point one way: `api → workflows → modules → repositor
 | `backend/modules/` (others) | One package per domain concept |
 | `backend/repository/` | Tables and queries |
 | `backend/illustrations/` | Illustration feature; `feature.py` is its single connection to the app |
-| `frontend/src/composables/roundFlow.ts` | Round lifecycle in the browser |
+| `backend/recall/` | Memory recall feature: `service.py` runs two passes of `judge.py` with `prompts.py`, producing a layout |
+| `frontend/src/composables/roundFlow.ts` | Round lifecycle in the browser; `WriteStep` is the seam for a step before writing |
 | `frontend/src/features/` | Frontend of optional features; core views only place their components |

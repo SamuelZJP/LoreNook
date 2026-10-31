@@ -10,6 +10,8 @@ import { STEP_LABELS } from '@/lib/archive'
 import { prefs } from '@/lib/prefs'
 import { substituteNames } from '@/lib/format'
 import { provideChatIllustrations } from '@/features/illustrations/useChatIllustrations'
+import { useRecall } from '@/features/recall/useRecall'
+import RecallError from '@/features/recall/components/RecallError.vue'
 import RoundIllustration from '@/features/illustrations/components/RoundIllustration.vue'
 import RoundIllustrationAction from '@/features/illustrations/components/RoundIllustrationAction.vue'
 import ChatIllustrationBackdrop from '@/features/illustrations/components/ChatIllustrationBackdrop.vue'
@@ -32,7 +34,8 @@ const chatId = toRef(props, 'id')
 const chat = useQuery({ queryKey: computed(() => ['chat', chatId.value]), queryFn: () => api.chat(chatId.value) })
 const rounds = useQuery({ queryKey: computed(() => ['rounds', chatId.value]), queryFn: () => api.rounds(chatId.value) })
 const episodes = useQuery({ queryKey: computed(() => ['episodes', chatId.value]), queryFn: () => api.episodes(chatId.value) })
-const flow = useRoundFlow(chatId)
+const recall = useRecall(chatId)
+const flow = useRoundFlow(chatId, recall.step)
 
 const panelOpen = ref(isWide.value && localPanelPref())
 const panelTab = ref<PanelTab>('state')
@@ -111,6 +114,7 @@ function discardCandidate() {
   flow.discardCandidate()
 }
 const generateError = computed(() => (flow.error.value?.action === 'generate' ? flow.error.value.error : null))
+const prepareError = computed(() => (flow.error.value?.action === 'prepare' ? flow.error.value.error : null))
 /** Locate a failed template among the chat's own definitions. */
 const templateLocation = computed(() => {
   const e = generateError.value
@@ -134,7 +138,7 @@ onMounted(() => scrollToEnd(false))
 
 // Warn before leaving while a request is running or a candidate would be lost.
 function beforeUnload(e: BeforeUnloadEvent) {
-  if (['generating', 'archiving'].includes(flow.phase.value) || candidate.value) e.preventDefault()
+  if (['preparing', 'generating', 'archiving'].includes(flow.phase.value) || candidate.value) e.preventDefault()
 }
 window.addEventListener('beforeunload', beforeUnload)
 onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
@@ -254,8 +258,8 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
             <div v-if="candidateProblem" class="notice warn indent"><AlertTriangle /> {{ candidateProblem }}，归档时可能被拒绝。</div>
           </template>
 
-          <MessageBubble v-if="flow.phase.value === 'generating'" side="ai" :name="character?.name ?? 'AI'" :avatar="character?.avatar" pending>
-            <div class="row muted"><Loader2 class="spin" /> 正在生成… {{ flow.elapsed.value }}s</div>
+          <MessageBubble v-if="flow.phase.value === 'preparing' || flow.phase.value === 'generating'" side="ai" :name="character?.name ?? 'AI'" :avatar="character?.avatar" pending>
+            <div class="row muted"><Loader2 class="spin" /> {{ flow.phase.value === 'preparing' ? flow.prepareLabel : '正在生成…' }} {{ flow.elapsed.value }}s</div>
           </MessageBubble>
         </div>
       </div>
@@ -263,6 +267,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
       <div class="dock">
         <div class="dock-inner stack tight">
           <ArchiveBanner :flow="flow" />
+          <RecallError v-if="prepareError" :error="prepareError" :flow="flow" />
           <ErrorBox v-if="generateError" :error="generateError" title="生成失败">
             <p class="hint">没有产生新的回复，输入内容已保留。</p>
             <p v-if="templateLocation" class="row wrap tpl">
@@ -282,7 +287,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
     <ChatIllustrationOverlays />
 
     <ChatPanel
-      v-if="panelOpen && chat.data.value" class="panel" :chat="chat.data.value" :flow="flow"
+      v-if="panelOpen && chat.data.value" class="panel" :chat="chat.data.value" :flow="flow" :memory-timeline="recall.timeline.value"
       :tab="panelTab" :latest-complete="latestComplete" @update:tab="panelTab = $event" @close="togglePanel()"
     />
   </div>

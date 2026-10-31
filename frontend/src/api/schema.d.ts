@@ -1342,6 +1342,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chats/{chat_id}/recall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recall */
+        post: operations["recall_api_chats__chat_id__recall_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chats/{chat_id}/recall-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Settings */
+        get: operations["read_settings_api_chats__chat_id__recall_settings_get"];
+        /** Replace Settings */
+        put: operations["replace_settings_api_chats__chat_id__recall_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chats/{chat_id}/recall-setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Setup */
+        post: operations["setup_api_chats__chat_id__recall_setup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -2177,6 +2229,16 @@ export interface components {
             url: string;
         };
         /**
+         * MemoryLayout
+         * @description The decided shape of history, with no text: `memory` in story order, then the full recent rounds.
+         */
+        MemoryLayout: {
+            /** Memory */
+            memory: components["schemas"]["MemorySegment"][];
+            /** Recent Rounds */
+            recent_rounds: number[];
+        };
+        /**
          * MemoryMaterials
          * @description What a writing preset receives. `memory` has no tags; the preset defines its own.
          */
@@ -2185,6 +2247,19 @@ export interface components {
             memory: string;
             /** Recent Rounds */
             recent_rounds: components["schemas"]["RecentRound"][];
+        };
+        /**
+         * MemorySegment
+         * @description A run of same-kind entries. `numbers` are episode positions or round numbers.
+         */
+        MemorySegment: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "episode" | "summary" | "round";
+            /** Numbers */
+            numbers: number[];
         };
         /** ModelConfigCreate */
         ModelConfigCreate: {
@@ -2292,6 +2367,34 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** RecallInput */
+        RecallInput: {
+            /** User Input */
+            user_input: string;
+            /**
+             * Instruction
+             * @default
+             */
+            instruction: string;
+        };
+        /**
+         * RecallResult
+         * @description `layout` goes back with the writing request; `timeline` is what the memory panel shows meanwhile.
+         */
+        RecallResult: {
+            layout: components["schemas"]["MemoryLayout"];
+            timeline: components["schemas"]["ChatMemory"];
+        };
+        /** RecallSettings */
+        RecallSettings: {
+            /** Model Config Id */
+            model_config_id?: string | null;
+            /**
+             * Depth
+             * @default 3
+             */
+            depth: number;
         };
         /** RecentRound */
         RecentRound: {
@@ -2500,6 +2603,7 @@ export interface components {
              * @default
              */
             instruction: string;
+            layout?: components["schemas"]["MemoryLayout"] | null;
         };
         /** WritingMaterials */
         WritingMaterials: {
@@ -2543,6 +2647,7 @@ export interface components {
              * @default
              */
             instruction: string;
+            layout?: components["schemas"]["MemoryLayout"] | null;
         };
         /** WritingResult */
         WritingResult: {
@@ -6594,6 +6699,142 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recall_api_chats__chat_id__recall_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecallInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecallResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_settings_api_chats__chat_id__recall_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecallSettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_settings_api_chats__chat_id__recall_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecallSettings"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecallSettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    setup_api_chats__chat_id__recall_setup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecallSettings"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecallSettings"];
                 };
             };
             /** @description Validation Error */

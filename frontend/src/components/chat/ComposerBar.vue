@@ -11,7 +11,7 @@ const instruction = props.flow.instruction
 const instructionOpen = ref(false)
 
 const phase = computed(() => props.flow.phase.value)
-const locked = computed(() => !props.canWrite || ['generating', 'archiving', 'checking', 'incomplete'].includes(phase.value))
+const locked = computed(() => !props.canWrite || ['preparing', 'generating', 'archiving', 'checking', 'incomplete'].includes(phase.value))
 const hasCandidate = computed(() => !!props.flow.candidate.value)
 
 // Auto-grow stops at 4 lines or 25vh; dragging the handle can go up to 50vh.
@@ -127,7 +127,7 @@ const placeholder = computed(() => {
         class="btn primary send" type="button" :disabled="locked"
         :title="hasCandidate ? '用当前输入重新生成' : '生成回复（允许空输入）'" @click="submit"
       >
-        <Loader2 v-if="phase === 'generating'" class="spin" />
+        <Loader2 v-if="phase === 'preparing' || phase === 'generating'" class="spin" />
         <RefreshCw v-else-if="hasCandidate" />
         <Send v-else />
         <span class="send-label">{{ hasCandidate ? '重新生成' : '发送' }}</span>

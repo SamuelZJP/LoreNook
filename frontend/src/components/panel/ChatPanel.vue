@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { X } from 'lucide-vue-next'
-import type { ChatDetail } from '@/api/endpoints'
+import type { ChatDetail, ChatMemory } from '@/api/endpoints'
 import type { RoundFlow } from '@/composables/roundFlow'
 import StatePanel from './StatePanel.vue'
 import MemoryPanel from './MemoryPanel.vue'
@@ -11,7 +11,7 @@ import ChatResourcesPanel from './ChatResourcesPanel.vue'
 
 export type PanelTab = 'state' | 'memory' | 'definitions' | 'request' | 'settings' | 'resources'
 type Tab = PanelTab
-defineProps<{ chat: ChatDetail; flow: RoundFlow; tab: Tab; latestComplete: boolean }>()
+defineProps<{ chat: ChatDetail; flow: RoundFlow; tab: Tab; latestComplete: boolean; memoryTimeline?: ChatMemory | null }>()
 const emit = defineEmits<{ 'update:tab': [Tab]; close: [] }>()
 const tabs: { id: Tab; label: string }[] = [
   { id: 'state', label: '状态' },
@@ -33,7 +33,7 @@ const tabs: { id: Tab; label: string }[] = [
     </div>
     <div class="content">
       <StatePanel v-if="tab === 'state'" :chat-id="chat.id" :editable="latestComplete && flow.phase.value !== 'archiving'" />
-      <MemoryPanel v-else-if="tab === 'memory'" :chat="chat" />
+      <MemoryPanel v-else-if="tab === 'memory'" :chat="chat" :timeline="memoryTimeline" :preparing="flow.phase.value === 'preparing' ? flow.prepareLabel : ''" />
       <DefinitionsPanel v-else-if="tab === 'definitions'" :chat="chat" />
       <RequestPanel v-else-if="tab === 'request'" :chat="chat" :flow="flow" />
       <ChatSettingsPanel v-else-if="tab === 'settings'" :chat="chat" />

@@ -7,6 +7,7 @@ import { api, MODEL_PURPOSES, type ChatDetail, type ChatPatch, type ModelPurpose
 import { PURPOSE_LABELS } from '@/lib/archive'
 import ErrorBox from '../ErrorBox.vue'
 import IllustrationSettingsSection from '@/features/illustrations/components/IllustrationSettingsSection.vue'
+import RecallSettingsSection from '@/features/recall/components/RecallSettingsSection.vue'
 import { toast } from '@/composables/toast'
 
 const props = defineProps<{ chat: ChatDetail }>()
@@ -105,6 +106,7 @@ async function removeChat() {
       <button class="btn" type="button" :disabled="!dirty" @click="fill(chat)">还原</button>
       <button class="btn primary" type="button" :disabled="!dirty || saving || !form.title.trim()" @click="save"><Save /> 保存</button>
     </div>
+    <RecallSettingsSection :chat-id="chat.id" :model-configs="chat.model_configs" />
     <IllustrationSettingsSection :chat-id="chat.id" :model-configs="chat.model_configs" />
   </div>
 </template>

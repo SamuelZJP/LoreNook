@@ -15,6 +15,7 @@ The concepts, rules and reasons behind the code. For *how* something is implemen
 | State | A JSON snapshot at the end of a round: time, place, character attributes, any variables. |
 | Round summary | ~150-character factual summary of one round. |
 | Episode | Title + ~200–300-character summary of a continuous range of rounds. |
+| Memory recall | A per-request judgment that expands relevant old memories in place before writing. |
 | Writing preset | JavaScript that builds the model request and parses/validates the response. |
 | Archiving | The steps that run after the user confirms a round: state → round summary → episode. |
 | Image workflow | A ComfyUI workflow with placeholders and the prompt template that fits its model. |
@@ -25,7 +26,7 @@ The concepts, rules and reasons behind the code. For *how* something is implemen
 
 ## Round lifecycle
 
-1. User sends input. Enabled definitions are rendered against the latest state, history is assembled, the preset builds a request, the model is called **once**, and the preset parses the response.
+1. User sends input. Memory recall decides the memory layout if it is on. Enabled definitions are rendered against the latest state, memory is rendered, the preset builds a request, the writing model is called **once**, and the preset parses the response.
 2. The result is shown as an unconfirmed **candidate**. It lives only in browser memory — not in the database. The user can edit the AI output (full raw text, tags included) or regenerate (optionally after editing the input). The edited text is what gets saved and archived.
 3. On confirm, the round text is saved and archiving runs:
 
@@ -123,6 +124,25 @@ Example: T=20, X=5, Y=6, episodes A(1–4) B(5–8) C(9–12) → A, B, summarie
 
 Episode coverage (for decisions) and episode use (in context) are independent: a saved episode may not be in the prompt yet.
 
+## Memory recall
+
+Before writing, a model can expand parts of `<memory>` **in place**, like a clear stretch surfacing from a river of memory. An episode expands into its round summaries; a summary expands into its complete round. Nothing moves, each round still appears exactly once, and `recent_rounds` is never affected.
+
+```python
+memory=[episode [1, 2, 3], summary [15, 16, 17]]
+memory=[episode [1], summary [4], round [5], summary [6], episode [3], summary [15], round [16], summary [17]]
+```
+
+- **Recall basis**: the latest D complete rounds (recall depth, per chat) plus the latest input. A complete round is `<round_1><user_input></user_input><content></content></round_1>`, which is also how an expanded round appears in memory.
+- **Two passes**, each judging one kind only. Pass 1 judges episodes and returns the IDs to expand. Pass 2 judges summaries: the original ones plus those just expanded. A pass with no candidates makes no call.
+- **Criterion**: memories that may be relevant to the plot's development. Summaries are judged far more strictly than episodes. The prompts alone control how much is recalled; there are no caps.
+- **The temporary instruction outranks every rule**: memories it refers to are chosen unconditionally at both passes.
+- **Per request.** `POST /recall` returns the layout and the panel updates; `POST /writing` takes the layout. Nothing is saved, and archiving never sees it. Regenerating reuses the layout unless the input or instruction changed. A layout that no longer fits the history is a conflict.
+- **Failure** stops before writing and offers retry or writing without recall. IDs the model made up are skipped.
+- **Off** when a chat has no recall model, the default.
+
+It is a separate feature: `backend/recall/` and `frontend/src/features/recall/`. The core only accepts an optional layout for a request and a generic step before writing.
+
 ## Definitions
 
 - Ordered entries with `enabled`, `has_template`, `content`. Exactly one of `character_id` / `user_identity_id` is set.
@@ -141,7 +161,7 @@ function parse(response)  { return 'full AI output text'; }  // throw Error to f
 
 `materials`: `character_name`, `user_identity_name`, `character_definitions`, `user_definitions`, `first_message`, `memory`, `recent_rounds`, `user_input`, `state`, `state_yaml`.
 
-- `memory` is finished text with no tags, empty when there is nothing older than the recent rounds. The preset defines the `<memory>` tags and placement; it never assembles memory itself.
+- `memory` is finished text with no tags, empty when there is nothing older than the recent rounds. It may contain expanded rounds. The preset defines the `<memory>` tags and placement; it never assembles memory itself.
 - `recent_rounds` is a list of `{id, round_no, user_input, ai_output}`, so the preset can build whatever structure it wants from them.
 
 - `user_input` ends with a `<instruction>` block when the user adds a temporary instruction. It is plot guidance for that one request: never saved, and absent from history, summaries and state updates.

@@ -8,6 +8,7 @@ import ModalDialog from './ModalDialog.vue'
 import ProfilePicker from './ProfilePicker.vue'
 import ErrorBox from './ErrorBox.vue'
 import NewChatIllustrationSection from '@/features/illustrations/components/NewChatIllustrationSection.vue'
+import NewChatRecallSection from '@/features/recall/components/NewChatRecallSection.vue'
 import { toast } from '@/composables/toast'
 
 const emit = defineEmits<{ close: [] }>()
@@ -33,6 +34,7 @@ const form = reactive({
 })
 const titleTouched = ref(false)
 const illustrationSection = ref<InstanceType<typeof NewChatIllustrationSection>>()
+const recallSection = ref<InstanceType<typeof NewChatRecallSection>>()
 
 watch(() => characters.data.value, (list) => {
   if (list?.length && !form.character_id) form.character_id = list[0].id
@@ -84,6 +86,11 @@ const create = useMutation({
       await illustrationSection.value?.apply(chat.id)
     } catch (e) {
       toast(`插图设置未保存：${e instanceof Error ? e.message : String(e)}`, 'error')
+    }
+    try {
+      await recallSection.value?.apply(chat.id)
+    } catch (e) {
+      toast(`记忆召回设置未保存：${e instanceof Error ? e.message : String(e)}`, 'error')
     }
     emit('close')
     router.push(`/chats/${chat.id}`)
@@ -161,6 +168,7 @@ const create = useMutation({
         </div>
       </details>
 
+      <NewChatRecallSection ref="recallSection" :models="models.data.value ?? []" />
       <NewChatIllustrationSection ref="illustrationSection" :models="models.data.value ?? []" />
 
       <h3>记忆</h3>

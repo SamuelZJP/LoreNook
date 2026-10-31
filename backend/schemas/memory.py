@@ -58,7 +58,7 @@ MemoryItem = Annotated[
 
 class MemorySegment(Contract):
     """A run of same-kind entries. `numbers` are episode positions or round numbers."""
-    kind: Literal["episode", "summary"]
+    kind: Literal["episode", "summary", "round"]
     numbers: list[PositiveInt]
 
 

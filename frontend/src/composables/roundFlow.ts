@@ -1,11 +1,12 @@
 import { computed, onBeforeUnmount, ref, watch, type Ref } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
-import { api, type ArchiveProgress, type WritingResult } from '@/api/endpoints'
+import { api, type ArchiveProgress, type MemoryLayout, type WritingResult } from '@/api/endpoints'
 import { ApiError } from '@/api/client'
 import { pendingStep } from '@/lib/archive'
 
 export type Phase =
   | 'idle'          // ready for a new input
+  | 'preparing'     // running the step before writing
   | 'generating'    // waiting for a candidate
   | 'candidate'     // unsaved candidate awaiting confirmation
   | 'archiving'     // confirmation or retry request in flight
@@ -13,16 +14,30 @@ export type Phase =
   | 'incomplete'    // latest saved round has unfinished archive steps
 
 export interface FlowError {
-  action: 'generate' | 'confirm' | 'retry' | 'check'
+  action: 'prepare' | 'generate' | 'confirm' | 'retry' | 'check'
   error: unknown
   note?: string
+}
+
+export interface WriteRequest {
+  input: string
+  instruction: string
+}
+
+/** An optional step before writing that can decide the memory layout for the request. */
+export interface WriteStep {
+  label: string
+  prepare(request: WriteRequest): Promise<MemoryLayout | null>
+  /** The layout already decided for this request, if any. */
+  current(request: WriteRequest): MemoryLayout | null
+  reset(): void
 }
 
 /**
  * Round lifecycle for one chat. Server progress is the source of truth for anything saved;
  * only the unsaved candidate lives in memory (and is lost on reload by design).
  */
-export function useRoundFlow(chatId: Ref<string>) {
+export function useRoundFlow(chatId: Ref<string>, writeStep?: WriteStep) {
   const qc = useQueryClient()
   const input = ref('')
   /** Temporary instruction: sent with the next generation, never part of the saved round. */
@@ -30,7 +45,7 @@ export function useRoundFlow(chatId: Ref<string>) {
   /** The instruction the current candidate was generated with. */
   const usedInstruction = ref('')
   const candidate = ref<WritingResult | null>(null)
-  const busy = ref<null | 'generating' | 'archiving' | 'checking'>(null)
+  const busy = ref<null | 'preparing' | 'generating' | 'archiving' | 'checking'>(null)
   const error = ref<FlowError | null>(null)
   const startedAt = ref(0)
   /** The model's own output for the current candidate, kept so user edits can be reverted. */
@@ -60,6 +75,7 @@ export function useRoundFlow(chatId: Ref<string>) {
     if (!c) {
       original.value = null
       usedInstruction.value = ''
+      writeStep?.reset()
     }
     draft.value = null
   })
@@ -83,6 +99,7 @@ export function useRoundFlow(chatId: Ref<string>) {
   }
 
   const phase = computed<Phase>(() => {
+    if (busy.value === 'preparing') return 'preparing'
     if (busy.value === 'generating') return 'generating'
     if (busy.value === 'archiving') return 'archiving'
     if (busy.value === 'checking') return 'checking'
@@ -106,21 +123,43 @@ export function useRoundFlow(chatId: Ref<string>) {
     }
   }
 
-  async function generate() {
+  const writeRequest = () => ({ input: input.value, instruction: instruction.value })
+  /** The layout the next write would use; the request preview shows the same. */
+  const preparedLayout = () => writeStep?.current(writeRequest()) ?? null
+
+  async function generate({ skipPrepare = false } = {}) {
     if (busy.value || unfinished.value) return
-    busy.value = 'generating'
     startedAt.value = Date.now()
     error.value = null
+    const sent = instruction.value
+    let layout: MemoryLayout | null = null
+    if (skipPrepare) {
+      writeStep?.reset()
+    } else if (writeStep) {
+      busy.value = 'preparing'
+      try {
+        layout = await writeStep.prepare(writeRequest())
+      } catch (e) {
+        error.value = { action: 'prepare', error: e }
+        if (e instanceof ApiError && e.status === 409) refreshAll()
+        busy.value = null
+        return
+      }
+    }
+    busy.value = 'generating'
+    startedAt.value = Date.now()
     try {
-      const sent = instruction.value
-      const result = await api.write(chatId.value, input.value, sent)
+      const result = await api.write(chatId.value, input.value, sent, layout)
       candidate.value = result
       usedInstruction.value = sent
       original.value = result.ai_output
     } catch (e) {
       // A failed generation keeps the previous candidate (if any) and the typed input.
       error.value = { action: 'generate', error: e }
-      if (e instanceof ApiError && e.status === 409) refreshAll()
+      if (e instanceof ApiError && e.status === 409) {
+        writeStep?.reset()
+        refreshAll()
+      }
     } finally {
       busy.value = null
     }
@@ -236,7 +275,7 @@ export function useRoundFlow(chatId: Ref<string>) {
 
   return {
     input, instruction, usedInstruction, candidate, phase, error, elapsed, inputChanged, archive, latestRound, unfinished,
-    draft, editing, edited, hasEdits,
+    draft, editing, edited, hasEdits, preparedLayout, prepareLabel: writeStep?.label ?? '',
     generate, confirm, retry, discardCandidate, checkProgress, refreshAll,
     startEdit, applyEdit, cancelEdit, revertEdit,
   }

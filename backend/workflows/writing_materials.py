@@ -11,7 +11,7 @@ from backend.modules.memory.service import MemoryService
 from backend.repository.models import Character, Chat, UserIdentity, WritingPreset
 from backend.repository.queries import Repository
 from backend.schemas.catalog import DefinitionRead
-from backend.schemas.memory import MemoryMaterials
+from backend.schemas.memory import MemoryLayout, MemoryMaterials
 from backend.schemas.presets import WritingMaterials
 from backend.shared.errors import ConflictError
 
@@ -32,7 +32,7 @@ class WritingSnapshot:
     memory: MemoryMaterials
 
 
-def collect_writing_snapshot(repository: Repository, chat_id: str) -> WritingSnapshot:
+def collect_writing_snapshot(repository: Repository, chat_id: str, layout: MemoryLayout | None = None) -> WritingSnapshot:
     """Caller keeps this read in the same transaction as model configuration selection."""
     chat = repository.get(Chat, chat_id)
     latest = repository.latest_round(chat_id)
@@ -54,7 +54,7 @@ def collect_writing_snapshot(repository: Repository, chat_id: str) -> WritingSna
         first_message=repository.opening_scene(character.id).first_message, state=deepcopy(state.content),
         character_definitions=storage.read(character_id=character.id),
         user_definitions=storage.read(user_identity_id=identity.id),
-        memory=MemoryService(repository).materials(chat_id),
+        memory=MemoryService(repository).materials(chat_id, layout),
     )
 
 

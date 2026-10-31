@@ -1,11 +1,14 @@
 from typing import Literal
 
 from backend.schemas.common import Contract, Name
+from backend.schemas.memory import MemoryLayout
 
 
 class WritingInput(Contract):
     user_input: str
     instruction: str = ""
+    # Replaces the assembled memory layout for this request.
+    layout: MemoryLayout | None = None
 
 
 class WritingResult(Contract):
