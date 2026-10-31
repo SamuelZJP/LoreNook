@@ -102,7 +102,7 @@ def test_create_complete_graph_in_one_batch_with_forward_references(database):
         create("image_workflows", id="workflow", chat_id="chat", name="工作流", base_url="待配置", workflow={"未校验": 1}),
         create("chat_illustration_settings", chat_id="chat", mode="manual", image_workflow_id="workflow",
                model_config_id="model"),
-        create("chat_recall_settings", chat_id="chat", model_config_id="model", depth=4),
+        create("chat_recall_settings", chat_id="chat", enabled=True, model_config_id="model", depth=4, episode_limit=1, summary_limit=3),
         create("illustrations", id="illustration", chat_id="chat", round_id="r1", status="failed", seed=7,
                error="失败", width=1344, height=768),
         create("cast_members", id="member", character_id="character", name="人物"),

@@ -26,7 +26,8 @@ class RecallSettingsService:
         record = self.repository.session.get(ChatRecallSettings, chat_id)
         if record is None:
             return RecallSettings()
-        return RecallSettings(model_config_id=record.model_config_id, depth=record.depth)
+        return RecallSettings(enabled=record.enabled, model_config_id=record.model_config_id, depth=record.depth,
+                              episode_limit=record.episode_limit, summary_limit=record.summary_limit)
 
     def replace(self, chat_id: str, payload: RecallSettings) -> RecallSettings:
         self.repository.get(Chat, chat_id)
@@ -35,14 +36,15 @@ class RecallSettingsService:
         record = self.repository.session.get(ChatRecallSettings, chat_id)
         if record is None:
             record = self.repository.add(ChatRecallSettings(chat_id=chat_id))
-        record.model_config_id, record.depth = payload.model_config_id, payload.depth
+        for name, value in payload.model_dump().items():
+            setattr(record, name, value)
         self.repository.session.flush()
         return self.read(chat_id)
 
     def setup(self, chat_id: str, payload: RecallSettings) -> RecallSettings:
         """From library resources, for a new chat: the model config is copied into it."""
         model_id = payload.model_config_id and self._chat_model(chat_id, payload.model_config_id)
-        return self.replace(chat_id, RecallSettings(model_config_id=model_id, depth=payload.depth))
+        return self.replace(chat_id, payload.model_copy(update={"model_config_id": model_id}))
 
     def _chat_model(self, chat_id: str, source_id: str) -> str:
         """A chat copy of a library model config, reusing an identical copy it already has."""
@@ -64,10 +66,11 @@ def _summary_candidates(layout: MemoryLayout, sources: MemorySources) -> dict[st
             for segment in layout.memory if segment.kind == "summary" for number in segment.numbers}
 
 
-def _recall_layout(context: RecallContext, layout: MemoryLayout, sources: MemorySources, client: ModelClient) -> MemoryLayout:
-    episodes = judge(context, "episode", _episode_candidates(layout, sources), client)
+def _recall_layout(context: RecallContext, settings: RecallSettings, layout: MemoryLayout, sources: MemorySources,
+                   client: ModelClient) -> MemoryLayout:
+    episodes = judge(context, "episode", _episode_candidates(layout, sources), settings.episode_limit, client)
     opened = expand_layout(layout, sources, episodes=episodes)
-    summaries = judge(context, "summary", _summary_candidates(opened, sources), client)
+    summaries = judge(context, "summary", _summary_candidates(opened, sources), settings.summary_limit, client)
     return expand_layout(opened, sources, summaries=summaries)
 
 
@@ -81,7 +84,7 @@ def run_recall(database: Database, client: ModelClient, chat_id: str, user_input
         snapshot = MemoryService(repository).snapshot(chat_id)
         settings = RecallSettingsService(repository).read(chat_id)
         connection = (ModelService(repository, chat_id).connection(settings.model_config_id)
-                      if settings.model_config_id else None)
+                      if settings.enabled and settings.model_config_id else None)
         character = repository.get(Character, repository.owner_id(chat_id, Character))
         identity = repository.get(UserIdentity, repository.owner_id(chat_id, UserIdentity))
         names = {"character_name": character.name, "user_name": identity.name}
@@ -92,6 +95,6 @@ def run_recall(database: Database, client: ModelClient, chat_id: str, user_input
         basis = rounds[-settings.depth:] if settings.depth else []
         context = RecallContext(**names, basis_rounds=[render_round(record) for record in basis],
                                 user_input=user_input, instruction=instruction, connection=connection)
-        layout = _recall_layout(context, layout, snapshot.sources, client)
+        layout = _recall_layout(context, settings, layout, snapshot.sources, client)
     timeline = render_timeline(layout, snapshot.sources, snapshot.settings)
     return RecallResult(layout=layout, timeline=ChatMemory(chat_id=chat_id, **timeline.model_dump()))

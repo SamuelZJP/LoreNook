@@ -135,11 +135,12 @@ memory=[episode [1], summary [4], round [5], summary [6], episode [3], summary [
 
 - **Recall basis**: the latest D complete rounds (recall depth, per chat) plus the latest input. A complete round is `<round_1><user_input></user_input><content></content></round_1>`, which is also how an expanded round appears in memory.
 - **Two passes**, each judging one kind only. Pass 1 judges episodes and returns the IDs to expand. Pass 2 judges summaries: the original ones plus those just expanded. A pass with no candidates makes no call.
-- **Criterion**: memories that may be relevant to the plot's development. Summaries are judged far more strictly than episodes. The prompts alone control how much is recalled; there are no caps.
-- **The temporary instruction outranks every rule**: memories it refers to are chosen unconditionally at both passes.
+- **Criterion**: memories that may be relevant to the plot's development. Summaries are judged far more strictly than episodes.
+- **Hard limits** per pass, default 2 episodes and 5 summaries. Each is stated in that pass's prompt, then enforced by keeping the first IDs the model returned, so the prompt asks for most important first. A limit of 0 skips the pass.
+- **The temporary instruction outranks every judging rule**: memories it refers to are chosen unconditionally at both passes and listed first. The hard limits still apply.
 - **Per request.** `POST /recall` returns the layout and the panel updates; `POST /writing` takes the layout. Nothing is saved, and archiving never sees it. Regenerating reuses the layout unless the input or instruction changed. A layout that no longer fits the history is a conflict.
 - **Failure** stops before writing and offers retry or writing without recall. IDs the model made up are skipped.
-- **Off** when a chat has no recall model, the default.
+- **Off** unless the chat's switch is on and it has a recall model. Off is the default.
 
 It is a separate feature: `backend/recall/` and `frontend/src/features/recall/`. The core only accepts an optional layout for a request and a generic step before writing.
 

@@ -101,13 +101,13 @@ def test_parse_ids_rejects_unusable_output(text):
         parse_ids(text)
 
 
-def enable(database, chat_id, depth=2):
+def enable(database, chat_id, depth=2, **limits):
     with database.transaction() as session:
         repo = Repository(session)
         model = repo.add(ModelConfig(chat_id=chat_id, name="召回", api_type="deepseek_chat_completions",
                                      base_url="https://recall.test", api_key="k", model="recall-model",
                                      default_parameters={}))
-        repo.add(ChatRecallSettings(chat_id=chat_id, model_config_id=model.id, depth=depth))
+        repo.add(ChatRecallSettings(chat_id=chat_id, enabled=True, model_config_id=model.id, depth=depth, **limits))
         # The fixture's template reads a field the seeded state doesn't have.
         for definition in session.query(Definition).filter(Definition.has_template.is_(True), Definition.enabled.is_(True)):
             definition.content = "序号{{ state['序号'] }}"
@@ -169,6 +169,54 @@ def test_two_passes_expand_and_writing_uses_the_layout(database, writing_chat): 
         assert "<round_19>" in prompt and "<round_20>" in prompt and "<round_18>" not in prompt, "depth is 2"
         assert "序号" not in prompt, "state is not part of the basis"
     assert "拿不准时不选" in second and "拿不准时不选" not in first
+    assert "最多选择 2 个情节" in first and "最多选择 5 个摘要" in second
+
+
+def recall_shape(database, chat_id, answers, prompts=None):
+    prompts = [] if prompts is None else prompts
+    shapes = []
+
+    async def scenario(client):
+        response = await client.post(f"/api/chats/{chat_id}/recall", json={"user_input": "输入"})
+        assert response.status_code == 200, response.text
+        shapes.extend((s["kind"], s["numbers"]) for s in response.json()["layout"]["memory"])
+
+    run_api(database, scenario, llm_transport=httpx.MockTransport(handler_for(prompts, answers, [])))
+    return shapes
+
+
+def test_results_over_the_limit_keep_the_first_items_in_the_models_order(database, writing_chat):  # noqa: F811
+    chat_id = writing_chat["chat_id"]
+    seed_history(database, chat_id)
+    enable(database, chat_id, episode_limit=1, summary_limit=2)
+    prompts = []
+    # Made-up labels and repeats don't use up the limit. E2 comes first, so E1 is dropped.
+    shapes = recall_shape(database, chat_id, [["E99", "E2", "E2", "E1"], ["R12", "R99", "R6", "R9"]], prompts)
+    assert shapes == [("episode", [1]), ("summary", [5]), ("round", [6]), ("summary", [7, 8, 9, 10, 11]),
+                      ("round", [12]), ("summary", [13, 14, 15])]
+    assert "最多选择 1 个情节" in prompts[0] and "最多选择 2 个摘要" in prompts[1]
+    assert "最多 1 个" in prompts[0] and "最多 2 个" in prompts[1]
+
+
+def test_zero_limit_skips_that_pass(database, writing_chat):  # noqa: F811
+    chat_id = writing_chat["chat_id"]
+    seed_history(database, chat_id)
+    enable(database, chat_id, episode_limit=0)
+    prompts = []
+    shapes = recall_shape(database, chat_id, [["R9"]], prompts)
+    assert len(prompts) == 1 and "[R9]" in prompts[0] and "[E" not in prompts[0]
+    assert shapes[0] == ("episode", [1, 2]) and ("round", [9]) in shapes
+
+
+def test_switch_off_makes_no_model_call_even_with_a_model(database, writing_chat):  # noqa: F811
+    chat_id = writing_chat["chat_id"]
+    seed_history(database, chat_id)
+    enable(database, chat_id)
+    with database.transaction() as session:
+        session.get(ChatRecallSettings, chat_id).enabled = False
+    prompts = []
+    assert recall_shape(database, chat_id, [], prompts)[0] == ("episode", [1, 2])
+    assert prompts == []
 
 
 def test_depth_zero_uses_only_the_latest_input(database, writing_chat):  # noqa: F811
@@ -206,7 +254,8 @@ def test_off_means_no_model_call_and_the_assembled_layout(database, writing_chat
 
     async def scenario(client):
         root = f"/api/chats/{chat_id}"
-        assert (await client.get(root + "/recall-settings")).json() == {"model_config_id": None, "depth": 3}
+        assert (await client.get(root + "/recall-settings")).json() == {
+            "enabled": False, "model_config_id": None, "depth": 3, "episode_limit": 2, "summary_limit": 5}
         result = (await client.post(root + "/recall", json={"user_input": "输入"})).json()
         assert result["timeline"]["items"] == (await client.get(root + "/memory")).json()["items"]
 
@@ -252,13 +301,15 @@ def test_settings_validate_their_model_and_chat_deletion_removes_them(database, 
         root = f"/api/chats/{chat_id}"
         assert (await client.put(root + "/recall-settings", json={"model_config_id": "missing"})).status_code == 404
         assert (await client.put(root + "/recall-settings", json={"depth": -1})).status_code == 422
+        assert (await client.put(root + "/recall-settings", json={"episode_limit": -1})).status_code == 422
+        assert (await client.put(root + "/recall-settings", json={"summary_limit": -1})).status_code == 422
         library = await client.post("/api/model-configs", json={
             "name": "库模型", "api_type": "google_generate_content", "base_url": "https://x.test/v1beta", "model": "m"})
         assert library.status_code == 201, library.text
-        setup = await client.post(root + "/recall-setup", json={"model_config_id": library.json()["id"], "depth": 5})
+        setup = await client.post(root + "/recall-setup", json={"enabled": True, "model_config_id": library.json()["id"], "depth": 5})
         assert setup.status_code == 200, setup.text
         own = setup.json()["model_config_id"]
-        assert own != library.json()["id"] and setup.json()["depth"] == 5
+        assert own != library.json()["id"] and setup.json()["depth"] == 5 and setup.json()["enabled"] is True
         assert (await client.get(root + "/recall-settings")).json() == setup.json()
         assert (await client.delete(root)).status_code == 204
 

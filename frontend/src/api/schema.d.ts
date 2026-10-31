@@ -2388,6 +2388,11 @@ export interface components {
         };
         /** RecallSettings */
         RecallSettings: {
+            /**
+             * Enabled
+             * @default false
+             */
+            enabled: boolean;
             /** Model Config Id */
             model_config_id?: string | null;
             /**
@@ -2395,6 +2400,16 @@ export interface components {
              * @default 3
              */
             depth: number;
+            /**
+             * Episode Limit
+             * @default 2
+             */
+            episode_limit: number;
+            /**
+             * Summary Limit
+             * @default 5
+             */
+            summary_limit: number;
         };
         /** RecentRound */
         RecentRound: {

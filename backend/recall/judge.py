@@ -24,16 +24,17 @@ def parse_ids(text: str) -> list[str]:
     return ids
 
 
-def judge(context: RecallContext, stage: str, candidates: dict[str, str], client: ModelClient) -> set[int]:
-    """`candidates` maps a label such as E2 or R15 to its text. No candidates means no model call.
-    Returns the chosen numbers; labels the model made up are skipped."""
-    if not candidates:
-        return set()
+def judge(context: RecallContext, stage: str, candidates: dict[str, str], limit: int, client: ModelClient) -> list[int]:
+    """`candidates` maps a label such as E2 or R15 to its text. No candidates or a zero limit means no model call.
+    Returns the chosen numbers in the model's order. Made-up labels and repeats don't count; past `limit` is dropped."""
+    if not candidates or limit == 0:
+        return []
     lines = [f"[{label}] {text}" for label, text in candidates.items()]
-    request = text_request(context.connection.api_type, SYSTEM, render_prompt(context, stage, lines), json_output=True)
+    request = text_request(context.connection.api_type, SYSTEM, render_prompt(context, stage, lines, limit), json_output=True)
     response = client.invoke(context.connection, request).response
     try:
         text = response_text(context.connection.api_type, response)
     except ValueError as error:
         raise RecallError("记忆召回响应必须是正常完成的单个候选，并提供非空文本") from error
-    return {int(label[1:]) for label in parse_ids(text) if label in candidates}
+    chosen = [label for label in dict.fromkeys(parse_ids(text)) if label in candidates]
+    return [int(label[1:]) for label in chosen[:limit]]
