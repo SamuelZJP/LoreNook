@@ -61,6 +61,8 @@ class AdminService:
         changes = []
         for operation in batch.operations:
             name = operation.table
+            if name not in TABLES:
+                raise AdminDataError("目标表不存在或不可管理")
             if isinstance(operation, AdminDelete):
                 self.repository.delete(name, operation.key)
                 key = operation.key

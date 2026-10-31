@@ -1,7 +1,6 @@
 """Persist confirmation once, then execute only the remaining archive steps."""
 
 from backend.llm.client import ModelClient
-from backend.modules.chats.service import ChatService
 from backend.modules.state.schema import StateValidator, validate_state
 from backend.repository.archive import ArchiveRepository
 from backend.repository.database import Database
@@ -72,9 +71,8 @@ def confirm_archive(database: Database, client: ModelClient, chat_id: str, confi
             raise ConflictError("确认所依据的回合已变化，请读取当前归档进度")
         if latest is not None and latest.archive_step != "complete":
             raise ConflictError("请先完成当前回合归档")
-        service = ChatService(repository)
-        character_id = service.owner_id(chat_id, Character)
-        service.owner_id(chat_id, UserIdentity)
+        character_id = repository.owner_id(chat_id, Character)
+        repository.owner_id(chat_id, UserIdentity)
         if repository.latest_state(character_id) is None:
             raise ConflictError("聊天缺少初始或上一回合状态")
         record = repository.create_round(chat_id, confirmation.user_input, confirmation.ai_output)

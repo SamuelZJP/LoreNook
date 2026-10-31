@@ -100,7 +100,7 @@ def test_generate_and_regenerate_return_unsaved_candidates(database, writing_cha
     assert database_contents(database) == before
     assert len(seen) == 2
     for value in seen:
-        assert value["history"]["items"] == [] and value["history"]["total_rounds"] == 0
+        assert value["memory"] == "" and value["recent_rounds"] == []
         assert value["character_definitions"] == [{"id": ids["definition_id"], "order": 2, "content": "年龄16"}]
         assert value["user_definitions"][0]["content"] == " 用户定义角色\r\n"
         assert value["first_message"] == " 开场身份\r\n" and value["state"]["年龄"] == 16
@@ -202,10 +202,10 @@ def test_complete_history_materials_and_current_input_not_in_total(database, wri
     round_ids = seed_history(database, ids["chat_id"])
     def handler(request):
         value = json.loads(json.loads(request.content)["contents"][0]["parts"][0]["text"])
-        assert value["history"]["total_rounds"] == 20
-        assert [item["kind"] for item in value["history"]["items"]] == ["episode"] * 2 + ["summary"] * 7 + ["round"] * 5
+        assert value["memory"].count("情节") == 2 and value["memory"].count("摘要") == 7
+        assert [item["round_no"] for item in value["recent_rounds"]] == [16, 17, 18, 19, 20]
         assert value["user_input"] == "第21回合输入"
-        assert value["history"]["items"][-1]["id"] == round_ids[-1]
+        assert value["recent_rounds"][-1]["id"] == round_ids[-1]
         assert value["state"] == {"序号": 20}
         return httpx.Response(200, json={"text": OUTPUT})
     # The seeded state has no age field; adjust the template before the assertion snapshot.

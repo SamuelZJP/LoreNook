@@ -95,10 +95,8 @@ const sampleMaterials = {
   user_identity_name: '我',
   character_definitions: [{ id: 'def-1', order: 0, content: '角色设定' }],
   user_definitions: [],
-  history: {
-    recent_rounds: 5, min_summaries: 6, total_rounds: 1,
-    items: [{ kind: 'round', id: 'round-1', round_no: 1, user_input: '你好', ai_output: '<content>你好呀。</content>' }],
-  },
+  memory: '',
+  recent_rounds: [{ id: 'round-1', round_no: 1, user_input: '你好', ai_output: '<content>你好呀。</content>' }],
   user_input: '今天做什么？',
   state: { 世界: { 日期: '2026-10-19', 星期: '星期一', 时间: '08:00', 地点: '家' } },
 }
@@ -133,15 +131,14 @@ async function loadChatMaterials() {
   const chatId = props.chatId
   if (!chatId) return
   await trial('materials', async () => {
-    const [chat, defs, memory] = await Promise.all([api.chat(chatId), api.resolveDefinitions(chatId), api.memory(chatId)])
-    const { chat_id: _c, uses_compressed_history: _u, ...history } = memory
+    const [chat, defs, memory] = await Promise.all([api.chat(chatId), api.resolveDefinitions(chatId), api.memoryMaterials(chatId)])
     materials.value = pretty({
       first_message: substituteNames(chat.character.scenes[0]?.first_message ?? '', chat.user_identity.name, chat.character.name),
       character_name: chat.character.name,
       user_identity_name: chat.user_identity.name,
       character_definitions: defs.character_definitions,
       user_definitions: defs.user_definitions,
-      history,
+      ...memory,
       user_input: '',
       state: chat.latest_state.content,
     })

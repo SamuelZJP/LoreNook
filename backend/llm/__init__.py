@@ -1,1 +1,1 @@
-"""Model transports and API adapters."""
+"""Model provider calls and optional call recording."""

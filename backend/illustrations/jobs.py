@@ -19,7 +19,6 @@ from backend.illustrations.service import CastService, IllustrationService
 from backend.illustrations.storage import ImageStorage
 from backend.llm.client import ModelClient
 from backend.llm.recording import recorded_workflow
-from backend.modules.chats.service import ChatService
 from backend.modules.definitions.storage import DefinitionStorage
 from backend.modules.media import MediaStorage, media_type_of
 from backend.modules.models.service import ModelService
@@ -45,9 +44,8 @@ def _context(repository: Repository, chat_id: str, round_id: str, focus_ids: lis
     record = repository.get_owned(Round, round_id, chat_id)
     if record.archive_step != "complete":
         raise ConflictError("只能为已归档的回合生成插图")
-    service = ChatService(repository)
-    character = repository.get(Character, service.owner_id(chat_id, Character))
-    identity = repository.get(UserIdentity, service.owner_id(chat_id, UserIdentity))
+    character = repository.get(Character, repository.owner_id(chat_id, Character))
+    identity = repository.get(UserIdentity, repository.owner_id(chat_id, UserIdentity))
     state = repository.state_for_round(chat_id, round_id)
     if state is None:
         raise ConflictError("回合缺少归档状态")

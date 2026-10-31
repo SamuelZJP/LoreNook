@@ -5,7 +5,7 @@ import yaml
 
 from backend.schemas.common import Contract, Name, PatchContract
 from backend.schemas.definitions import ResolvedDefinition
-from backend.schemas.memory import MemoryHistory
+from backend.schemas.memory import MemoryMaterials
 
 
 class PresetCreate(Contract):
@@ -26,13 +26,12 @@ class PresetRead(Contract):
     created_at: datetime
 
 
-class WritingMaterials(Contract):
+class WritingMaterials(MemoryMaterials):
     first_message: str
     character_name: str
     user_identity_name: str
     character_definitions: list[ResolvedDefinition] = Field(default_factory=list)
     user_definitions: list[ResolvedDefinition] = Field(default_factory=list)
-    history: MemoryHistory
     user_input: str
     state: dict[str, JsonValue]
 

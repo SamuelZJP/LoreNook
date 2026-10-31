@@ -1,6 +1,5 @@
 from sqlalchemy.orm.attributes import flag_modified
 
-from backend.modules.chats.service import ChatService
 from backend.repository.models import Character, StateSnapshot
 from backend.repository.queries import Repository
 from backend.schemas.chats import StateRead
@@ -12,7 +11,7 @@ class StateService:
         self.repository = repository
 
     def latest(self, chat_id: str) -> StateRead:
-        character_id = ChatService(self.repository).owner_id(chat_id, Character)
+        character_id = self.repository.owner_id(chat_id, Character)
         state = self.repository.latest_state(character_id)
         if state is None:
             raise ConflictError("Chat has no state snapshot")

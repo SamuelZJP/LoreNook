@@ -9,7 +9,7 @@ from backend.repository.models import (
     Base, Character, CharacterScene, Chat, ChatModelBinding, Definition, Episode, ModelConfig, Round,
     StateSnapshot, UserIdentity, WritingPreset,
 )
-from backend.shared.errors import NotFoundError
+from backend.shared.errors import ConflictError, NotFoundError
 
 Record = TypeVar("Record", bound=Base)
 
@@ -41,6 +41,14 @@ class Repository:
 
     def list_chats(self) -> list[Chat]:
         return list(self.session.scalars(select(Chat).order_by(Chat.created_at.desc(), Chat.id)))
+
+    def owner_id(self, chat_id: str, model: type[Character | UserIdentity]) -> str:
+        """The chat's own character or identity copy."""
+        self.get(Chat, chat_id)
+        records = self.list_owned(model, chat_id)
+        if len(records) != 1:
+            raise ConflictError(f"Chat must have exactly one {model.__name__}")
+        return records[0].id
 
     def get_owned(self, model: type[Record], key: str, chat_id: str | None) -> Record:
         record = self.get(model, key)

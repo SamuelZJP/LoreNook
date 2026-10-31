@@ -84,6 +84,7 @@ export const api = {
   patchChat: (id: string, body: ChatPatch) => request<ChatDetail>(`/api/chats/${id}`, json('PATCH', body)),
   deleteChat: (id: string) => request<void>(`/api/chats/${id}`, json('DELETE')),
   memory: (chatId: string) => request<ChatMemory>(`/api/chats/${chatId}/memory`),
+  memoryMaterials: (chatId: string) => request<Schemas['MemoryMaterials']>(`/api/chats/${chatId}/memory/materials`),
 
   // Presets (source or chat scope)
   presets: (s: Scope) => request<Preset[]>(presetBase(s)),

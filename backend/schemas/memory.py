@@ -1,8 +1,8 @@
-"""Database-independent contracts for selecting chronological history."""
+"""Contracts of the memory pipeline: sources -> layout (numbers) -> rendered output."""
 
 from typing import Annotated, Literal
 
-from pydantic import Field, computed_field
+from pydantic import Field
 
 from backend.schemas.common import Contract, NonnegativeInt
 
@@ -40,12 +40,15 @@ class RoundSummaryMemory(Contract):
     summary: str
 
 
-class FullRoundMemory(Contract):
-    kind: Literal["round"] = "round"
+class RecentRound(Contract):
     id: str
     round_no: PositiveInt
     user_input: str
     ai_output: str
+
+
+class FullRoundMemory(RecentRound):
+    kind: Literal["round"] = "round"
 
 
 MemoryItem = Annotated[
@@ -53,16 +56,29 @@ MemoryItem = Annotated[
 ]
 
 
-class MemoryHistory(MemorySettings):
+class MemorySegment(Contract):
+    """A run of same-kind entries. `numbers` are episode positions or round numbers."""
+    kind: Literal["episode", "summary"]
+    numbers: list[PositiveInt]
+
+
+class MemoryLayout(Contract):
+    """The decided shape of history, with no text: `memory` in story order, then the full recent rounds."""
+    memory: list[MemorySegment]
+    recent_rounds: list[PositiveInt]
+
+
+class MemoryMaterials(Contract):
+    """What a writing preset receives. `memory` has no tags; the preset defines its own."""
+    memory: str
+    recent_rounds: list[RecentRound]
+
+
+class MemoryTimeline(MemorySettings):
+    """What the memory panel shows."""
     total_rounds: NonnegativeInt
     items: list[MemoryItem]
 
-    @computed_field
-    @property
-    def uses_compressed_history(self) -> bool:
-        """A preset can use this to decide whether to include First Message."""
-        return any(item.kind != "round" for item in self.items)
 
-
-class ChatMemory(MemoryHistory):
+class ChatMemory(MemoryTimeline):
     chat_id: str

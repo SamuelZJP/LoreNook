@@ -21,12 +21,11 @@ function build(materials) {
     message('model', fixed.openingModel);
     message('user', fixed.openingUser);
 
-    // Keep compressed items in their selected chronological order.
-    const history = materials.history.items.filter(item => item.kind !== 'round')
-        .map(item => item.summary).join('\n');
-    const first = materials.history.uses_compressed_history ? '' : materials.first_message;
-    let pending = fixed.historyPrefix + first + history;
-    for (const round of materials.history.items.filter(item => item.kind === 'round')) {
+    // The backend assembles memory; the preset only decides its tags and where it goes.
+    const memory = materials.memory ? '<memory>\n' + materials.memory + '\n</memory>' : '';
+    const first = materials.memory ? '' : materials.first_message;
+    let pending = fixed.historyPrefix + first + memory;
+    for (const round of materials.recent_rounds) {
         message('model', pending + '\n' + wrapInput(round.user_input));
         message('user', fixed.filler);
         // Preserve all accepted assistant tags when resending history.

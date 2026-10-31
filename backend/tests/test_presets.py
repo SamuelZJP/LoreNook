@@ -5,12 +5,14 @@ from pathlib import Path
 import pytest
 import yaml
 
-from backend.modules.memory.assembler import assemble_memory
+from backend.modules.memory.layout import plan_layout
+from backend.modules.memory.render import render_materials
+from backend.modules.memory.sources import MemorySources
 from backend.modules.presets.runtime import PresetRuntime
 from backend.repository.archive import ArchiveRepository
 from backend.repository.models import Character, Chat, Definition, WritingPreset
 from backend.repository.queries import Repository
-from backend.schemas.memory import ArchivedRound, EpisodeMemory
+from backend.schemas.memory import ArchivedRound, EpisodeMemory, MemorySettings
 from backend.schemas.presets import WritingMaterials
 from backend.shared.errors import PresetExecutionError
 from backend.tests.test_catalog_api import run_api
@@ -29,11 +31,13 @@ def materials(count=0, x=5, y=6, episodes=()):
     ranges = [EpisodeMemory(id=f"e{start}", start_round_id=f"r{start}", end_round_id=f"r{end}",
                             start_round_no=start, end_round_no=end, summary=f"情节{start}")
               for start, end in episodes]
+    settings = MemorySettings(recent_rounds=x, min_summaries=y)
+    sources = MemorySources.build(rounds, ranges)
     return WritingMaterials(
         character_name="角色", user_identity_name="身份", first_message="开场原文\r\n",
         character_definitions=[{"id": "d1", "order": 0, "content": "角色定义"}],
         user_definitions=[{"id": "d2", "order": 0, "content": "身份定义"}],
-        history=assemble_memory(rounds, ranges, recent_rounds=x, min_summaries=y),
+        **render_materials(plan_layout(sources, settings), sources).model_dump(),
         user_input=" 最新输入\r\n", state={"世界": {"日期": "第二天"}, "整数": 3, "布尔": True, "空": None},
     )
 
@@ -45,9 +49,7 @@ def response(text, name="game_content", finish="STOP"):
 
 
 def material_payload(value):
-    payload = value.model_dump(exclude={"state_yaml"})
-    payload["history"].pop("uses_compressed_history")
-    return payload
+    return value.model_dump(exclude={"state_yaml"})
 
 
 def test_runtime_preserves_json_and_detaches_mutations():
@@ -160,7 +162,7 @@ def test_example_rearranges_turns_and_materials(count, x, y, ranges, has_first):
     text = lambda item: item["parts"][0]["text"]
     all_text = "\n".join(text(item) for item in contents)
     assert (value.first_message in all_text) is has_first
-    full = [item for item in value.history.items if item.kind == "round"]
+    full = value.recent_rounds
     assert len(contents) == 6 + 2 * len(full)
     assert [item["role"] for item in contents] == ["model", "user"] * (3 + len(full))
     for i, item in enumerate(full):
@@ -168,8 +170,8 @@ def test_example_rearranges_turns_and_materials(count, x, y, ranges, has_first):
         assert text(contents[3 + 2 * i]) == "<填充>"
         assert text(contents[4 + 2 * i]).startswith(item.ai_output + "\n")
     assert text(contents[2 + 2 * len(full)]).endswith("<前缀>" + value.user_input + "<后缀>")
-    compressed = [item.summary for item in value.history.items if item.kind != "round"]
-    assert all(text(contents[2]).count(summary) == 1 for summary in compressed)
+    if value.memory:
+        assert text(contents[2]).count(f"<memory>\n{value.memory}\n</memory>") == 1
     assert value.state_yaml in text(contents[-2])
     assert yaml.safe_load(value.state_yaml) == value.state
     assert "角色定义\n身份定义" in body["systemInstruction"]["parts"][0]["text"]
@@ -271,7 +273,7 @@ def test_chat_preview_snapshot_and_archive_gate(database, chat):
         assert payload["preset_id"] == preset_id and payload["state_snapshot_id"]
         value = payload["request"]["body"]["materials"]
         assert value["character_definitions"] == [{"id": definition_id, "order": 0, "content": "年龄16"}]
-        assert value["history"]["items"] == [] and value["history"]["uses_compressed_history"] is False
+        assert value["memory"] == "" and value["recent_rounds"] == []
         assert value["first_message"] == "开场\r\n" and value["user_input"] == "输入\r\n"
         assert yaml.safe_load(value["state_yaml"]) == value["state"]
         # A copied preset is independently editable and cannot be deleted while selected.
@@ -290,7 +292,7 @@ def test_chat_preview_snapshot_and_archive_gate(database, chat):
         assert fresh["state_snapshot_id"] != payload["state_snapshot_id"]
         value = fresh["request"]["body"]["materials"]
         assert value["character_definitions"][0]["content"] == "年龄17"
-        assert value["history"]["items"][0]["ai_output"] == "<content>旧输出</content>"
+        assert value["recent_rounds"][0]["ai_output"] == "<content>旧输出</content>"
         # Template failure precedes build failure, and neither writes database results.
         definition_path = f"/api/chats/{chat[0]}/character/definitions/{definition_id}"
         await client.patch(definition_path, json={"content": "{{ missing }}"})

@@ -3,7 +3,6 @@
 from fastapi import APIRouter, Response
 
 from backend.api.dependencies import DatabaseDependency
-from backend.modules.chats.service import ChatService
 from backend.modules.definitions.service import DefinitionService
 from backend.repository.models import Character, UserIdentity
 from backend.repository.queries import Repository
@@ -19,7 +18,7 @@ def owner_routes(prefix: str, model: type[Character | UserIdentity], chat_local:
 
     def service(repository, owner_id):
         chat_id = owner_id if chat_local else None
-        record_id = ChatService(repository).owner_id(chat_id, model) if chat_local else owner_id
+        record_id = repository.owner_id(chat_id, model) if chat_local else owner_id
         owner = {"character_id": record_id} if model is Character else {"user_identity_id": record_id}
         return DefinitionService(repository, chat_id=chat_id, **owner)
 

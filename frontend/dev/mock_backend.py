@@ -121,7 +121,7 @@ def handler(request: httpx.Request) -> httpx.Response:
             patch = json.dumps([{"op": "replace", "path": "/世界/日期", "value": date}], ensure_ascii=False)
         text = f"<UpdateVariable><Analysis>模拟结算。</Analysis><JSONPatch>{patch}</JSONPatch></UpdateVariable>"
     elif step == "episode_summary":
-        text = json.dumps({"title": "模拟情节", "summary": "2026/10/19-2026/10/20—某地\n这是一段模拟的情节摘要。"},
+        text = json.dumps({"title": "模拟情节", "summary": "2026/10/19-2026/10/20—某地\n" + "这是一段模拟的情节摘要。" * 12},
                           ensure_ascii=False)
     else:
         text = "2026/10/19—08:00—某地\n这是一段模拟的回合摘要。"

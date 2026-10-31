@@ -11,7 +11,6 @@ from backend.illustrations.schemas import (
     ImageWorkflowPatch, ImageWorkflowRead, Subject,
 )
 from backend.illustrations.templates import default_template
-from backend.modules.chats.service import ChatService
 from backend.modules.media import MEDIA_NAME
 from backend.repository.models import Character, Chat, ModelConfig, UserIdentity
 from backend.repository.queries import Repository
@@ -116,9 +115,8 @@ class CastService:
 
     def copy_for_chat(self, session, chat_id: str, payload) -> None:
         """Chat-created hook: a chat gets its own copy, like the rest of the character card."""
-        service = ChatService(self.repository)
-        character_id = service.owner_id(chat_id, Character)
-        identity_id = service.owner_id(chat_id, UserIdentity)
+        character_id = self.repository.owner_id(chat_id, Character)
+        identity_id = self.repository.owner_id(chat_id, UserIdentity)
         for member in self._members(payload.character_id):
             self.repository.add(CastMember(character_id=character_id, order=member.order, name=member.name,
                                            appearance=member.appearance, reference_image=member.reference_image))
@@ -129,9 +127,8 @@ class CastService:
 
     def _subjects(self, chat_id: str) -> tuple[list[Subject], Subject, Subject]:
         """(cast, the character card itself, the user's persona)"""
-        service = ChatService(self.repository)
-        character = self.repository.get(Character, service.owner_id(chat_id, Character))
-        identity = self.repository.get(UserIdentity, service.owner_id(chat_id, UserIdentity))
+        character = self.repository.get(Character, self.repository.owner_id(chat_id, Character))
+        identity = self.repository.get(UserIdentity, self.repository.owner_id(chat_id, UserIdentity))
         cast = [Subject(id=m.id, name=m.name, appearance=m.appearance, reference_image=m.reference_image)
                 for m in self._members(character.id)]
         look = self.appearance(identity.id)

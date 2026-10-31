@@ -2,21 +2,19 @@
 
 from backend.llm.client import ModelClient
 from backend.llm.recording import recorded_workflow
-from backend.modules.chats.service import ChatService
 from backend.modules.models.service import ModelService
 from backend.modules.round_summary.generate import generate_summary
-from backend.repository.archive import ArchiveRepository
 from backend.repository.database import Database
 from backend.repository.models import Character, Round, UserIdentity
 from backend.repository.queries import Repository
 from backend.schemas.round_summary import RoundSummaryContext, RoundSummaryResult
-from backend.shared.errors import ConflictError, ModelCallError, ModelConfigurationError, RoundSummaryError
+from backend.shared.errors import ConflictError, RoundSummaryError
+from backend.workflows.archive_step import run_archive_step
 
 
 def _context(repository: Repository, chat_id: str, round_id: str, window: int) -> RoundSummaryContext:
-    service = ChatService(repository)
-    character = repository.get(Character, service.owner_id(chat_id, Character))
-    identity = repository.get(UserIdentity, service.owner_id(chat_id, UserIdentity))
+    character = repository.get(Character, repository.owner_id(chat_id, Character))
+    identity = repository.get(UserIdentity, repository.owner_id(chat_id, UserIdentity))
     record = repository.get_owned(Round, round_id, chat_id)
     latest = repository.latest_round(chat_id)
     if latest is None or latest.id != round_id or record.archive_step != "round_summary":
@@ -35,27 +33,16 @@ def _context(repository: Repository, chat_id: str, round_id: str, window: int) -
     )
 
 
-def _unchanged(repository: Repository, context: RoundSummaryContext, window: int) -> None:
-    current = _context(repository, context.chat_id, context.round_id, window)
-    if current != context or current.model_dump_json() != context.model_dump_json():
-        raise ConflictError("摘要生成期间输入已变化，请重新执行当前步骤")
-
-
 @recorded_workflow("round_summary")
 def run_round_summary(database: Database, client: ModelClient, chat_id: str, round_id: str, *,
                       recent_summaries: int = 3) -> RoundSummaryResult:
-    with database.read() as session:
-        context = _context(Repository(session), chat_id, round_id, recent_summaries)
-    try:
-        summary = generate_summary(context, client)
-    except (RoundSummaryError, ModelCallError, ModelConfigurationError) as error:
-        with database.transaction() as session:
-            repository = ArchiveRepository(session)
-            _unchanged(repository, context, recent_summaries)
-            repository.save_error(round_id, "round_summary", str(error)[:2000])
-        raise
-    with database.transaction() as session:
-        repository = ArchiveRepository(session)
-        _unchanged(repository, context, recent_summaries)
+    def save(repository, summary):
         repository.save_summary(round_id, summary)
         return RoundSummaryResult(chat_id=chat_id, round_id=round_id, summary=summary)
+
+    return run_archive_step(
+        database, round_id=round_id, step="round_summary",
+        load=lambda repository: _context(repository, chat_id, round_id, recent_summaries),
+        generate=lambda context: generate_summary(context, client), save=save,
+        failures=(RoundSummaryError,), changed_message="摘要生成期间输入已变化，请重新执行当前步骤",
+    )

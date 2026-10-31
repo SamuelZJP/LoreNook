@@ -13,17 +13,10 @@ class ChatService:
     def list(self) -> list[ChatRead]:
         return [ChatRead.model_validate(record) for record in self.repository.list_chats()]
 
-    def owner_id(self, chat_id: str, model: type[Character | UserIdentity]) -> str:
-        self.repository.get(Chat, chat_id)
-        records = self.repository.list_owned(model, chat_id)
-        if len(records) != 1:
-            raise ConflictError(f"Chat must have exactly one {model.__name__}")
-        return records[0].id
-
     def detail(self, chat_id: str) -> ChatDetail:
         chat = self.repository.get(Chat, chat_id)
-        character_id = self.owner_id(chat_id, Character)
-        identity_id = self.owner_id(chat_id, UserIdentity)
+        character_id = self.repository.owner_id(chat_id, Character)
+        identity_id = self.repository.owner_id(chat_id, UserIdentity)
         state = self.repository.latest_state(character_id)
         if state is None:
             raise ConflictError("Chat has no state snapshot")

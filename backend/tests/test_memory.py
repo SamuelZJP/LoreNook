@@ -1,14 +1,22 @@
 import pytest
 from pydantic import ValidationError
 
-from backend.modules.memory.assembler import assemble_memory
+from backend.modules.memory.layout import plan_layout
+from backend.modules.memory.render import render_materials, render_timeline
 from backend.modules.memory.service import MemoryService
+from backend.modules.memory.sources import MemorySources
 from backend.repository.archive import ArchiveRepository
 from backend.repository.models import Chat
 from backend.repository.queries import Repository
-from backend.schemas.memory import ArchivedRound, EpisodeMemory, MemoryHistory
+from backend.schemas.memory import ArchivedRound, EpisodeMemory, MemorySettings, MemoryTimeline
 from backend.shared.errors import ConflictError
 from backend.tests.test_catalog_api import run_api
+
+
+def assemble_memory(rounds, episodes, *, recent_rounds, min_summaries):
+    settings = MemorySettings(recent_rounds=recent_rounds, min_summaries=min_summaries)
+    sources = MemorySources.build(rounds, episodes)
+    return render_timeline(plan_layout(sources, settings), sources, settings)
 
 
 def rounds(count):
@@ -43,7 +51,6 @@ def test_without_episodes_keeps_all_history(count, x, y, summary_count, full_cou
     assert result.total_rounds == count
     assert [item.kind for item in result.items] == ["summary"] * summary_count + ["round"] * full_count
     assert coverage(result) == list(range(1, count + 1))
-    assert result.uses_compressed_history == (summary_count > 0)
 
 
 def test_design_example_and_serializable_contract():
@@ -52,9 +59,32 @@ def test_design_example_and_serializable_contract():
     assert [item.round_no for item in result.items if item.kind == "summary"] == list(range(9, 16))
     assert [item.round_no for item in result.items if item.kind == "round"] == list(range(16, 21))
     assert coverage(result) == list(range(1, 21))
-    payload = result.model_dump()
-    assert payload.pop("uses_compressed_history") is True
-    assert MemoryHistory.model_validate(payload) == result
+    assert MemoryTimeline.model_validate(result.model_dump()) == result
+
+
+def test_layout_is_plain_numbers_and_materials_render_from_it():
+    settings = MemorySettings(recent_rounds=5, min_summaries=6)
+    sources = MemorySources.build(rounds(20), [episode(1, 4), episode(5, 8), episode(9, 12)])
+    layout = plan_layout(sources, settings)
+    assert layout.model_dump() == {
+        "memory": [{"kind": "episode", "numbers": [1, 2]}, {"kind": "summary", "numbers": list(range(9, 16))}],
+        "recent_rounds": [16, 17, 18, 19, 20],
+    }
+    materials = render_materials(layout, sources)
+    assert materials.memory == "\n".join(
+        [" 情节1—4\r\n", " 情节5—8\r\n", *(f" 摘要{number}\r\n" for number in range(9, 16))])
+    assert [item.round_no for item in materials.recent_rounds] == [16, 17, 18, 19, 20]
+    assert materials.recent_rounds[0].ai_output == rounds(20)[15].ai_output
+
+
+def test_uncovered_gap_between_episodes_stays_in_story_order():
+    settings = MemorySettings(recent_rounds=2, min_summaries=2)
+    sources = MemorySources.build(rounds(10), [episode(2, 3), episode(5, 6)])
+    assert [segment.model_dump() for segment in plan_layout(sources, settings).memory] == [
+        {"kind": "summary", "numbers": [1]}, {"kind": "episode", "numbers": [1]},
+        {"kind": "summary", "numbers": [4]}, {"kind": "episode", "numbers": [2]},
+        {"kind": "summary", "numbers": [7, 8]},
+    ]
 
 
 @pytest.mark.parametrize("count,x,y,ranges,selected_ids", [
@@ -120,7 +150,6 @@ def test_missing_summary_is_error_only_if_used():
     with pytest.raises(ConflictError):
         assemble_memory(source, [], recent_rounds=1, min_summaries=0)
     assert assemble_memory(source, [episode(1, 2)], recent_rounds=1, min_summaries=0).items[0].kind == "episode"
-    assert not assemble_memory(source, [], recent_rounds=3, min_summaries=0).uses_compressed_history
 
 
 def seed_history(database, chat_id):
@@ -163,7 +192,6 @@ def test_service_and_http_use_chat_settings_preserve_database_and_exclude_pendin
         assert response.status_code == 200, response.text
         payload = response.json()
         assert payload["chat_id"] == chat[0] and payload["total_rounds"] == 20
-        assert payload["uses_compressed_history"] is True
         assert [item["kind"] for item in payload["items"]] == ["episode"] * 2 + ["summary"] * 7 + ["round"] * 5
         assert payload["items"][-1]["ai_output"] == "<think>思考</think>\r\n<content>20</content>\n"
         assert payload["items"][-1]["id"] == ids[-1]
@@ -172,7 +200,6 @@ def test_service_and_http_use_chat_settings_preserve_database_and_exclude_pendin
         updated = await client.patch(f"/api/chats/{chat[0]}", json={"recent_rounds": 20, "min_summaries": 0})
         assert updated.status_code == 200
         fresh = (await client.get(path)).json()
-        assert fresh["uses_compressed_history"] is False
         assert len(fresh["items"]) == 20 and all(item["kind"] == "round" for item in fresh["items"])
     run_api(database, scenario)
 
@@ -181,14 +208,14 @@ def test_service_and_http_use_chat_settings_preserve_database_and_exclude_pendin
         assert [(r.id, r.user_input, r.ai_output, r.summary, r.archive_step, r.archive_error)
                 for r in repo.rounds(chat[0])] == before
         assert [(e.id, e.summary) for e in repo.episodes(chat[0])] == episode_before
-        result = MemoryService(repo).assemble(chat[0])
+        result = MemoryService(repo).timeline(chat[0])
     assert result.total_rounds == 20  # independent of the closed Session
 
 
 def test_empty_chat_and_http_conflict_on_corrupt_episode(database, chat):
     with database.read() as session:
-        result = MemoryService(Repository(session)).assemble(chat[0])
-        assert result.items == [] and result.uses_compressed_history is False
+        result = MemoryService(Repository(session)).timeline(chat[0])
+        assert result.items == []
     seed_history(database, chat[0])
     with database.transaction() as session:
         repo = Repository(session)

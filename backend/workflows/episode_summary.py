@@ -2,7 +2,6 @@
 
 from backend.llm.client import ModelClient
 from backend.llm.recording import recorded_workflow
-from backend.modules.chats.service import ChatService
 from backend.modules.definitions.renderer import substitute_names
 from backend.modules.episode_summary.generate import generate_episode_summary
 from backend.modules.models.service import ModelService
@@ -10,14 +9,14 @@ from backend.repository.archive import ArchiveRepository
 from backend.repository.database import Database
 from backend.repository.models import Character, Round, UserIdentity
 from backend.schemas.episode_summary import EpisodeBridgeRound, EpisodeRead, EpisodeSourceRound, EpisodeSummaryContext, EpisodeSummaryResult
-from backend.shared.errors import ConflictError, EpisodeSummaryError, ModelCallError, ModelConfigurationError
+from backend.shared.errors import ConflictError, EpisodeSummaryError
+from backend.workflows.archive_step import run_archive_step
 
 
 def _context(repository: ArchiveRepository, chat_id: str, round_id: str) -> EpisodeSummaryContext:
     record = repository.get_owned(Round, round_id, chat_id)
-    service = ChatService(repository)
-    character = repository.get(Character, service.owner_id(chat_id, Character))
-    identity = repository.get(UserIdentity, service.owner_id(chat_id, UserIdentity))
+    character = repository.get(Character, repository.owner_id(chat_id, Character))
+    identity = repository.get(UserIdentity, repository.owner_id(chat_id, UserIdentity))
     latest = repository.latest_round_header(chat_id)
     if latest is None or latest.id != round_id or record.archive_step != "episode_summary":
         raise ConflictError("只能对最新回合的 episode_summary 步骤生成情节摘要")
@@ -50,26 +49,15 @@ def _context(repository: ArchiveRepository, chat_id: str, round_id: str) -> Epis
     )
 
 
-def _unchanged(repository: ArchiveRepository, context: EpisodeSummaryContext) -> None:
-    current = _context(repository, context.chat_id, context.round_id)
-    if current != context or current.model_dump_json() != context.model_dump_json():
-        raise ConflictError("情节摘要生成期间输入已变化，请重新执行当前步骤")
-
-
 @recorded_workflow("episode_summary")
 def run_episode_summary(database: Database, client: ModelClient, chat_id: str, round_id: str) -> EpisodeSummaryResult:
-    with database.read() as session:
-        context = _context(ArchiveRepository(session), chat_id, round_id)
-    try:
-        generated = generate_episode_summary(context, client)
-    except (EpisodeSummaryError, ModelCallError, ModelConfigurationError) as error:
-        with database.transaction() as session:
-            repository = ArchiveRepository(session)
-            _unchanged(repository, context)
-            repository.save_error(round_id, "episode_summary", str(error)[:2000])
-        raise
-    with database.transaction() as session:
-        repository = ArchiveRepository(session)
-        _unchanged(repository, context)
+    def save(repository, generated):
         saved = repository.save_episode(round_id, generated.summary, title=generated.title)
         return EpisodeSummaryResult(chat_id=chat_id, round_id=round_id, episode=EpisodeRead.model_validate(saved))
+
+    return run_archive_step(
+        database, round_id=round_id, step="episode_summary",
+        load=lambda repository: _context(repository, chat_id, round_id),
+        generate=lambda context: generate_episode_summary(context, client), save=save,
+        failures=(EpisodeSummaryError,), changed_message="情节摘要生成期间输入已变化，请重新执行当前步骤",
+    )

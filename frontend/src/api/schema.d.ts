@@ -421,6 +421,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chats/{chat_id}/memory/materials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Materials */
+        get: operations["read_materials_api_chats__chat_id__memory_materials_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/writing-presets": {
         parameters: {
             query?: never;
@@ -1367,11 +1384,8 @@ export interface components {
              * @enum {string}
              */
             action: "create" | "update" | "delete";
-            /**
-             * Table
-             * @enum {string}
-             */
-            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes" | "image_workflows" | "chat_illustration_settings" | "cast_members" | "identity_appearances" | "illustrations";
+            /** Table */
+            table: string;
             /** Key */
             key: {
                 [key: string]: string;
@@ -1384,11 +1398,8 @@ export interface components {
              * @enum {string}
              */
             action: "create";
-            /**
-             * Table
-             * @enum {string}
-             */
-            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes" | "image_workflows" | "chat_illustration_settings" | "cast_members" | "identity_appearances" | "illustrations";
+            /** Table */
+            table: string;
             /** Values */
             values: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -1401,11 +1412,8 @@ export interface components {
              * @enum {string}
              */
             action: "delete";
-            /**
-             * Table
-             * @enum {string}
-             */
-            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes" | "image_workflows" | "chat_illustration_settings" | "cast_members" | "identity_appearances" | "illustrations";
+            /** Table */
+            table: string;
             /** Key */
             key: {
                 [key: string]: string;
@@ -1424,11 +1432,8 @@ export interface components {
         };
         /** AdminTableInfo */
         AdminTableInfo: {
-            /**
-             * Name
-             * @enum {string}
-             */
-            name: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes" | "image_workflows" | "chat_illustration_settings" | "cast_members" | "identity_appearances" | "illustrations";
+            /** Name */
+            name: string;
             /** Primary Key */
             primary_key: string[];
             /** Row Schema */
@@ -1443,11 +1448,8 @@ export interface components {
              * @enum {string}
              */
             action: "update";
-            /**
-             * Table
-             * @enum {string}
-             */
-            table: "chats" | "characters" | "character_scenes" | "user_identities" | "definitions" | "writing_presets" | "model_configs" | "chat_model_bindings" | "rounds" | "state_snapshots" | "episodes" | "image_workflows" | "chat_illustration_settings" | "cast_members" | "identity_appearances" | "illustrations";
+            /** Table */
+            table: string;
             /** Key */
             key: {
                 [key: string]: string;
@@ -1691,11 +1693,6 @@ export interface components {
             items: (components["schemas"]["EpisodeMemory"] | components["schemas"]["RoundSummaryMemory"] | components["schemas"]["FullRoundMemory"])[];
             /** Chat Id */
             chat_id: string;
-            /**
-             * Uses Compressed History
-             * @description A preset can use this to decide whether to include First Message.
-             */
-            readonly uses_compressed_history: boolean;
         };
         /** ChatPatch */
         ChatPatch: {
@@ -1924,11 +1921,6 @@ export interface components {
         };
         /** FullRoundMemory */
         FullRoundMemory: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            kind: "round";
             /** Id */
             id: string;
             /** Round No */
@@ -1937,6 +1929,11 @@ export interface components {
             user_input: string;
             /** Ai Output */
             ai_output: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "round";
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -2179,16 +2176,15 @@ export interface components {
             /** Url */
             url: string;
         };
-        /** MemoryHistory */
-        MemoryHistory: {
+        /**
+         * MemoryMaterials
+         * @description What a writing preset receives. `memory` has no tags; the preset defines its own.
+         */
+        MemoryMaterials: {
+            /** Memory */
+            memory: string;
             /** Recent Rounds */
-            recent_rounds: number;
-            /** Min Summaries */
-            min_summaries: number;
-            /** Total Rounds */
-            total_rounds: number;
-            /** Items */
-            items: (components["schemas"]["EpisodeMemory"] | components["schemas"]["RoundSummaryMemory"] | components["schemas"]["FullRoundMemory"])[];
+            recent_rounds: components["schemas"]["RecentRound"][];
         };
         /** ModelConfigCreate */
         ModelConfigCreate: {
@@ -2296,6 +2292,17 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** RecentRound */
+        RecentRound: {
+            /** Id */
+            id: string;
+            /** Round No */
+            round_no: number;
+            /** User Input */
+            user_input: string;
+            /** Ai Output */
+            ai_output: string;
         };
         /** ResolvedDefinition */
         ResolvedDefinition: {
@@ -2496,6 +2503,10 @@ export interface components {
         };
         /** WritingMaterials */
         WritingMaterials: {
+            /** Memory */
+            memory: string;
+            /** Recent Rounds */
+            recent_rounds: components["schemas"]["RecentRound"][];
             /** First Message */
             first_message: string;
             /** Character Name */
@@ -2506,7 +2517,6 @@ export interface components {
             character_definitions?: components["schemas"]["ResolvedDefinition"][];
             /** User Definitions */
             user_definitions?: components["schemas"]["ResolvedDefinition"][];
-            history: components["schemas"]["MemoryHistory"];
             /** User Input */
             user_input: string;
             /** State */
@@ -4022,6 +4032,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChatMemory"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_materials_api_chats__chat_id__memory_materials_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryMaterials"];
                 };
             };
             /** @description Validation Error */

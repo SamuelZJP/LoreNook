@@ -1,1 +1,1 @@
-"""History selection, independent of model calls and request packaging."""
+"""History for writing: sources -> layout (plain numbers) -> render (text). Entry point: MemoryService."""

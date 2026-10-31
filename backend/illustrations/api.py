@@ -12,7 +12,6 @@ from backend.illustrations.schemas import (
 )
 from backend.illustrations.service import CastService, IllustrationService, ImageWorkflowService
 from backend.illustrations.templates import IMAGE_TO_IMAGE, TEXT_TO_IMAGE
-from backend.modules.chats.service import ChatService
 from backend.repository.models import Character, Chat, UserIdentity
 from backend.repository.queries import Repository
 from backend.shared.errors import NotFoundError
@@ -85,11 +84,11 @@ cast = APIRouter(prefix="/api", tags=["illustration-cast"])
 
 
 def _chat_character(repository: Repository, chat_id: str) -> str:
-    return ChatService(repository).owner_id(chat_id, Character)
+    return repository.owner_id(chat_id, Character)
 
 
 def _chat_identity(repository: Repository, chat_id: str) -> str:
-    return ChatService(repository).owner_id(chat_id, UserIdentity)
+    return repository.owner_id(chat_id, UserIdentity)
 
 
 def _library_character(repository: Repository, character_id: str) -> str:

@@ -101,7 +101,17 @@ State is free-form JSON, but top-level `世界` is required:
 
 ## Memory assembly
 
-Writing history uses three representations, oldest to newest: **episodes → round summaries → full rounds**. Each archived round appears in exactly one.
+History uses three representations, oldest to newest: **episodes → round summaries → full rounds**. Each archived round appears in exactly one.
+
+The first two are `<memory>`, the distant and earlier past, assembled by the backend. The full rounds are `recent_rounds`, separate from it. Everything is decided first as plain numbers and only then rendered:
+
+```text
+sources (validated records) → layout (episode and round numbers, no text) → render (text)
+```
+
+```python
+MemoryLayout(memory=[episode [1, 2], summary [9, 10, …, 15]], recent_rounds=[16, 17, 18, 19, 20])
+```
 
 With `T` archived rounds, `X` = chat's `recent_rounds`, `Y` = `min_summaries`:
 
@@ -129,12 +139,15 @@ function build(materials) { return {api_type: 'google_generate_content', body: {
 function parse(response)  { return 'full AI output text'; }  // throw Error to fail
 ```
 
-`materials`: `character_name`, `user_identity_name`, `character_definitions`, `user_definitions`, `first_message`, `history` (`items`, `uses_compressed_history`, …), `user_input`, `state`, `state_yaml`.
+`materials`: `character_name`, `user_identity_name`, `character_definitions`, `user_definitions`, `first_message`, `memory`, `recent_rounds`, `user_input`, `state`, `state_yaml`.
+
+- `memory` is finished text with no tags, empty when there is nothing older than the recent rounds. The preset defines the `<memory>` tags and placement; it never assembles memory itself.
+- `recent_rounds` is a list of `{id, round_no, user_input, ai_output}`, so the preset can build whatever structure it wants from them.
 
 - `user_input` ends with a `<instruction>` block when the user adds a temporary instruction. It is plot guidance for that one request: never saved, and absent from history, summaries and state updates.
 - The preset decides roles, message layout, whether to send First Message, and which stored tags to resend. The stored AI output keeps all its tags.
 - A custom `<think>` tag is ordinary text, unrelated to a model's native thinking output.
-- Example: `backend/modules/presets/examples/google_tool.js` — forces a `game_content(content)` tool call to carry the output, requires `<content>` and a report tag, and includes First Message until compressed history kicks in.
+- Example: `backend/modules/presets/examples/google_tool.js` — forces a `game_content(content)` tool call to carry the output, requires `<content>` and a report tag, and includes First Message until `memory` is non-empty.
 
 ## Model calls
 
@@ -148,7 +161,7 @@ function parse(response)  { return 'full AI output text'; }  // throw Error to f
 
 An optional illustration per archived round: a model call turns the round into an image prompt, a local ComfyUI renders it, the chat shows it. Only locally deployed ComfyUI is supported.
 
-It is a separate feature: `backend/illustrations/` and `frontend/src/features/illustrations/`. The feature depends on the core, never the reverse. The core connects to it only at `main.py`, the generic hooks in `shared/hooks.py` (round archived, chat created, chat deleted), the migration environment, and the data-management table registry. On the frontend, core views place a few of its components and otherwise know nothing about it. It keeps its own tables and endpoints; chat responses don't include it.
+It is a separate feature: `backend/illustrations/` and `frontend/src/features/illustrations/`. The feature depends on the core, never the reverse. The core connects to it only through the list in `backend/features.py` and the generic hooks in `shared/hooks.py` (round archived, chat created, chat deleted). The feature registers its own tables with data management. On the frontend, core views place a few of its components and otherwise know nothing about it. It keeps its own tables and endpoints; chat responses don't include it.
 
 ### Image workflows
 

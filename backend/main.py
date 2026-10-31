@@ -2,8 +2,6 @@
 
 from contextlib import asynccontextmanager
 
-from concurrent.futures import Executor
-
 from fastapi import FastAPI
 import httpx
 
@@ -23,7 +21,7 @@ from backend.api.admin import router as admin_router
 from backend.api.media import router as media_router
 from backend.api.errors import register_error_handlers
 from backend.config import Settings
-from backend.illustrations import feature as illustrations
+from backend.features import FEATURES
 from backend.llm.client import ModelClient
 from backend.modules.media import MediaStorage
 from backend.modules.state.initial import InitialStateFactory
@@ -37,9 +35,7 @@ def create_app(
     initial_state_factory: InitialStateFactory = python_initial_state,
     *, llm_transport: httpx.BaseTransport | None = None,
     state_validator: StateValidator = validate_state,
-    comfyui_transport: httpx.BaseTransport | None = None,
-    comfyui_connect=None,
-    illustration_executor: Executor | None = None,
+    **feature_options,
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -56,13 +52,12 @@ def create_app(
         app.state.model_client = client
         app.state.media = MediaStorage(configuration.resolved_media_directory())
         app.state.hooks = AppHooks()
-        stop_illustrations = illustrations.start(app, configuration, database, client,
-                                                 comfyui_transport=comfyui_transport, comfyui_connect=comfyui_connect,
-                                                 executor=illustration_executor)
+        stops = [feature.start(app, configuration, database, client, **feature_options) for feature in FEATURES]
         try:
             yield
         finally:
-            stop_illustrations()
+            for stop in reversed(stops):
+                stop()
             client.close()
             database.dispose()
 
@@ -82,7 +77,8 @@ def create_app(
     app.include_router(archive_router)
     app.include_router(admin_router)
     app.include_router(media_router)
-    illustrations.install(app)
+    for feature in FEATURES:
+        feature.install(app)
 
     @app.get("/health", tags=["health"])
     def health() -> dict[str, str]:

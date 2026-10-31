@@ -49,7 +49,7 @@ def delete(chat_id: str, request: Request, database: DatabaseDependency):
 def read_character(chat_id: str, database: DatabaseDependency):
     with database.read() as session:
         repository = Repository(session)
-        character_id = ChatService(repository).owner_id(chat_id, Character)
+        character_id = repository.owner_id(chat_id, Character)
         return CharacterService(repository).read(character_id, chat_id)
 
 
@@ -57,7 +57,7 @@ def read_character(chat_id: str, database: DatabaseDependency):
 def update_character(chat_id: str, payload: CharacterPatch, request: Request, database: DatabaseDependency):
     with database.transaction() as session:
         repository = Repository(session)
-        character_id = ChatService(repository).owner_id(chat_id, Character)
+        character_id = repository.owner_id(chat_id, Character)
         return CharacterService(repository, request.app.state.initial_state_factory).update(character_id, payload, chat_id)
 
 
@@ -65,7 +65,7 @@ def update_character(chat_id: str, payload: CharacterPatch, request: Request, da
 def read_identity(chat_id: str, database: DatabaseDependency):
     with database.read() as session:
         repository = Repository(session)
-        identity_id = ChatService(repository).owner_id(chat_id, UserIdentity)
+        identity_id = repository.owner_id(chat_id, UserIdentity)
         return IdentityService(repository).read(identity_id, chat_id)
 
 
@@ -73,5 +73,5 @@ def read_identity(chat_id: str, database: DatabaseDependency):
 def update_identity(chat_id: str, payload: IdentityPatch, database: DatabaseDependency):
     with database.transaction() as session:
         repository = Repository(session)
-        identity_id = ChatService(repository).owner_id(chat_id, UserIdentity)
+        identity_id = repository.owner_id(chat_id, UserIdentity)
         return IdentityService(repository).update(identity_id, payload, chat_id)

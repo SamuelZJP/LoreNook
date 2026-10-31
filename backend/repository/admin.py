@@ -1,11 +1,8 @@
-"""Explicit table registry and parameterized raw operations for data management."""
+"""Explicit table registry and parameterized raw operations for data management. Features add tables via modules/admin/registry.py."""
 
 from sqlalchemy import and_, delete, insert, select, text, update
 from sqlalchemy.orm import Session
 
-from backend.illustrations.models import (
-    CastMember, ChatIllustrationSettings, IdentityAppearance, Illustration, ImageWorkflow,
-)
 from backend.repository.models import (
     Character, CharacterScene, Chat, ChatModelBinding, Definition, Episode, ModelConfig, Round,
     StateSnapshot, UserIdentity, WritingPreset,
@@ -15,8 +12,6 @@ from backend.shared.errors import AdminDataError, ConflictError, NotFoundError
 TABLES = {model.__tablename__: model.__table__ for model in (
     Chat, Character, CharacterScene, UserIdentity, Definition, WritingPreset, ModelConfig, ChatModelBinding,
     Round, StateSnapshot, Episode,
-    # Illustration feature
-    ImageWorkflow, ChatIllustrationSettings, CastMember, IdentityAppearance, Illustration,
 )}
 
 

@@ -5,14 +5,13 @@ from dataclasses import dataclass
 
 from pydantic import JsonValue
 
-from backend.modules.chats.service import ChatService
 from backend.modules.definitions.renderer import DefinitionRenderer, substitute_names
 from backend.modules.definitions.storage import DefinitionStorage
 from backend.modules.memory.service import MemoryService
 from backend.repository.models import Character, Chat, UserIdentity, WritingPreset
 from backend.repository.queries import Repository
 from backend.schemas.catalog import DefinitionRead
-from backend.schemas.memory import MemoryHistory
+from backend.schemas.memory import MemoryMaterials
 from backend.schemas.presets import WritingMaterials
 from backend.shared.errors import ConflictError
 
@@ -30,7 +29,7 @@ class WritingSnapshot:
     state: dict[str, JsonValue]
     character_definitions: list[DefinitionRead]
     user_definitions: list[DefinitionRead]
-    history: MemoryHistory
+    memory: MemoryMaterials
 
 
 def collect_writing_snapshot(repository: Repository, chat_id: str) -> WritingSnapshot:
@@ -42,14 +41,12 @@ def collect_writing_snapshot(repository: Repository, chat_id: str) -> WritingSna
     if chat.writing_preset_id is None:
         raise ConflictError("聊天尚未选择写作预设")
     preset = repository.get_owned(WritingPreset, chat.writing_preset_id, chat_id)
-    service = ChatService(repository)
-    character = repository.get(Character, service.owner_id(chat_id, Character))
-    identity = repository.get(UserIdentity, service.owner_id(chat_id, UserIdentity))
+    character = repository.get(Character, repository.owner_id(chat_id, Character))
+    identity = repository.get(UserIdentity, repository.owner_id(chat_id, UserIdentity))
     state = repository.latest_state(character.id)
     if state is None:
         raise ConflictError("Chat has no state snapshot")
     storage = DefinitionStorage(repository)
-    history = MemoryService(repository).assemble(chat_id)
     return WritingSnapshot(
         chat_id=chat_id, preset_id=preset.id, source=preset.source,
         state_snapshot_id=state.id, based_on_round_id=latest.id if latest else None,
@@ -57,7 +54,7 @@ def collect_writing_snapshot(repository: Repository, chat_id: str) -> WritingSna
         first_message=repository.opening_scene(character.id).first_message, state=deepcopy(state.content),
         character_definitions=storage.read(character_id=character.id),
         user_definitions=storage.read(user_identity_id=identity.id),
-        history=MemoryHistory.model_validate(history.model_dump(exclude={"chat_id", "uses_compressed_history"})),
+        memory=MemoryService(repository).materials(chat_id),
     )
 
 
@@ -76,6 +73,6 @@ def resolve_writing_materials(snapshot: WritingSnapshot, user_input: str, instru
                                             snapshot.state, **names)
     return WritingMaterials(
         character_name=snapshot.character_name, user_identity_name=snapshot.user_identity_name,
-        first_message=substitute_names(snapshot.first_message, **names), state=snapshot.state, history=snapshot.history,
-        user_input=with_instruction(user_input, instruction), **resolved.model_dump(),
+        first_message=substitute_names(snapshot.first_message, **names), state=snapshot.state,
+        user_input=with_instruction(user_input, instruction), **snapshot.memory.model_dump(), **resolved.model_dump(),
     )
