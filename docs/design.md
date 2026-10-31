@@ -133,7 +133,7 @@ memory=[episode [1, 2, 3], summary [15, 16, 17]]
 memory=[episode [1], summary [4], round [5], summary [6], episode [3], summary [15], round [16], summary [17]]
 ```
 
-- **Recall basis**: the latest D complete rounds (recall depth, per chat) plus the latest input. A complete round is `<round_1><user_input></user_input><content></content></round_1>`, which is also how an expanded round appears in memory.
+- **Recall basis**: the latest D complete rounds (recall depth, per chat) plus the latest input. A complete round is a `日期—时间—地点` header taken from the state the round ended in, then `<用户名>` holding the input and `<plot>` holding the story body, separated by blank lines. An empty location or input is left out. This is also how an expanded round appears in memory, with a blank line before and after it.
 - **Two passes**, each judging one kind only. Pass 1 judges episodes and returns the IDs to expand. Pass 2 judges summaries: the original ones plus those just expanded. A pass with no candidates makes no call.
 - **Criterion**: memories that may be relevant to the plot's development. Summaries are judged far more strictly than episodes.
 - **Hard limits** per pass, default 2 episodes and 5 summaries. Each is stated in that pass's prompt, then enforced by keeping the first IDs the model returned, so the prompt asks for most important first. A limit of 0 skips the pass.
@@ -162,7 +162,7 @@ function parse(response)  { return 'full AI output text'; }  // throw Error to f
 
 `materials`: `character_name`, `user_identity_name`, `character_definitions`, `user_definitions`, `first_message`, `memory`, `recent_rounds`, `user_input`, `state`, `state_yaml`.
 
-- `memory` is finished text with no tags, empty when there is nothing older than the recent rounds. It may contain expanded rounds. The preset defines the `<memory>` tags and placement; it never assembles memory itself.
+- `memory` is finished text with no tags, empty when there is nothing older than the recent rounds. An episode with a title shows `【标题】` on the line after its date and location. It may contain expanded rounds. The preset defines the `<memory>` tags and placement; it never assembles memory itself.
 - `recent_rounds` is a list of `{id, round_no, user_input, ai_output}`, so the preset can build whatever structure it wants from them.
 
 - `user_input` ends with a `<instruction>` block when the user adds a temporary instruction. It is plot guidance for that one request: never saved, and absent from history, summaries and state updates.

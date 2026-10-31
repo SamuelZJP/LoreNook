@@ -70,7 +70,7 @@ def test_layout_is_plain_numbers_and_materials_render_from_it():
         "memory": [{"kind": "episode", "numbers": [1, 2]}, {"kind": "summary", "numbers": list(range(9, 16))}],
         "recent_rounds": [16, 17, 18, 19, 20],
     }
-    materials = render_materials(layout, sources)
+    materials = render_materials(layout, sources, "我")
     assert materials.memory == "\n".join(
         [" 情节1—4\r\n", " 情节5—8\r\n", *(f" 摘要{number}\r\n" for number in range(9, 16))])
     assert [item.round_no for item in materials.recent_rounds] == [16, 17, 18, 19, 20]
@@ -160,7 +160,7 @@ def seed_history(database, chat_id):
             record = repo.create_round(chat_id, f" 输入{number}\r\n",
                                        f"<think>思考</think>\r\n<content>{number}</content>\n")
             ids.append(record.id)
-            repo.save_state(record.id, {"序号": number})
+            repo.save_state(record.id, {"世界": {"日期": "2026-10-19", "时间": f"{number:02}:00", "地点": "教室"}, "序号": number})
             repo.save_summary(record.id, f" 摘要{number}\r\n")
             if number in (5, 9, 13):
                 repo.save_decision(record.id, start_round_id=ids[number - 5], end_round_id=ids[number - 2])

@@ -4,7 +4,7 @@ import httpx
 import pytest
 
 from backend.modules.memory.layout import expand_layout, plan_layout, validate_layout
-from backend.modules.memory.render import render_materials
+from backend.modules.memory.render import render_episode, render_materials, render_round
 from backend.modules.memory.service import MemoryService
 from backend.modules.memory.sources import MemorySources
 from backend.modules.presets.runtime import PresetRuntime
@@ -50,10 +50,44 @@ def test_expansion_only_refines_in_place():
 
 def test_rendered_memory_keeps_order_and_uses_the_round_structure():
     layout, sources = planned()
-    text = render_materials(expand_layout(layout, sources, summaries={11}), sources).memory
-    round_text = "<round_11><user_input> 输入11\r\n</user_input><content>正文11</content></round_11>"
+    text = render_materials(expand_layout(layout, sources, summaries={11}), sources, "小明").memory
+    round_text = "\n\n<小明>\n输入11\n</小明>\n\n<plot>\n正文11\n</plot>\n\n"
     assert text.index("摘要10") < text.index(round_text) < text.index("摘要12")
     assert "<think>" not in text and "摘要11" not in text
+
+
+def test_rendered_round_has_a_time_and_place_header():
+    record = rounds(1)[0].model_copy(update={"world": {"日期": "2024-11-14", "星期": "星期四", "时间": "17:53", "地点": "校门外"}})
+    assert render_round(record, "小明") == "2024-11-14—17:53—校门外\n\n<小明>\n输入1\n</小明>\n\n<plot>\n正文1\n</plot>"
+
+
+def test_rendered_round_leaves_out_what_is_empty():
+    record = rounds(1)[0].model_copy(update={"user_input": " \n", "world": {"日期": "2024-11-14", "时间": "17:53", "地点": ""}})
+    assert render_round(record, "小明") == "2024-11-14—17:53\n\n<plot>\n正文1\n</plot>"
+    assert render_round(rounds(1)[0], "小明") == "<小明>\n输入1\n</小明>\n\n<plot>\n正文1\n</plot>", "no world, no header"
+
+
+@pytest.mark.parametrize("title,summary,expected", [
+    ("初访图书馆", " 2026/10/19—图书馆\r\n正文\n第二段\n", "2026/10/19—图书馆\n【初访图书馆】\n正文\n第二段"),
+    ("初访图书馆", "2026/10/19—图书馆。正文", "【初访图书馆】\n2026/10/19—图书馆。正文"),
+    ("", " 2026/10/19—图书馆\n正文\n", " 2026/10/19—图书馆\n正文\n"),
+])
+def test_unexpanded_episode_shows_its_title_below_the_header(title, summary, expected):
+    record = episode(1, 3).model_copy(update={"title": title, "summary": summary})
+    assert render_episode(record) == expected
+
+
+def test_episode_title_reaches_the_rendered_memory():
+    records = [episode(1, 3).model_copy(update={"title": "标题", "summary": "2026/10/19—某地\n情节"})]
+    sources = MemorySources.build(rounds(14), records)
+    text = render_materials(plan_layout(sources, SETTINGS), sources, "小明").memory
+    assert text.startswith("2026/10/19—某地\n【标题】\n情节\n")
+
+
+def test_adjacent_expanded_rounds_are_separated_by_one_blank_line():
+    layout, sources = planned()
+    text = render_materials(expand_layout(layout, sources, summaries={10, 11}), sources, "小明").memory
+    assert "<plot>\n正文10\n</plot>\n\n<小明>\n输入11" in text
 
 
 def test_round_without_valid_content_tag_keeps_its_text():
@@ -61,8 +95,8 @@ def test_round_without_valid_content_tag_keeps_its_text():
     records[0].ai_output = "手工改过的正文"
     sources = MemorySources.build(records, [])
     layout = plan_layout(sources, MemorySettings(recent_rounds=1, min_summaries=0))
-    text = render_materials(expand_layout(layout, sources, summaries={1}), sources).memory
-    assert "<content>手工改过的正文</content>" in text
+    text = render_materials(expand_layout(layout, sources, summaries={1}), sources, "小明").memory
+    assert "<plot>\n手工改过的正文\n</plot>" in text
 
 
 @pytest.mark.parametrize("memory,recent", [
@@ -81,9 +115,9 @@ def test_layout_that_no_longer_fits_is_a_conflict(memory, recent):
 def test_example_preset_needs_no_change_for_expanded_rounds():
     layout, sources = planned()
     materials = WritingMaterials(first_message="开场", character_name="角色", user_identity_name="我", user_input="输入", state={},
-                                 **render_materials(expand_layout(layout, sources, summaries={11}), sources).model_dump())
+                                 **render_materials(expand_layout(layout, sources, summaries={11}), sources, "我").model_dump())
     contents = PresetRuntime().build(EXAMPLE, materials).body["contents"]
-    assert "<round_11>" in contents[2]["parts"][0]["text"]
+    assert "<plot>\n正文11\n</plot>" in contents[2]["parts"][0]["text"]
     assert len(contents) == 6 + 2 * 2, "only recent rounds are dialogue turns"
 
 
@@ -152,10 +186,11 @@ def test_two_passes_expand_and_writing_uses_the_layout(database, writing_chat): 
         assert [item["kind"] for item in result["timeline"]["items"]][:4] == ["episode", "summary", "round", "summary"]
         write = await client.post(root + "/writing", json={**request, "layout": result["layout"]})
         assert write.status_code == 200, write.text
-        assert "<round_6>" in writes[0]["memory"] and "<round_9>" in writes[0]["memory"]
+        assert "2026-10-19—06:00—教室\n\n<" in writes[0]["memory"] and "<plot>\n6\n</plot>" in writes[0]["memory"]
+        assert "<plot>\n9\n</plot>" in writes[0]["memory"]
         assert [item["round_no"] for item in writes[0]["recent_rounds"]] == [16, 17, 18, 19, 20]
         preview = await client.post(root + "/writing-preview", json={**request, "layout": result["layout"]})
-        assert "<round_6>" in json.loads(preview.json()["request"]["body"]["contents"][0]["parts"][0]["text"])["memory"]
+        assert "<plot>\n6\n</plot>" in json.loads(preview.json()["request"]["body"]["contents"][0]["parts"][0]["text"])["memory"]
         memory = await client.get(root + "/memory")
         assert memory.json()["items"] == json.loads(baseline.model_dump_json())["items"], "recall is not saved"
 
@@ -166,8 +201,9 @@ def test_two_passes_expand_and_writing_uses_the_layout(database, writing_chat): 
     assert "[E" not in second and "[R5]" in second and "[R9]" in second, "expanded and original summaries are both judged"
     for prompt in prompts:
         assert "必须提到初见" in prompt and "你当时怎么说的" in prompt
-        assert "<round_19>" in prompt and "<round_20>" in prompt and "<round_18>" not in prompt, "depth is 2"
-        assert "序号" not in prompt, "state is not part of the basis"
+        assert "<plot>\n19\n</plot>" in prompt and "<plot>\n20\n</plot>" in prompt and "<plot>\n18\n</plot>" not in prompt, "depth is 2"
+        assert "2026-10-19—20:00—教室" in prompt
+        assert "序号" not in prompt, "only the header's fields of the state reach the basis"
     assert "拿不准时不选" in second and "拿不准时不选" not in first
     assert "最多选择 2 个情节" in first and "最多选择 5 个摘要" in second
 
@@ -229,7 +265,7 @@ def test_depth_zero_uses_only_the_latest_input(database, writing_chat):  # noqa:
         assert (await client.post(f"/api/chats/{chat_id}/recall", json={"user_input": "输入"})).status_code == 200
 
     run_api(database, scenario, llm_transport=httpx.MockTransport(handler_for(prompts, [[], []], [])))
-    assert "<round_" not in prompts[0] and "最新输入：输入" in prompts[0]
+    assert "<plot>" not in prompts[0] and "最新输入：输入" in prompts[0]
 
 
 def test_depth_can_exceed_recent_rounds(database, writing_chat):  # noqa: F811
@@ -242,7 +278,7 @@ def test_depth_can_exceed_recent_rounds(database, writing_chat):  # noqa: F811
         assert (await client.post(f"/api/chats/{chat_id}/recall", json={"user_input": "输入"})).status_code == 200
 
     run_api(database, scenario, llm_transport=httpx.MockTransport(handler_for(prompts, [[], []], [])))
-    assert "<round_14>" in prompts[0] and "<round_13>" not in prompts[0]
+    assert "<plot>\n14\n</plot>" in prompts[0] and "<plot>\n13\n</plot>" not in prompts[0]
 
 
 def test_off_means_no_model_call_and_the_assembled_layout(database, writing_chat):  # noqa: F811

@@ -37,7 +37,7 @@ def materials(count=0, x=5, y=6, episodes=()):
         character_name="角色", user_identity_name="身份", first_message="开场原文\r\n",
         character_definitions=[{"id": "d1", "order": 0, "content": "角色定义"}],
         user_definitions=[{"id": "d2", "order": 0, "content": "身份定义"}],
-        **render_materials(plan_layout(sources, settings), sources).model_dump(),
+        **render_materials(plan_layout(sources, settings), sources, "身份").model_dump(),
         user_input=" 最新输入\r\n", state={"世界": {"日期": "第二天"}, "整数": 3, "布尔": True, "空": None},
     )
 

@@ -40,10 +40,10 @@ PASSES = {
 
 
 def render_prompt(context, stage: str, candidates: list[str], limit: int) -> str:
-    basis = "\n".join(context.basis_rounds)
+    basis = "\n\n".join(context.basis_rounds)
     return (
         f"## 人物\n角色：{context.character_name}\n用户角色：{context.user_name}\n\n"
-        f"## 回忆依据\n{basis + chr(10) if basis else ''}"
+        f"## 回忆依据\n{basis + chr(10) * 2 if basis else ''}"
         f"最新输入：{context.user_input.strip() or '（空，表示顺着当前情节继续）'}\n\n"
         f"## 临时指令\n{context.instruction.strip() or '（无）'}\n\n"
         f"## 候选（从早到晚）\n" + "\n".join(candidates) + "\n\n"

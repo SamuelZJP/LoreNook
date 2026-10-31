@@ -206,7 +206,7 @@ def test_complete_history_materials_and_current_input_not_in_total(database, wri
         assert [item["round_no"] for item in value["recent_rounds"]] == [16, 17, 18, 19, 20]
         assert value["user_input"] == "第21回合输入"
         assert value["recent_rounds"][-1]["id"] == round_ids[-1]
-        assert value["state"] == {"序号": 20}
+        assert value["state"]["序号"] == 20
         return httpx.Response(200, json={"text": OUTPUT})
     # The seeded state has no age field; adjust the template before the assertion snapshot.
     with database.transaction() as session:

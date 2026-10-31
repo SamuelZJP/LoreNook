@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from backend.modules.memory.layout import plan_layout, validate_layout
 from backend.modules.memory.render import render_materials, render_timeline
 from backend.modules.memory.sources import MemorySources
-from backend.repository.models import Chat
+from backend.repository.models import Chat, UserIdentity
 from backend.repository.queries import Repository
 from backend.schemas.memory import (
     ArchivedRound, ChatMemory, EpisodeMemory, MemoryLayout, MemoryMaterials, MemorySettings,
@@ -26,8 +26,9 @@ class MemoryService:
         self.repository = repository
 
     def _sources(self, chat_id: str) -> MemorySources:
-        rounds = [ArchivedRound.model_validate(record) for record in
-                  self.repository.rounds(chat_id, completed_only=True)]
+        worlds = self.repository.round_worlds(chat_id)
+        rounds = [ArchivedRound.model_validate(record).model_copy(update={"world": worlds.get(record.id)})
+                  for record in self.repository.rounds(chat_id, completed_only=True)]
         by_id = {record.id: record for record in rounds}
         episodes = []
         for record in self.repository.episodes(chat_id):
@@ -51,7 +52,8 @@ class MemoryService:
         snapshot = self.snapshot(chat_id)
         if layout is not None:
             validate_layout(layout, snapshot.layout, snapshot.sources)
-        return render_materials(layout or snapshot.layout, snapshot.sources)
+        identity = self.repository.get(UserIdentity, self.repository.owner_id(chat_id, UserIdentity))
+        return render_materials(layout or snapshot.layout, snapshot.sources, identity.name)
 
     def timeline(self, chat_id: str) -> ChatMemory:
         snapshot = self.snapshot(chat_id)

@@ -119,6 +119,11 @@ class Repository:
         ).order_by(Round.round_no.desc()).limit(1)).first()
         return RoundHeader(*row) if row is not None else None
 
+    def round_worlds(self, chat_id: str) -> dict:
+        return dict(self.session.execute(select(
+            StateSnapshot.round_id, StateSnapshot.content["世界"],
+        ).where(StateSnapshot.chat_id == chat_id, StateSnapshot.round_id.is_not(None))).all())
+
     def round_dates(self, chat_id: str, round_ids: list[str]) -> dict:
         if not round_ids:
             return {}

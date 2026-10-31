@@ -20,6 +20,7 @@ class ArchivedRound(Contract):
     user_input: str
     ai_output: str
     summary: str | None
+    world: dict | None = None  # `世界` of the state this round ended in
 
 
 class EpisodeMemory(Contract):

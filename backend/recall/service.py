@@ -93,7 +93,7 @@ def run_recall(database: Database, client: ModelClient, chat_id: str, user_input
     if connection is not None:
         rounds = list(snapshot.sources.rounds.values())
         basis = rounds[-settings.depth:] if settings.depth else []
-        context = RecallContext(**names, basis_rounds=[render_round(record) for record in basis],
+        context = RecallContext(**names, basis_rounds=[render_round(record, names["user_name"]) for record in basis],
                                 user_input=user_input, instruction=instruction, connection=connection)
         layout = _recall_layout(context, settings, layout, snapshot.sources, client)
     timeline = render_timeline(layout, snapshot.sources, snapshot.settings)
