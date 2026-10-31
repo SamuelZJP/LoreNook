@@ -369,6 +369,45 @@ def test_writing_candidate_can_be_confirmed_without_rerunning_its_preset(databas
     assert calls == ["writing", "state_update", "round_summary"]
 
 
+def test_instruction_only_reaches_the_writing_request(database, archive_chat):
+    from backend.tests.test_writing import SOURCE
+    instruction = "让剧情转向雨夜"
+    with database.transaction() as session:
+        repo = Repository(session)
+        preset = repo.add(WritingPreset(chat_id=archive_chat, name="写作", source=SOURCE))
+        repo.get(Chat, archive_chat).writing_preset_id = preset.id
+        model_id = repo.model_binding(archive_chat, "state_update").model_config_id
+        repo.add(ChatModelBinding(chat_id=archive_chat, purpose="writing", model_config_id=model_id))
+    calls, archive_prompts = [], []
+    good = successful_handler(calls)
+    def handler(request):
+        body = json.loads(request.content)
+        if "systemInstruction" not in body:
+            materials = json.loads(body["contents"][0]["parts"][0]["text"])
+            assert materials["user_input"] == f"{INPUT}\n\n<instruction>\n{instruction}\n</instruction>"
+            calls.append("writing")
+            return httpx.Response(200, json={"text": OUTPUT})
+        archive_prompts.append(json.dumps(body, ensure_ascii=False))
+        return good(request)
+    async def scenario(client):
+        root = f"/api/chats/{archive_chat}"
+        preview = await client.post(root + "/writing-preview", json={"user_input": INPUT, "instruction": instruction})
+        assert instruction in json.loads(preview.json()["request"]["body"]["contents"][0]["parts"][0]["text"])["user_input"]
+        writing = await client.post(root + "/writing", json={"user_input": INPUT, "instruction": instruction})
+        assert writing.status_code == 200, writing.text
+        candidate = writing.json()
+        assert candidate["user_input"] == INPUT
+        confirmation = {key: candidate[key] for key in ("user_input", "ai_output", "based_on_round_id")}
+        result = await client.post(root + "/archive", json=confirmation)
+        assert result.status_code == 201, result.text
+        following = await client.post(root + "/writing-preview", json={"user_input": "下一回合"})
+        assert instruction not in following.json()["request"]["body"]["contents"][0]["parts"][0]["text"]
+    run_api(database, scenario, llm_transport=httpx.MockTransport(handler))
+    assert calls == ["writing", "state_update", "round_summary"]
+    assert len(archive_prompts) == 2 and not any(instruction in prompt for prompt in archive_prompts)
+    assert instruction not in str(database_contents(database))
+
+
 @pytest.mark.parametrize("failure,status,step", [("state_binding", 409, "state_update"),
     ("summary_binding", 409, "round_summary"), ("api_type", 422, "state_update"), ("schema", 422, "state_update")])
 def test_configuration_can_be_repaired_after_confirmation(database, archive_chat, failure, status, step):

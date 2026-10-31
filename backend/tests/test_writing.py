@@ -15,6 +15,7 @@ from backend.repository.models import (
 from backend.repository.queries import Repository
 from backend.tests.test_catalog_api import run_api
 from backend.tests.test_memory import seed_history
+from backend.workflows.writing_materials import with_instruction
 
 SOURCE = """
 function build(m) {
@@ -306,3 +307,14 @@ def test_retry_after_parse_failure_has_no_saved_candidate(database, writing_chat
         assert retried.status_code == 200 and retried.json()["ai_output"] == OUTPUT
     run_api(database, scenario, llm_transport=httpx.MockTransport(handler))
     assert len(calls) == 2 and database_contents(database) == before
+
+
+@pytest.mark.parametrize("user_input,instruction,expected", [
+    ("ABCD", "abcd", "ABCD\n\n<instruction>\nabcd\n</instruction>"),
+    (" 原文\r\n", " 指令\n", " 原文\r\n\n\n<instruction>\n指令\n</instruction>"),
+    ("", "abcd", "<instruction>\nabcd\n</instruction>"),
+    (" 原文\r\n", " \n", " 原文\r\n"),
+    ("", "", ""),
+])
+def test_instruction_is_appended_to_the_request_input(user_input, instruction, expected):
+    assert with_instruction(user_input, instruction) == expected

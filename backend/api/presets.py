@@ -76,4 +76,4 @@ router.include_router(preset_router("/api/chats/{chat_id}/writing-presets"))
 
 @router.post("/api/chats/{chat_id}/writing-preview", response_model=WritingPreview, tags=["writing-presets"])
 def preview(chat_id: str, payload: WritingPreviewInput, database: DatabaseDependency):
-    return preview_writing(database, chat_id, payload.user_input)
+    return preview_writing(database, chat_id, payload.user_input, payload.instruction)

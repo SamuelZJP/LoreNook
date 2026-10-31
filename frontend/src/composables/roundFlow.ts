@@ -25,6 +25,10 @@ export interface FlowError {
 export function useRoundFlow(chatId: Ref<string>) {
   const qc = useQueryClient()
   const input = ref('')
+  /** Temporary instruction: sent with the next generation, never part of the saved round. */
+  const instruction = ref('')
+  /** The instruction the current candidate was generated with. */
+  const usedInstruction = ref('')
   const candidate = ref<WritingResult | null>(null)
   const busy = ref<null | 'generating' | 'archiving' | 'checking'>(null)
   const error = ref<FlowError | null>(null)
@@ -42,7 +46,7 @@ export function useRoundFlow(chatId: Ref<string>) {
   })
 
   watch(chatId, () => {
-    input.value = ''
+    clearInputs()
     candidate.value = null
     error.value = null
     busy.value = null
@@ -53,7 +57,10 @@ export function useRoundFlow(chatId: Ref<string>) {
 
   // Edits belong to one candidate: drop them once it is saved, discarded or replaced.
   watch(candidate, (c) => {
-    if (!c) original.value = null
+    if (!c) {
+      original.value = null
+      usedInstruction.value = ''
+    }
     draft.value = null
   })
 
@@ -87,6 +94,11 @@ export function useRoundFlow(chatId: Ref<string>) {
   /** Input differs from the candidate's paired input: confirmation would mismatch them. */
   const inputChanged = computed(() => !!candidate.value && candidate.value.user_input !== input.value)
 
+  function clearInputs() {
+    input.value = ''
+    instruction.value = ''
+  }
+
   function refreshAll() {
     const id = chatId.value
     for (const key of ['archive', 'rounds', 'chat', 'episodes', 'state', 'memory']) {
@@ -100,8 +112,10 @@ export function useRoundFlow(chatId: Ref<string>) {
     startedAt.value = Date.now()
     error.value = null
     try {
-      const result = await api.write(chatId.value, input.value)
+      const sent = instruction.value
+      const result = await api.write(chatId.value, input.value, sent)
       candidate.value = result
+      usedInstruction.value = sent
       original.value = result.ai_output
     } catch (e) {
       // A failed generation keeps the previous candidate (if any) and the typed input.
@@ -135,14 +149,14 @@ export function useRoundFlow(chatId: Ref<string>) {
         based_on_round_id: c.based_on_round_id,
       })
       candidate.value = null
-      input.value = ''
+      clearInputs()
       applyProgress(progress)
     } catch (e) {
       busy.value = null
       if (e instanceof ApiError && e.archive) {
         // Dialogue was saved; a later step failed. Recovery continues from the saved round.
         candidate.value = null
-        input.value = ''
+        clearInputs()
         error.value = { action: 'confirm', error: e }
         applyProgress(e.archive)
       } else if (e instanceof ApiError && e.transport) {
@@ -166,7 +180,7 @@ export function useRoundFlow(chatId: Ref<string>) {
         && progress.round.ai_output === c.ai_output && progress.round.user_input === c.user_input
       if (saved) {
         candidate.value = null
-        input.value = ''
+        clearInputs()
         error.value = progress.round.archive_step === 'complete' ? null : {
           action: 'confirm', error: cause, note: '确认请求的响应丢失，但回合已保存。请按需要继续归档。',
         }
@@ -221,7 +235,7 @@ export function useRoundFlow(chatId: Ref<string>) {
   const elapsed = computed(() => (busy.value ? Math.max(0, Math.floor((now.value - startedAt.value) / 1000)) : 0))
 
   return {
-    input, candidate, phase, error, elapsed, inputChanged, archive, latestRound, unfinished,
+    input, instruction, usedInstruction, candidate, phase, error, elapsed, inputChanged, archive, latestRound, unfinished,
     draft, editing, edited, hasEdits,
     generate, confirm, retry, discardCandidate, checkProgress, refreshAll,
     startEdit, applyEdit, cancelEdit, revertEdit,

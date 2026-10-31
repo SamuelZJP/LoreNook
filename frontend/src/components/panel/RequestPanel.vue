@@ -15,7 +15,7 @@ async function build() {
   error.value = null
   building.value = true
   try {
-    const r = await api.writingPreview(props.chat.id, props.flow.input.value)
+    const r = await api.writingPreview(props.chat.id, props.flow.input.value, props.flow.instruction.value)
     preview.value = pretty(r.request)
   } catch (e) {
     preview.value = null
@@ -32,7 +32,7 @@ async function build() {
       <h3 class="grow">写作请求预览</h3>
       <button class="btn small" type="button" :disabled="building" @click="build"><FileJson /> {{ building ? '构建中…' : '构建预览' }}</button>
     </div>
-    <p class="hint">使用当前输入框内容和已选预设构建请求，不调用模型，也不合并模型默认参数。</p>
+    <p class="hint">使用当前输入框内容、临时指令和已选预设构建请求，不调用模型，也不合并模型默认参数。</p>
     <ErrorBox v-if="error" :error="error" title="预览失败" />
     <CodeEditor v-if="preview" :model-value="preview" language="json" readonly min-height="200px" />
   </div>

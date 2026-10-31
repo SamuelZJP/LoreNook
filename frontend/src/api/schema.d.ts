@@ -1234,6 +1234,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chats/{chat_id}/illustrations/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Progress
+         * @description Server-sent events: {illustration id: IllustrationProgress} for the chat's running jobs.
+         */
+        get: operations["progress_api_chats__chat_id__illustrations_progress_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chats/{chat_id}/rounds/{round_id}/illustrations": {
         parameters: {
             query?: never;
@@ -2468,6 +2488,11 @@ export interface components {
         WritingInput: {
             /** User Input */
             user_input: string;
+            /**
+             * Instruction
+             * @default
+             */
+            instruction: string;
         };
         /** WritingMaterials */
         WritingMaterials: {
@@ -2503,6 +2528,11 @@ export interface components {
         WritingPreviewInput: {
             /** User Input */
             user_input: string;
+            /**
+             * Instruction
+             * @default
+             */
+            instruction: string;
         };
         /** WritingResult */
         WritingResult: {
@@ -6355,6 +6385,35 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["IllustrationRead"][];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    progress_api_chats__chat_id__illustrations_progress_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

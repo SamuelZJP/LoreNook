@@ -5,6 +5,7 @@ from backend.schemas.common import Contract, Name
 
 class WritingInput(Contract):
     user_input: str
+    instruction: str = ""
 
 
 class WritingResult(Contract):

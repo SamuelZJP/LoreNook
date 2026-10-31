@@ -61,7 +61,15 @@ def collect_writing_snapshot(repository: Repository, chat_id: str) -> WritingSna
     )
 
 
-def resolve_writing_materials(snapshot: WritingSnapshot, user_input: str) -> WritingMaterials:
+def with_instruction(user_input: str, instruction: str) -> str:
+    """Text for this request only; the candidate and archive keep the raw input."""
+    if not instruction.strip():
+        return user_input
+    block = f"<instruction>\n{instruction.strip()}\n</instruction>"
+    return f"{user_input}\n\n{block}" if user_input.strip() else block
+
+
+def resolve_writing_materials(snapshot: WritingSnapshot, user_input: str, instruction: str = "") -> WritingMaterials:
     """Render only after the database session has closed."""
     names = {"user_name": snapshot.user_identity_name, "character_name": snapshot.character_name}
     resolved = DefinitionRenderer().resolve(snapshot.character_definitions, snapshot.user_definitions,
@@ -69,5 +77,5 @@ def resolve_writing_materials(snapshot: WritingSnapshot, user_input: str) -> Wri
     return WritingMaterials(
         character_name=snapshot.character_name, user_identity_name=snapshot.user_identity_name,
         first_message=substitute_names(snapshot.first_message, **names), state=snapshot.state, history=snapshot.history,
-        user_input=user_input, **resolved.model_dump(),
+        user_input=with_instruction(user_input, instruction), **resolved.model_dump(),
     )

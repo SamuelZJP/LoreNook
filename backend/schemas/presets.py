@@ -57,6 +57,7 @@ class ParsedOutput(Contract):
 
 class WritingPreviewInput(Contract):
     user_input: str
+    instruction: str = ""
 
 
 class WritingPreview(Contract):

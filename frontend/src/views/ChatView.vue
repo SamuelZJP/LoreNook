@@ -217,6 +217,10 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
             <MessageBubble side="user" :name="identity?.name ?? '我'" :avatar="identity?.avatar" pending>
               <template #meta><span class="badge">候选输入</span></template>
               <div class="plain user-text">{{ candidate.user_input || '（空输入）' }}</div>
+              <div v-if="flow.usedInstruction.value" class="used-instruction">
+                <span class="badge">临时指令 · 不保存</span>
+                <div class="plain">{{ flow.usedInstruction.value }}</div>
+              </div>
             </MessageBubble>
             <MessageBubble side="ai" page :name="character?.name ?? 'AI'" :avatar="character?.avatar" pending>
               <template #meta>
@@ -299,6 +303,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 .indent { margin-left: 44px; }
 .candidate-editor { display: block; width: 760px; max-width: 100%; font-family: var(--font-mono); font-size: 13px; }
 .user-text { font-size: var(--reading-size); font-family: var(--font-reading); }
+.used-instruction { margin-top: 8px; padding-top: 8px; border-top: 1px dashed currentColor; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
 .earlier { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; font-size: 12px; }
 .notice { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 12px; border-radius: var(--radius-m); background: var(--warn-soft); font-size: 13px; }
 .notice svg { width: 16px; height: 16px; color: var(--warn); flex-shrink: 0; }

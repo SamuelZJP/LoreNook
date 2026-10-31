@@ -95,8 +95,8 @@ export const api = {
     request<BuiltRequest>(`${presetBase(s)}/${id}/build`, json('POST', body)),
   parsePreset: (s: Scope, id: string, response: Record<string, unknown>) =>
     request<Schemas['ParsedOutput']>(`${presetBase(s)}/${id}/parse`, json('POST', { response })),
-  writingPreview: (chatId: string, userInput: string) =>
-    request<Schemas['WritingPreview']>(`/api/chats/${chatId}/writing-preview`, json('POST', { user_input: userInput })),
+  writingPreview: (chatId: string, userInput: string, instruction: string) =>
+    request<Schemas['WritingPreview']>(`/api/chats/${chatId}/writing-preview`, json('POST', { user_input: userInput, instruction })),
 
   // Model configurations (source or chat scope)
   models: (s: Scope) => request<ModelConfig[]>(modelBase(s)),
@@ -111,8 +111,8 @@ export const api = {
   uploadMedia: (file: Blob) => request<Schemas['MediaRead']>('/api/media', { method: 'POST', file }),
 
   // Writing and archiving
-  write: (chatId: string, userInput: string) =>
-    request<WritingResult>(`/api/chats/${chatId}/writing`, json('POST', { user_input: userInput })),
+  write: (chatId: string, userInput: string, instruction: string) =>
+    request<WritingResult>(`/api/chats/${chatId}/writing`, json('POST', { user_input: userInput, instruction })),
   confirm: (chatId: string, body: Schemas['ArchiveConfirm']) =>
     request<ArchiveProgress>(`/api/chats/${chatId}/archive`, json('POST', body)),
   archive: (chatId: string) => request<ArchiveProgress | null>(`/api/chats/${chatId}/archive`),

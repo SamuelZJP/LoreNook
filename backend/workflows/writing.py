@@ -12,7 +12,8 @@ from backend.workflows.writing_materials import collect_writing_snapshot, resolv
 
 
 @recorded_workflow("writing")
-def generate_writing(database: Database, client: ModelClient, chat_id: str, user_input: str) -> WritingResult:
+def generate_writing(database: Database, client: ModelClient, chat_id: str, user_input: str,
+                     instruction: str = "") -> WritingResult:
     with database.read() as session:
         repository = Repository(session)
         snapshot = collect_writing_snapshot(repository, chat_id)
@@ -22,7 +23,7 @@ def generate_writing(database: Database, client: ModelClient, chat_id: str, user
         model_config_id = binding.model_config_id
         connection = ModelService(repository, chat_id).connection(model_config_id)
 
-    materials = resolve_writing_materials(snapshot, user_input)
+    materials = resolve_writing_materials(snapshot, user_input, instruction)
     runtime = PresetRuntime()
     request = runtime.build(snapshot.source, materials)
     response = client.invoke(connection, request)
