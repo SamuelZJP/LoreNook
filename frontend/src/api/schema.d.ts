@@ -1002,23 +1002,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/image-workflows/default-templates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Default Templates */
-        get: operations["default_templates_api_image_workflows_default_templates_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/chats/{chat_id}/image-workflows/import": {
         parameters: {
             query?: never;
@@ -1790,13 +1773,6 @@ export interface components {
             /** State Snapshot Id */
             state_snapshot_id: string;
         };
-        /** DefaultTemplates */
-        DefaultTemplates: {
-            /** Text To Image */
-            text_to_image: string;
-            /** Image To Image */
-            image_to_image: string;
-        };
         /** DefinitionInput */
         DefinitionInput: {
             /**
@@ -1960,6 +1936,8 @@ export interface components {
             name: string;
             /** Has Reference */
             has_reference: boolean;
+            /** Has Appearance */
+            has_appearance: boolean;
         };
         /**
          * FocusOptions
@@ -2051,10 +2029,10 @@ export interface components {
             image_workflow_id: string;
             /** Focus */
             focus: string[];
-            /** Fields */
-            fields: {
-                [key: string]: string;
-            };
+            /** Prompt */
+            prompt: string;
+            /** Images */
+            images: string[];
         };
         /** IllustrationRead */
         IllustrationRead: {
@@ -2068,7 +2046,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "pending" | "prompting" | "rendering" | "ready" | "failed";
+            status: "pending" | "rendering" | "ready" | "failed";
             /** Seed */
             seed: number;
             /** Focus */
@@ -2110,14 +2088,12 @@ export interface components {
             mode: "off" | "every_round" | "scene_change" | "manual";
             /** Image Workflow Id */
             image_workflow_id?: string | null;
-            /** Model Config Id */
-            model_config_id?: string | null;
             /** Focus */
             focus?: string[];
         };
         /**
          * IllustrationSetup
-         * @description Library resources for a new chat; the workflow and model config are copied into it.
+         * @description Library resources for a new chat; the workflow is copied into it.
          */
         IllustrationSetup: {
             /**
@@ -2127,8 +2103,6 @@ export interface components {
             mode: "off" | "every_round" | "scene_change" | "manual";
             /** Image Workflow Id */
             image_workflow_id?: string | null;
-            /** Model Config Id */
-            model_config_id?: string | null;
         };
         /** ImageWorkflowCreate */
         ImageWorkflowCreate: {
@@ -2140,11 +2114,6 @@ export interface components {
             workflow: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
-            /**
-             * Prompt Template
-             * @default
-             */
-            prompt_template: string;
             /**
              * Width
              * @default 1344
@@ -2171,8 +2140,6 @@ export interface components {
             workflow?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
-            /** Prompt Template */
-            prompt_template?: string | null;
             /** Width */
             width?: number | null;
             /** Height */
@@ -2192,16 +2159,10 @@ export interface components {
             workflow: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
-            /** Prompt Template */
-            prompt_template: string;
             /** Width */
             width: number;
             /** Height */
             height: number;
-            /** Prompt Fields */
-            prompt_fields: string[];
-            /** Image Inputs */
-            image_inputs: string[];
             /**
              * Created At
              * Format: date-time
@@ -5760,26 +5721,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    default_templates_api_image_workflows_default_templates_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DefaultTemplates"];
                 };
             };
         };

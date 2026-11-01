@@ -1,6 +1,7 @@
-"""Illustration jobs: model call → ComfyUI → file. Runs after archiving and never touches archive progress."""
+"""Illustration jobs: prompt text and reference images → ComfyUI → file. Runs after archiving and never touches archive progress."""
 
 from concurrent.futures import Executor, ThreadPoolExecutor
+import json
 import logging
 import secrets
 
@@ -8,30 +9,24 @@ from sqlalchemy import inspect, select, update
 
 from backend.illustrations.comfyui import ComfyUIClient, RenderProgress
 from backend.illustrations.errors import IllustrationError
-from backend.illustrations.generate import generate_fields
 from backend.illustrations.models import Illustration, ImageWorkflow
-from backend.illustrations.placeholders import IMAGE_INPUT, fill_workflow, image_inputs, prompt_fields
-from backend.illustrations.schemas import (
-    ACTIVE_STATUSES, FOCUS_CHAR, IllustrationContext, IllustrationProgress, IllustrationPrompt, IllustrationRead,
-)
+from backend.illustrations.placeholders import fill_workflow, uses_images, validate_workflow
 from backend.illustrations.progress import ProgressBoard
+from backend.illustrations.prompt import reference_images, render_prompt
+from backend.illustrations.schemas import (
+    ACTIVE_STATUSES, IllustrationContext, IllustrationProgress, IllustrationPrompt, IllustrationRead,
+)
 from backend.illustrations.service import CastService, IllustrationService
 from backend.illustrations.storage import ImageStorage
-from backend.llm.client import ModelClient
-from backend.llm.recording import recorded_workflow
-from backend.modules.definitions.storage import DefinitionStorage
 from backend.modules.media import MediaStorage, media_type_of
-from backend.modules.models.service import ModelService
 from backend.repository.database import Database
-from backend.repository.models import Character, Chat, Round, StateSnapshot, UserIdentity
+from backend.repository.models import Chat, Round, StateSnapshot
 from backend.repository.queries import Repository
-from backend.shared.errors import (
-    ConflictError, DefinitionTemplateError, ModelCallError, ModelConfigurationError, NotFoundError,
-)
+from backend.shared.errors import ConflictError, NotFoundError
 
 logger = logging.getLogger(__name__)
 
-FAILURES = (ConflictError, DefinitionTemplateError, IllustrationError, ModelCallError, ModelConfigurationError)
+FAILURES = (ConflictError, IllustrationError)
 
 
 def _context(repository: Repository, chat_id: str, round_id: str, focus_ids: list[str] | None) -> IllustrationContext:
@@ -39,61 +34,37 @@ def _context(repository: Repository, chat_id: str, round_id: str, focus_ids: lis
     settings = IllustrationService(repository).settings(chat_id)
     if settings.mode == "off":
         raise ConflictError("聊天未开启插图")
-    if settings.image_workflow_id is None or settings.model_config_id is None:
-        raise ConflictError("请先在插图设置中选择图像工作流和提示词模型")
+    if settings.image_workflow_id is None:
+        raise ConflictError("请先在插图设置中选择图像工作流")
     record = repository.get_owned(Round, round_id, chat_id)
     if record.archive_step != "complete":
         raise ConflictError("只能为已归档的回合生成插图")
-    character = repository.get(Character, repository.owner_id(chat_id, Character))
-    identity = repository.get(UserIdentity, repository.owner_id(chat_id, UserIdentity))
     state = repository.state_for_round(chat_id, round_id)
     if state is None:
         raise ConflictError("回合缺少归档状态")
     workflow = repository.get_owned(ImageWorkflow, settings.image_workflow_id, chat_id)
     focus, others = CastService(repository).resolve_focus(chat_id, settings.focus if focus_ids is None else focus_ids)
-    storage = DefinitionStorage(repository)
     return IllustrationContext(
-        chat_id=chat_id, round_id=round_id, round_no=record.round_no,
-        user_input=record.user_input, ai_output=record.ai_output, summary=record.summary, state=state.content,
-        character_name=character.name, user_name=identity.name,
-        character_definitions=storage.read(character_id=character.id),
-        user_definitions=storage.read(user_identity_id=identity.id),
-        focus=focus, others=others,
+        user_input=record.user_input, ai_output=record.ai_output, state=state.content, focus=focus, others=others,
         image_workflow_id=workflow.id, base_url=workflow.base_url, workflow=workflow.workflow,
-        prompt_template=workflow.prompt_template, width=workflow.width, height=workflow.height,
-        fields=prompt_fields(workflow.workflow), image_inputs=image_inputs(workflow.workflow),
-        connection=ModelService(repository, chat_id).connection(settings.model_config_id),
+        width=workflow.width, height=workflow.height,
     )
 
 
-def _reference_images(context: IllustrationContext) -> dict[str, str]:
-    """Placeholder → media name. A missing reference fails here, before any model call is spent."""
-    references = {}
-    for placeholder in context.image_inputs:
-        position = int(IMAGE_INPUT.fullmatch(placeholder).group(1))
-        if position > len(context.focus):
-            raise IllustrationError(f"工作流需要第 {position} 位主要人物的参考图，但本次只有 {len(context.focus)} 位主要人物")
-        person = context.focus[position - 1]
-        if person.reference_image is None:
-            where = "请在角色卡中添加画像人物并上传参考图" if person.id == FOCUS_CHAR else "请先上传参考图"
-            raise IllustrationError(f"{person.name} 没有参考图，{where}")
-        references[placeholder] = person.reference_image
-    return references
+def _inputs(context: IllustrationContext) -> tuple[str, list[str]]:
+    """(prompt text, media names). Data management can store anything, so the workflow is checked again here."""
+    validate_workflow(context.workflow)
+    images = reference_images([*context.focus, *context.others]) if uses_images(context.workflow) else []
+    return render_prompt(context, images), images
 
 
-@recorded_workflow("image_prompt")
-def _prompt_fields(database: Database, client: ModelClient, chat_id: str, round_id: str,
-                   context: IllustrationContext) -> dict[str, str]:
-    return generate_fields(context, client)
-
-
-def preview_prompt(database: Database, client: ModelClient, chat_id: str, round_id: str,
-                   focus: list[str] | None = None) -> IllustrationPrompt:
-    """Run only the model step; nothing is stored or sent to ComfyUI."""
+def preview_prompt(database: Database, chat_id: str, round_id: str, focus: list[str] | None = None) -> IllustrationPrompt:
+    """Only render the inputs; nothing is stored or sent to ComfyUI."""
     with database.read() as session:
         context = _context(Repository(session), chat_id, round_id, focus)
-    fields = _prompt_fields(database, client, chat_id, round_id, context)
-    return IllustrationPrompt(image_workflow_id=context.image_workflow_id, focus=[p.name for p in context.focus], fields=fields)
+    prompt, images = _inputs(context)
+    return IllustrationPrompt(image_workflow_id=context.image_workflow_id, focus=[p.name for p in context.focus],
+                              prompt=prompt, images=images)
 
 
 def request_illustration(database: Database, chat_id: str, round_id: str, focus: list[str] | None = None) -> IllustrationRead:
@@ -159,8 +130,8 @@ def _fail(database: Database, illustration_id: str, message: str) -> None:
         ).values(status="failed", error=message[:2000]))
 
 
-def run_illustration(database: Database, client: ModelClient, comfy: ComfyUIClient, storage: ImageStorage,
-                     media: MediaStorage, board: ProgressBoard, illustration_id: str) -> None:
+def run_illustration(database: Database, comfy: ComfyUIClient, storage: ImageStorage, media: MediaStorage,
+                     board: ProgressBoard, illustration_id: str) -> None:
     try:
         with database.read() as session:
             record = session.get(Illustration, illustration_id)
@@ -169,16 +140,12 @@ def run_illustration(database: Database, client: ModelClient, comfy: ComfyUIClie
             chat_id, round_id, seed = record.chat_id, record.round_id, record.seed
             focus_ids = [item["id"] for item in record.focus]
             context = _context(Repository(session), chat_id, round_id, focus_ids)
-        references = _reference_images(context)
-        _advance(database, illustration_id, "pending", status="prompting")
-        board.set(illustration_id, chat_id, IllustrationProgress(status="prompting"))
-        fields = _prompt_fields(database, client, chat_id, round_id, context)
-        _advance(database, illustration_id, "prompting", status="rendering", prompt=fields)
+        prompt, images = _inputs(context)
+        _advance(database, illustration_id, "pending", status="rendering", prompt={"prompt": prompt})
         board.set(illustration_id, chat_id, IllustrationProgress(status="rendering"))
-        uploaded = {placeholder: comfy.upload_image(context.base_url, name, media.read(name), media_type_of(name))
-                    for placeholder, name in references.items()}
-        workflow = fill_workflow(context.workflow, {**fields, **uploaded, "seed": seed, "width": context.width,
-                                                    "height": context.height})
+        uploaded = [comfy.upload_image(context.base_url, name, media.read(name), media_type_of(name)) for name in images]
+        workflow = fill_workflow(context.workflow, {"prompt": prompt, "images": json.dumps(uploaded, ensure_ascii=False),
+                                                    "seed": seed, "width": context.width, "height": context.height})
 
         def report(progress: RenderProgress) -> None:
             board.set(illustration_id, chat_id, IllustrationProgress(
@@ -213,16 +180,15 @@ def interrupt_unfinished(database: Database) -> None:
 class IllustrationRunner:
     """In-process queue: one job at a time, matching a single local ComfyUI."""
 
-    def __init__(self, database: Database, client: ModelClient, comfy: ComfyUIClient, storage: ImageStorage,
-                 media: MediaStorage, board: ProgressBoard, executor: Executor | None = None):
-        self.database, self.client, self.comfy, self.storage, self.media = database, client, comfy, storage, media
+    def __init__(self, database: Database, comfy: ComfyUIClient, storage: ImageStorage, media: MediaStorage,
+                 board: ProgressBoard, executor: Executor | None = None):
+        self.database, self.comfy, self.storage, self.media = database, comfy, storage, media
         self.board = board
         self.executor = executor or ThreadPoolExecutor(max_workers=1, thread_name_prefix="illustration")
 
     def submit(self, job: IllustrationRead):
         self.board.set(job.id, job.chat_id, IllustrationProgress(status=job.status))
-        return self.executor.submit(run_illustration, self.database, self.client, self.comfy, self.storage, self.media,
-                                    self.board, job.id)
+        return self.executor.submit(run_illustration, self.database, self.comfy, self.storage, self.media, self.board, job.id)
 
     def round_archived(self, chat_id: str, round_id: str) -> None:
         job = auto_illustration(self.database, chat_id, round_id)

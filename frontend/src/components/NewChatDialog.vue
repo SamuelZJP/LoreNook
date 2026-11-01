@@ -169,7 +169,7 @@ const create = useMutation({
       </details>
 
       <NewChatRecallSection ref="recallSection" :models="models.data.value ?? []" />
-      <NewChatIllustrationSection ref="illustrationSection" :models="models.data.value ?? []" />
+      <NewChatIllustrationSection ref="illustrationSection" />
 
       <h3>记忆</h3>
       <div class="grid-2">

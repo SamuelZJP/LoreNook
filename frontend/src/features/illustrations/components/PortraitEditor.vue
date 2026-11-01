@@ -82,7 +82,7 @@ async function save() {
     <template v-else-if="kind === 'character'">
       <p class="hint">
         画面里可能出现的人物。多主角的角色卡（例如“ABC 学园”）应在这里列出每位主角。第一位是默认的主要人物；没有人物时默认使用角色卡本身。
-        外貌用简洁的视觉描述即可，提示词模板会让模型改写成工作流需要的风格。
+        外貌用简洁的视觉描述即可，工作流会把它改写成需要的风格。
       </p>
       <div v-for="(m, i) in cast" :key="m.key" class="card card-pad member">
         <ImageUpload v-model="m.reference_image" label="参考图" :url-of="mediaUrl" />

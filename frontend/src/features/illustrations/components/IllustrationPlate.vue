@@ -31,7 +31,6 @@ const steps = computed(() => {
   const s = status.value
   return [
     { label: '整理上下文', done: s !== 'pending', active: s === 'pending' },
-    { label: '生成提示词', done: s === 'rendering', active: s === 'prompting' },
     { label: '渲染', done: false, active: s === 'rendering' },
   ]
 })
@@ -65,7 +64,7 @@ const steps = computed(() => {
         <div v-else class="working" role="status">
           <PenTool v-if="status === 'rendering'" class="pulse" />
           <Sparkles v-else class="pulse" />
-          <span class="working-title">{{ status === 'rendering' ? '正在绘制插图' : '正在构思画面' }}</span>
+          <span class="working-title">{{ status === 'rendering' ? '正在绘制插图' : '正在准备插图' }}</span>
           <span class="steps">
             <span v-for="s in steps" :key="s.label" :class="{ active: s.active }">{{ s.label }}{{ s.done ? ' ✓' : '' }}</span>
           </span>

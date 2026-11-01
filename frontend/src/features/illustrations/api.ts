@@ -32,7 +32,6 @@ export const illustrationApi = {
   deleteWorkflow: (s: WorkflowScope, id: string) => request<void>(`${workflowBase(s)}/${id}`, json('DELETE')),
   importWorkflow: (chatId: string, sourceId: string) =>
     request<ImageWorkflow>(`/api/chats/${chatId}/image-workflows/import`, json('POST', { source_id: sourceId })),
-  defaultTemplates: () => request<Schemas['DefaultTemplates']>('/api/image-workflows/default-templates'),
 
   settings: (chatId: string) => request<IllustrationSettings>(`/api/chats/${chatId}/illustration-settings`),
   putSettings: (chatId: string, body: IllustrationSettings) =>

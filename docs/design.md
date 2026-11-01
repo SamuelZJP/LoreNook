@@ -18,7 +18,7 @@ The concepts, rules and reasons behind the code. For *how* something is implemen
 | Memory recall | A per-request judgment that expands relevant old memories in place before writing. |
 | Writing preset | JavaScript that builds the model request and parses/validates the response. |
 | Archiving | The steps that run after the user confirms a round: state → round summary → episode. |
-| Image workflow | A ComfyUI workflow with placeholders and the prompt template that fits its model. |
+| Image workflow | A ComfyUI workflow with placeholders for what LoreNook provides. |
 | Cast | The people on a character card who can be drawn, each with an appearance and optional reference image. |
 | Main characters | Who an illustration centers on, chosen from the cast and the user identity. |
 
@@ -180,25 +180,31 @@ function parse(response)  { return 'full AI output text'; }  // throw Error to f
 
 ## Illustrations
 
-An optional illustration per archived round: a model call turns the round into an image prompt, a local ComfyUI renders it, the chat shows it. Only locally deployed ComfyUI is supported.
+An optional illustration per archived round: LoreNook sends the round's context and reference images to a local ComfyUI, the workflow turns them into an image, the chat shows it. Only locally deployed ComfyUI is supported.
+
+LoreNook decides when to illustrate and who is central, and states what happened. It doesn't write image prompts: enhancement, image reverse-inference and external model calls belong to ComfyUI nodes.
 
 It is a separate feature: `backend/illustrations/` and `frontend/src/features/illustrations/`. The feature depends on the core, never the reverse. The core connects to it only through the list in `backend/features.py` and the generic hooks in `shared/hooks.py` (round archived, chat created, chat deleted). The feature registers its own tables with data management. On the frontend, core views place a few of its components and otherwise know nothing about it. It keeps its own tables and endpoints; chat responses don't include it.
 
 ### Image workflows
 
-An image workflow is a library resource (imported into chats as a copy) holding a ComfyUI **API-format** workflow, the ComfyUI address, the image size and a **prompt template**. Models differ in what they want — natural language, tags, a mix, edit instructions — so that difference lives in each workflow's template and placeholders, not in the code.
+An image workflow is a library resource (imported into chats as a copy) holding a ComfyUI **API-format** workflow, the ComfyUI address and the image size.
 
-- **Placeholders** go in any workflow string. `{{seed}}`, `{{width}}`, `{{height}}` are filled by LoreNook. `{{image:focus_N}}` is main character N's reference image. Every other name is a **prompt field** the model must return, so a model needing both tags and a caption just uses two fields. A string that is exactly one placeholder takes the raw value (a seed stays an integer); otherwise it's text substitution.
+- **Placeholders** go in any workflow string, and anything else is rejected. A string that is exactly one placeholder takes the raw value (a seed stays an integer); otherwise it's text substitution.
+  - `{{prompt}}` (required) is the rendered context below.
+  - `{{images}}` (optional) is the uploaded reference images as a JSON array inside a string, `[]` when there are none. A real array would be read by ComfyUI as a node link.
+  - `{{seed}}`, `{{width}}`, `{{height}}` are numbers.
+- **The prompt** has a fixed format with no instructions, since those live in the workflow: `## 用户输入`, `## 剧情内容`, `## 状态信息`, `## 人物外貌`, `## 中心人物`, then a closing line asking for the prompt text. Character definitions aren't included.
+- **人物外貌** lists main characters first, then everyone else. Each entry is `<名字>…</名字>` with `参考图：图 N` if an image was sent, then the appearance. Someone with neither is left out.
 - **Size**: the workflow's width and height fields reserve the plate's space, so a workflow should take its size from `{{width}}` and `{{height}}` rather than fix its own. The editor warns otherwise.
-- **Text-to-image or image-to-image** isn't a setting: a workflow with an image placeholder is image-to-image.
-- **The prompt template** is Jinja2 and writes the whole request to the model (variables are listed in the editor). The output format is appended by the code, so a template can't lose it. An empty template selects the default for the workflow's kind. The model returns one JSON object with every field as a string; a missing field fails the attempt before ComfyUI is called.
+- **Prompt enhancement nodes** should take `{{seed}}`: ComfyUI caches a node whose inputs didn't change, so regenerating would reuse the same prompt.
 
 ### Cast and main characters
 
 - A **cast** (画像人物) belongs to a character card: name, appearance, optional reference image. A multi-protagonist card lists each protagonist; the card's own name isn't a person. A user identity has one appearance and optional reference image. Both are copied into chats with their owner.
-- **Main characters** decide who the prompt centers on. The default is the first cast member, or the card itself if it has no cast. A chat's manual choice overrides the default, and one attempt can override both when regenerating.
-- **More than two is allowed and warned about**: models usually do best with one or two.
-- Reference images map to main characters by position. If the workflow needs one that's missing, the attempt fails with that reason before any model call.
+- **Main characters** decide who `## 中心人物` names and whose reference images come first. The default is the first cast member, or the card itself if it has no cast. A chat's manual choice overrides the default, and one attempt can override both when regenerating.
+- **More than two is allowed and warned about**: models usually do best with one or two. A main character with neither appearance nor reference image is also warned about.
+- **Reference images**: `{{images}}` carries everyone's, not just the main characters', because the workflow decides who appears. Up to 8 are sent, and people sharing a file share a number. A missing image is not an error, and a workflow without `{{images}}` gets none.
 
 ### Uploads
 
@@ -206,9 +212,9 @@ Avatars and reference images are uploaded through `/api/media` (PNG, JPEG, WebP;
 
 ### Jobs
 
-- Per-chat settings: mode (`off` / `every_round` / `scene_change` / `manual`), image workflow, the model config for the prompt, main characters. Manual generation needs any mode except `off`.
+- Per-chat settings: mode (`off` / `every_round` / `scene_change` / `manual`), image workflow, main characters. Manual generation needs any mode except `off`.
 - `scene_change` triggers when `世界.地点` or `世界.日期` differs from the previous round's state (the initial state for round 1), or when the chat has no illustration yet.
-- A job runs after its archive completes, in a single in-process queue (`pending → prompting → rendering → ready | failed`). **It never blocks the next round** and never shows as an archive error. One active job per round. Jobs don't survive a restart; unfinished ones are marked failed at startup.
+- A job runs after its archive completes, in a single in-process queue (`pending → rendering → ready | failed`). **It never blocks the next round** and never shows as an archive error. One active job per round. Jobs don't survive a restart; unfinished ones are marked failed at startup.
 - **Live progress.** While rendering, the backend reads ComfyUI's WebSocket (current node, sampler steps) and streams each running job's state to the open chat as server-sent events. Progress is in memory only and purely informative: the outcome always comes from ComfyUI's history, so without a socket a job still finishes, just without the bar. The stream is open only while a job runs, and a slow list refetch covers a stream that can't get through.
 - Regenerate adds a new attempt; earlier attempts are kept and the newest is shown.
 - Generated files live under `LORENOOK_IMAGE_DIRECTORY` (default `data/images`), one folder per chat, removed with the chat.

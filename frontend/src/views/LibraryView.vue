@@ -40,7 +40,7 @@ const items = computed(() => {
     case 'characters': return (characters.data.value ?? []).map((c) => ({ id: c.id, name: c.name, avatar: c.avatar, sub: c.description }))
     case 'identities': return (identities.data.value ?? []).map((c) => ({ id: c.id, name: c.name, avatar: c.avatar, sub: c.description }))
     case 'presets': return (presets.data.value ?? []).map((p) => ({ id: p.id, name: p.name, avatar: undefined, sub: `${p.source.length} 字符` }))
-    case 'workflows': return (workflows.data.value ?? []).map((w) => ({ id: w.id, name: w.name, avatar: undefined, sub: `${w.image_inputs.length ? '图生图' : '文生图'} · ${w.width}×${w.height}` }))
+    case 'workflows': return (workflows.data.value ?? []).map((w) => ({ id: w.id, name: w.name, avatar: undefined, sub: `${w.width}×${w.height}` }))
     default: return (models.data.value ?? []).map((m) => ({ id: m.id, name: m.name, avatar: undefined, sub: `${m.api_type} · ${m.model}`, key: m.has_api_key }))
   }
 })

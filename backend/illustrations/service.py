@@ -4,23 +4,15 @@ from backend.illustrations.errors import IllustrationError
 from backend.illustrations.models import (
     CastMember, ChatIllustrationSettings, IdentityAppearance, Illustration, ImageWorkflow,
 )
-from backend.illustrations.placeholders import image_inputs, prompt_fields
 from backend.illustrations.schemas import (
     FOCUS_CHAR, FOCUS_USER, AppearanceInput, CastMemberInput, CastMemberRead, FocusOption, FocusOptions,
     IllustrationPatch, IllustrationRead, IllustrationSettings, IllustrationSetup, ImageWorkflowCreate,
     ImageWorkflowPatch, ImageWorkflowRead, Subject,
 )
-from backend.illustrations.templates import default_template
 from backend.modules.media import MEDIA_NAME
-from backend.repository.models import Character, Chat, ModelConfig, UserIdentity
+from backend.repository.models import Character, Chat, UserIdentity
 from backend.repository.queries import Repository
 from backend.shared.errors import ConflictError
-
-
-def read_workflow(record: ImageWorkflow) -> ImageWorkflowRead:
-    derived = {"prompt_fields", "image_inputs"}
-    fields = {name: getattr(record, name) for name in ImageWorkflowRead.model_fields if name not in derived}
-    return ImageWorkflowRead(**fields, prompt_fields=prompt_fields(record.workflow), image_inputs=image_inputs(record.workflow))
 
 
 def _check_image(name: str | None) -> str | None:
@@ -37,24 +29,20 @@ class ImageWorkflowService:
             repository.get(Chat, chat_id)
 
     def list(self) -> list[ImageWorkflowRead]:
-        return [read_workflow(record) for record in self.repository.list_owned(ImageWorkflow, self.chat_id)]
+        return [ImageWorkflowRead.model_validate(record) for record in self.repository.list_owned(ImageWorkflow, self.chat_id)]
 
     def read(self, workflow_id: str) -> ImageWorkflowRead:
-        return read_workflow(self.repository.get_owned(ImageWorkflow, workflow_id, self.chat_id))
+        return ImageWorkflowRead.model_validate(self.repository.get_owned(ImageWorkflow, workflow_id, self.chat_id))
 
     def create(self, payload: ImageWorkflowCreate) -> ImageWorkflowRead:
-        values = payload.model_dump()
-        values["prompt_template"] = values["prompt_template"] or default_template(bool(image_inputs(payload.workflow)))
-        return read_workflow(self.repository.add(ImageWorkflow(chat_id=self.chat_id, **values)))
+        return ImageWorkflowRead.model_validate(self.repository.add(ImageWorkflow(chat_id=self.chat_id, **payload.model_dump())))
 
     def update(self, workflow_id: str, payload: ImageWorkflowPatch) -> ImageWorkflowRead:
         record = self.repository.get_owned(ImageWorkflow, workflow_id, self.chat_id)
         for name, value in payload.model_dump(exclude_unset=True).items():
             setattr(record, name, value)
-        if not record.prompt_template:
-            record.prompt_template = default_template(bool(image_inputs(record.workflow)))
         self.repository.session.flush()
-        return read_workflow(record)
+        return ImageWorkflowRead.model_validate(record)
 
     def delete(self, workflow_id: str) -> None:
         record = self.repository.get_owned(ImageWorkflow, workflow_id, self.chat_id)
@@ -64,9 +52,9 @@ class ImageWorkflowService:
 
     def import_source(self, source_id: str) -> ImageWorkflowRead:
         source = self.repository.get_owned(ImageWorkflow, source_id, None)
-        return read_workflow(self.repository.add(ImageWorkflow(
+        return ImageWorkflowRead.model_validate(self.repository.add(ImageWorkflow(
             chat_id=self.chat_id, name=source.name, base_url=source.base_url, workflow=source.workflow,
-            prompt_template=source.prompt_template, width=source.width, height=source.height,
+            width=source.width, height=source.height,
         )))
 
 
@@ -139,7 +127,8 @@ class CastService:
         cast, char, user = self._subjects(chat_id)
         # A multi-protagonist card's name is not a person, so it is only offered without a cast.
         people = [*(cast or [char]), user]
-        return FocusOptions(options=[FocusOption(id=p.id, name=p.name, has_reference=p.reference_image is not None) for p in people],
+        return FocusOptions(options=[FocusOption(id=p.id, name=p.name, has_reference=p.reference_image is not None,
+                                                has_appearance=bool(p.appearance.strip())) for p in people],
                             default=[(cast or [char])[0].id])
 
     def resolve_focus(self, chat_id: str, requested: list[str]) -> tuple[list[Subject], list[Subject]]:
@@ -167,8 +156,6 @@ class IllustrationService:
         self.repository.get(Chat, chat_id)
         if payload.image_workflow_id is not None:
             self.repository.get_owned(ImageWorkflow, payload.image_workflow_id, chat_id)
-        if payload.model_config_id is not None:
-            self.repository.get_owned(ModelConfig, payload.model_config_id, chat_id)
         record = self.repository.session.get(ChatIllustrationSettings, chat_id)
         if record is None:
             record = self.repository.add(ChatIllustrationSettings(chat_id=chat_id))
@@ -177,21 +164,10 @@ class IllustrationService:
         self.repository.session.flush()
         return self.settings(chat_id)
 
-    def _chat_model(self, chat_id: str, source_id: str) -> str:
-        """A chat copy of a library model config, reusing an identical copy it already has."""
-        source = self.repository.get_owned(ModelConfig, source_id, None)
-        fields = ("name", "api_type", "base_url", "api_key", "model", "default_parameters")
-        for record in self.repository.list_owned(ModelConfig, chat_id):
-            if all(getattr(record, name) == getattr(source, name) for name in fields):
-                return record.id
-        return self.repository.add(ModelConfig(chat_id=chat_id, **{name: getattr(source, name) for name in fields})).id
-
     def setup(self, chat_id: str, payload: IllustrationSetup) -> IllustrationSettings:
         workflow_id = (ImageWorkflowService(self.repository, chat_id).import_source(payload.image_workflow_id).id
                        if payload.image_workflow_id is not None else None)
-        model_id = self._chat_model(chat_id, payload.model_config_id) if payload.model_config_id is not None else None
-        return self.replace_settings(chat_id, IllustrationSettings(mode=payload.mode, image_workflow_id=workflow_id,
-                                                                   model_config_id=model_id))
+        return self.replace_settings(chat_id, IllustrationSettings(mode=payload.mode, image_workflow_id=workflow_id))
 
     def list(self, chat_id: str) -> list[IllustrationRead]:
         self.repository.get(Chat, chat_id)

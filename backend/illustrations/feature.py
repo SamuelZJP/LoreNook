@@ -32,7 +32,7 @@ def start(app: FastAPI, configuration, database, client, *, comfyui_transport=No
     storage = ImageStorage(configuration.resolved_image_directory())
     interrupt_unfinished(database)
     board = ProgressBoard()
-    runner = IllustrationRunner(database, client, comfy, storage, app.state.media, board, illustration_executor)
+    runner = IllustrationRunner(database, comfy, storage, app.state.media, board, illustration_executor)
     app.state.illustration_progress = board
     app.state.image_storage = storage
     app.state.illustrations = runner

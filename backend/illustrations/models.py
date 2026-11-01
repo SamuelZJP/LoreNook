@@ -11,13 +11,12 @@ from backend.repository.models import Base, Identified, Timestamped
 
 
 class ImageWorkflow(Identified, Timestamped, Base):
-    """A ComfyUI API-format workflow with {{placeholders}} and the template that writes its prompts."""
+    """A ComfyUI API-format workflow with {{placeholders}}."""
     __tablename__ = "image_workflows"
     chat_id: Mapped[str | None] = mapped_column(ForeignKey("chats.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(Text)
     base_url: Mapped[str] = mapped_column(Text)
     workflow: Mapped[dict[str, Any]] = mapped_column(JSON(none_as_null=True))
-    prompt_template: Mapped[str] = mapped_column(Text, default="", server_default="")
     width: Mapped[int] = mapped_column(Integer, default=1344, server_default="1344")
     height: Mapped[int] = mapped_column(Integer, default=768, server_default="768")
     __table_args__ = (
@@ -33,12 +32,10 @@ class ChatIllustrationSettings(Base):
     chat_id: Mapped[str] = mapped_column(ForeignKey("chats.id", ondelete="CASCADE"), primary_key=True)
     mode: Mapped[str] = mapped_column(String(16), default="off", server_default="off")
     image_workflow_id: Mapped[str | None] = mapped_column(String(36))
-    model_config_id: Mapped[str | None] = mapped_column(String(36))
     # Main character ids chosen by the user; empty means the default.
     focus: Mapped[list[str]] = mapped_column(JSON(none_as_null=True), default=list, server_default="[]")
     __table_args__ = (
         ForeignKeyConstraint(["image_workflow_id", "chat_id"], ["image_workflows.id", "image_workflows.chat_id"]),
-        ForeignKeyConstraint(["model_config_id", "chat_id"], ["model_configs.id", "model_configs.chat_id"]),
         CheckConstraint("mode IN ('off', 'every_round', 'scene_change', 'manual')", name="valid_mode"),
     )
 
@@ -83,10 +80,10 @@ class Illustration(Identified, Timestamped, Base):
     )
     __table_args__ = (
         ForeignKeyConstraint(["round_id", "chat_id"], ["rounds.id", "rounds.chat_id"], ondelete="CASCADE"),
-        CheckConstraint("status IN ('pending', 'prompting', 'rendering', 'ready', 'failed')", name="valid_status"),
+        CheckConstraint("status IN ('pending', 'rendering', 'ready', 'failed')", name="valid_status"),
         CheckConstraint("status != 'ready' OR (file_name IS NOT NULL AND media_type IS NOT NULL)", name="ready_file"),
         CheckConstraint("status != 'failed' OR error IS NOT NULL", name="failed_error"),
         CheckConstraint("prompt IS NULL OR (json_valid(prompt) AND json_type(prompt) = 'object')", name="prompt_object"),
         Index("uq_illustrations_one_active", "round_id", unique=True,
-              sqlite_where=text("status IN ('pending', 'prompting', 'rendering')")),
+              sqlite_where=text("status IN ('pending', 'rendering')")),
     )

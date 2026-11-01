@@ -241,7 +241,7 @@ export function rowDetails(table: string, row: Row, lookup: Lookup): Detail[] {
     case 'episodes': return [d('范围', roundRange(lookup, row.start_round_id, row.end_round_id)), d('摘要', row.summary)]
     case 'image_workflows': return [d('地址', row.base_url), d('尺寸', `${row.width}×${row.height}`)]
     case 'chat_recall_settings': return [d('启用', row.enabled ? '是' : '否'), d('情节上限', row.episode_limit), d('摘要上限', row.summary_limit), d('模型', nameOf(lookupRow(lookup, 'model_configs', row.model_config_id)) || null), d('深度', row.depth)]
-    case 'chat_illustration_settings': return [d('时机', row.mode), d('工作流', nameOf(lookupRow(lookup, 'image_workflows', row.image_workflow_id)) || null), d('提示词模型', nameOf(lookupRow(lookup, 'model_configs', row.model_config_id)) || null)]
+    case 'chat_illustration_settings': return [d('时机', row.mode), d('工作流', nameOf(lookupRow(lookup, 'image_workflows', row.image_workflow_id)) || null)]
     case 'cast_members': return [d('角色', nameOf(lookupRow(lookup, 'characters', row.character_id)) || null), d('外貌', firstLine(row.appearance) || null), d('参考图', row.reference_image ? '有' : '无')]
     case 'identity_appearances': return [d('外貌', firstLine(row.appearance) || null), d('参考图', row.reference_image ? '有' : '无')]
     case 'illustrations': return [d('状态', row.status), ...(row.error ? [d('错误', row.error)] : []), d('隐藏', row.hidden ? '是' : '否')]

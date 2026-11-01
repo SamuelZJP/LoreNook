@@ -16,7 +16,6 @@ class ImageWorkflowRow(TimestampedRow):
     name: Name
     base_url: str
     workflow: dict[str, JsonValue]
-    prompt_template: str = ""
     width: ImageSize = 1344
     height: ImageSize = 768
 
@@ -25,7 +24,6 @@ class IllustrationSettingsRow(Contract):
     chat_id: RecordId
     mode: IllustrationMode = "off"
     image_workflow_id: RecordId | None = None
-    model_config_id: RecordId | None = None
     focus: list[str] = Field(default_factory=list)
 
 

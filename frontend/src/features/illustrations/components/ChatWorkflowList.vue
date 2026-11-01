@@ -36,7 +36,7 @@ async function importSource() {
   <button v-for="w in workflows.data.value" :key="w.id" class="list-item card" type="button" @click="editing = { id: w.id }">
     <div class="grow">
       <div class="ellipsis">{{ w.name }}</div>
-      <div class="faint ellipsis mono small">{{ w.image_inputs.length ? '图生图' : '文生图' }} · {{ w.width }}×{{ w.height }} · {{ w.prompt_fields.join(', ') }}</div>
+      <div class="faint ellipsis mono small">{{ w.width }}×{{ w.height }}</div>
     </div>
     <span v-if="w.id === settings.data.value?.image_workflow_id" class="badge accent">使用中</span>
     <Pencil class="ic" />

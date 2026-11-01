@@ -107,6 +107,6 @@ async function removeChat() {
       <button class="btn primary" type="button" :disabled="!dirty || saving || !form.title.trim()" @click="save"><Save /> 保存</button>
     </div>
     <RecallSettingsSection :chat-id="chat.id" :model-configs="chat.model_configs" />
-    <IllustrationSettingsSection :chat-id="chat.id" :model-configs="chat.model_configs" />
+    <IllustrationSettingsSection :chat-id="chat.id" />
   </div>
 </template>

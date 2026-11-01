@@ -11,15 +11,18 @@ export const MODE_LABELS: Record<IllustrationMode, string> = {
 /** Beyond this, image models usually get noticeably worse. Only a warning. */
 export const FOCUS_SOFT_LIMIT = 2
 
-const ACTIVE = ['pending', 'prompting', 'rendering']
+/** How many reference images a workflow receives; same as the backend. */
+export const MAX_IMAGES = 8
+
+const ACTIVE = ['pending', 'rendering']
 export const isActive = (i: Illustration) => ACTIVE.includes(i.status)
 
 export const mediaUrl = (name: string) => `/api/media/${name}`
 
-/** Same placeholder rule as the backend; `seed`, `width`, `height` are filled by LoreNook. */
+/** Same placeholder rule as the backend. */
 const PLACEHOLDER = /\{\{\s*((?:image:)?[A-Za-z_][A-Za-z0-9_]*)\s*\}\}/g
-const BUILTINS = new Set(['seed', 'width', 'height'])
-export function placeholders(workflow: unknown): { fields: string[]; images: string[] } {
+const KNOWN = new Set(['prompt', 'images', 'seed', 'width', 'height'])
+export function placeholders(workflow: unknown): { hasPrompt: boolean; unknown: string[] } {
   const names = new Set<string>()
   const walk = (v: unknown) => {
     if (typeof v === 'string') for (const m of v.matchAll(PLACEHOLDER)) names.add(m[1])
@@ -27,8 +30,7 @@ export function placeholders(workflow: unknown): { fields: string[]; images: str
     else if (v && typeof v === 'object') Object.values(v).forEach(walk)
   }
   walk(workflow)
-  const all = [...names].filter((n) => !BUILTINS.has(n)).sort()
-  return { fields: all.filter((n) => !n.startsWith('image:')), images: all.filter((n) => n.startsWith('image:')) }
+  return { hasPrompt: names.has('prompt'), unknown: [...names].filter((n) => !KNOWN.has(n)).sort() }
 }
 
 /** The round summary starts with a date—time—place header; it doubles as the plate caption. */

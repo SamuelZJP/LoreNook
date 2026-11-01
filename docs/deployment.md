@@ -17,6 +17,8 @@ Machine-local files (not in Git): `deploy/lorenook.env`, `deploy/lorenook.servic
 
 Wait for running generation/archive work to finish first. Illustration jobs still running at shutdown are marked failed on the next start. Uvicorn must run a single worker: the illustration queue and its live progress are in-process.
 
+ComfyUI: `SaveImage` writes the whole workflow into each PNG, including the story text in `{{prompt}}`; start ComfyUI with `--disable-metadata` to keep it out. The render timeout (`comfyui_timeout_seconds`, 600 s) also has to cover any LLM nodes in the workflow, including their retries.
+
 ```bash
 cd ~/LoreNook
 sudo systemctl stop lorenook

@@ -56,8 +56,6 @@ def text_of(body: dict) -> tuple[str, str]:
 
 
 def classify(body: dict, system: str) -> str:
-    if "插图提示词助手" in system:
-        return "image_prompt"
     if "记忆召回器" in system:
         return "memory_recall"
     if "JSON Patch" in system or "JSONPatch" in system:
@@ -114,14 +112,7 @@ def handler(request: httpx.Request) -> httpx.Response:
         labels = re.findall(r"^\[([ER]\d+)\]", rest, re.MULTILINE) if "[[recall]]" in rest else []
         text = json.dumps({"reason": "模拟召回。", "ids": labels[:1]}, ensure_ascii=False)
         return google(text) if is_google else deepseek(text)
-    if step == "image_prompt":
-        line = next((l for l in rest.splitlines() if "恰好包含这些字符串字段" in l), "")
-        fields = re.findall(r'"([A-Za-z_][A-Za-z0-9_]*)"', line) or ["prompt"]
-        values = {name: ("" if "negative" in name else f"mock {name}, 1girl, library, warm light") for name in fields}
-        if "[[fail-image]]" in rest:
-            values = {name: f"{value} [[fail-image]]" for name, value in values.items()}
-        text = json.dumps(values, ensure_ascii=False)
-    elif step == "state_update":
+    if step == "state_update":
         patch = "[]"
         if "[[newday]]" in rest:
             day_offset += 1
@@ -234,7 +225,7 @@ MOCK_WORKFLOW = {
     "4": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": "mock.safetensors"}},
     "5": {"class_type": "EmptyLatentImage", "inputs": {"width": "{{width}}", "height": "{{height}}", "batch_size": 1}},
     "6": {"class_type": "CLIPTextEncode", "inputs": {"text": "masterpiece, {{prompt}}", "clip": ["4", 1]}},
-    "7": {"class_type": "CLIPTextEncode", "inputs": {"text": "lowres, {{negative_prompt}}", "clip": ["4", 1]}},
+    "7": {"class_type": "CLIPTextEncode", "inputs": {"text": "lowres", "clip": ["4", 1]}},
     "8": {"class_type": "VAEDecode", "inputs": {"samples": ["3", 0], "vae": ["4", 2]}},
     "9": {"class_type": "SaveImage", "inputs": {"filename_prefix": "LoreNook", "images": ["8", 0]}},
 }
@@ -251,8 +242,8 @@ def seed(app) -> None:
                 "name": "模拟 SDXL", "base_url": "http://127.0.0.1:8188", "workflow": MOCK_WORKFLOW,
             }).raise_for_status()
             client.post("/api/image-workflows", json={
-                "name": "模拟 图生图", "base_url": "http://127.0.0.1:8188", "width": 832, "height": 1216,
-                "workflow": {**MOCK_WORKFLOW, "10": {"class_type": "LoadImage", "inputs": {"image": "{{image:focus_1}}"}}},
+                "name": "模拟 参考图", "base_url": "http://127.0.0.1:8188", "width": 832, "height": 1216,
+                "workflow": {**MOCK_WORKFLOW, "10": {"class_type": "LLMAPIProNode", "inputs": {"prompt": "{{prompt}}", "images": "{{images}}"}}},
             }).raise_for_status()
             print("Seeded mock image workflow.")
         if client.get("/api/characters").json():

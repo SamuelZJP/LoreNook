@@ -1,17 +1,16 @@
 from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import FileResponse, StreamingResponse
 
-from backend.api.dependencies import DatabaseDependency, ModelClientDependency
+from backend.api.dependencies import DatabaseDependency
 from backend.illustrations.jobs import preview_prompt, request_illustration
 from backend.illustrations.models import Illustration
 from backend.illustrations.progress import progress_events
 from backend.illustrations.schemas import (
-    AppearanceInput, CastMemberRead, CastReplace, DefaultTemplates, FocusOptions, IllustrationPatch, IllustrationPrompt,
-    IllustrationRead, IllustrationRequest, IllustrationSettings, IllustrationSetup, ImageWorkflowCreate,
-    ImageWorkflowImport, ImageWorkflowPatch, ImageWorkflowRead,
+    AppearanceInput, CastMemberRead, CastReplace, FocusOptions, IllustrationPatch, IllustrationPrompt, IllustrationRead,
+    IllustrationRequest, IllustrationSettings, IllustrationSetup, ImageWorkflowCreate, ImageWorkflowImport,
+    ImageWorkflowPatch, ImageWorkflowRead,
 )
 from backend.illustrations.service import CastService, IllustrationService, ImageWorkflowService
-from backend.illustrations.templates import IMAGE_TO_IMAGE, TEXT_TO_IMAGE
 from backend.repository.models import Character, Chat, UserIdentity
 from backend.repository.queries import Repository
 from backend.shared.errors import NotFoundError
@@ -62,12 +61,6 @@ def workflow_router(prefix: str) -> APIRouter:
 
 
 router = APIRouter()
-
-
-# Registered before the workflow routes, or "default-templates" would be read as a workflow id.
-@router.get("/api/image-workflows/default-templates", response_model=DefaultTemplates, tags=["image-workflows"])
-def default_templates():
-    return DefaultTemplates(text_to_image=TEXT_TO_IMAGE, image_to_image=IMAGE_TO_IMAGE)
 
 
 @router.post("/api/chats/{chat_id}/image-workflows/import", response_model=ImageWorkflowRead, status_code=201,
@@ -209,9 +202,8 @@ def generate(chat_id: str, round_id: str, request: Request, database: DatabaseDe
 
 
 @chat.post("/rounds/{round_id}/illustration-prompt", response_model=IllustrationPrompt)
-def prompt(chat_id: str, round_id: str, database: DatabaseDependency, client: ModelClientDependency,
-           payload: IllustrationRequest | None = None):
-    return preview_prompt(database, client, chat_id, round_id, payload.focus if payload else None)
+def prompt(chat_id: str, round_id: str, database: DatabaseDependency, payload: IllustrationRequest | None = None):
+    return preview_prompt(database, chat_id, round_id, payload.focus if payload else None)
 
 
 @chat.patch("/illustrations/{illustration_id}", response_model=IllustrationRead)
