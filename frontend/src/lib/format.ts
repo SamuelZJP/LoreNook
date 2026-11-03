@@ -25,3 +25,8 @@ export function substituteNames(text: string, user: string, char: string): strin
 export function pretty(value: unknown): string {
   return JSON.stringify(value, null, 2)
 }
+
+/** A round's `日期 · 时间 · 地点` line; empty parts are left out. */
+export function sceneLine(scene: { date: string; time: string; place: string } | null | undefined): string {
+  return scene ? [scene.date, scene.time, scene.place].filter(Boolean).join(' · ') : ''
+}

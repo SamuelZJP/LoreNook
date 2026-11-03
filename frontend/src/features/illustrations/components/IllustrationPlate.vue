@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { Maximize2, RefreshCw, FileText, EyeOff, Image as ImageIcon, AlertTriangle, PenTool, Sparkles, Users } from 'lucide-vue-next'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { Maximize2, RefreshCw, FileText, EyeOff, Image as ImageIcon, AlertTriangle, PenTool, Sparkles, Users, MoreHorizontal, X } from 'lucide-vue-next'
 import { illustrationApi, type Illustration, type IllustrationProgress } from '../api'
 
 /** One round's illustration, framed as a book plate at the head of its reading page. */
-const props = defineProps<{ chatId: string; illustration: Illustration; progress?: IllustrationProgress; caption: string; busy?: boolean }>()
+const props = defineProps<{ chatId: string; illustration: Illustration; progress?: IllustrationProgress; busy?: boolean }>()
 const emit = defineEmits<{ open: []; regenerate: []; focus: []; prompt: []; hide: [hidden: boolean] }>()
 
 const it = computed(() => props.illustration)
@@ -27,6 +27,18 @@ const detail = computed(() => {
   return [p.node, count].filter(Boolean).join(' · ')
 })
 
+// Touch screens have no hover, so the buttons fold into one toggle that keeps the image clear.
+const actionsOpen = ref(false)
+const actionsEl = ref<HTMLElement>()
+function closeOutside(e: PointerEvent) {
+  if (!actionsEl.value?.contains(e.target as Node)) actionsOpen.value = false
+}
+watch(actionsOpen, (open) => {
+  if (open) document.addEventListener('pointerdown', closeOutside)
+  else document.removeEventListener('pointerdown', closeOutside)
+})
+onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOutside))
+
 const steps = computed(() => {
   const s = status.value
   return [
@@ -39,7 +51,7 @@ const steps = computed(() => {
 <template>
   <!-- Hidden: a thin line that can bring it back -->
   <button v-if="it.hidden" class="hidden-strip" type="button" @click="emit('hide', false)">
-    <span class="rule dashed" /><ImageIcon /><span>插图已隐藏 · 点此显示</span><span class="rule dashed" />
+    <span class="rule" /><ImageIcon /><span>插图已隐藏 · 点此显示</span><span class="rule" />
   </button>
 
   <!-- Failed: one quiet line, never a large error box -->
@@ -73,7 +85,10 @@ const steps = computed(() => {
           <span v-else class="bar" aria-hidden="true" />
         </div>
       </div>
-      <div v-if="it.status === 'ready'" class="actions">
+      <div v-if="it.status === 'ready'" ref="actionsEl" class="actions" :class="{ open: actionsOpen }">
+        <button class="toggle" type="button" :aria-label="actionsOpen ? '收起按钮' : '展开按钮'" :aria-expanded="actionsOpen" @click="actionsOpen = !actionsOpen">
+          <X v-if="actionsOpen" /><MoreHorizontal v-else />
+        </button>
         <button type="button" aria-label="全屏查看" title="全屏查看" @click="emit('open')"><Maximize2 /></button>
         <button type="button" aria-label="重新生成" title="重新生成" :disabled="busy" @click="emit('regenerate')"><RefreshCw /></button>
         <button type="button" aria-label="换人物重新生成" title="换人物重新生成" :disabled="busy" @click="emit('focus')"><Users /></button>
@@ -81,12 +96,11 @@ const steps = computed(() => {
         <button type="button" aria-label="隐藏插图" title="隐藏插图" @click="emit('hide', true)"><EyeOff /></button>
       </div>
     </div>
-    <figcaption v-if="caption"><span class="rule" /><span>{{ caption }}</span><span class="rule" /></figcaption>
   </figure>
 </template>
 
 <style scoped>
-.plate { margin: 2px 0 18px; display: flex; flex-direction: column; gap: 10px; }
+.plate { margin: 2px 0 12px; }
 .frame { position: relative; padding: 5px; border: 1px solid var(--page-border); border-radius: 4px; background: var(--page-bg); box-shadow: 0 1px 3px rgb(60 40 20 / 10%); }
 /* The width follows the height limit, so a portrait image keeps its ratio instead of being cropped to the column. */
 .image { --plate-max: min(62vh, 560px); position: relative; overflow: hidden; border-radius: 2px; background: var(--page-rule); max-height: var(--plate-max); width: min(100%, calc(var(--plate-max) * var(--plate-ratio))); margin-inline: auto; }
@@ -97,7 +111,12 @@ img.loaded { opacity: 1; }
 
 .actions { position: absolute; top: 14px; right: 14px; display: flex; gap: 6px; opacity: 0; transition: opacity 0.15s; }
 .frame:hover .actions, .frame:focus-within .actions { opacity: 1; }
-@media (hover: none) { .actions { opacity: 1; } }
+.actions .toggle { display: none; }
+@media (hover: none) {
+  .actions { opacity: 1; flex-direction: row-reverse; }
+  .actions .toggle { display: flex; }
+  .actions:not(.open) button:not(.toggle) { display: none; }
+}
 .actions button {
   width: 34px; height: 34px; border-radius: 50%; border: 0; display: flex; align-items: center; justify-content: center;
   background: rgb(29 27 32 / 55%); color: #f6efe3; cursor: pointer; backdrop-filter: blur(4px);
@@ -126,9 +145,7 @@ img.loaded { opacity: 1; }
 @keyframes pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .working, .bar, .pulse { animation: none; } }
 
-figcaption { display: flex; align-items: center; gap: 12px; font-family: var(--font-reading); font-size: 12.5px; letter-spacing: 0.12em; color: var(--page-muted); text-align: center; }
-.rule { flex: 1; height: 1px; background: var(--page-border); min-width: 16px; }
-.rule.dashed { height: 0; background: none; border-top: 1px dashed var(--page-border); }
+.rule { flex: 1; min-width: 16px; height: 0; border-top: 1px dashed var(--page-border); }
 
 .failed {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; padding: 6px 8px 6px 10px;
@@ -148,9 +165,8 @@ figcaption { display: flex; align-items: center; gap: 12px; font-family: var(--f
 
 @media (max-width: 640px) {
   /* Full-bleed inside the page bubble on phones. */
-  .plate { margin: -14px -14px 14px; gap: 8px; }
+  .plate { margin: -14px -14px 12px; }
   .frame { padding: 0; border: 0; border-radius: 0; box-shadow: none; }
   .image { --plate-max: 70vh; border-radius: 4px 16px 0 0; }
-  figcaption { padding: 0 14px; }
 }
 </style>

@@ -2526,6 +2526,28 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            scene?: components["schemas"]["RoundScene"] | null;
+        };
+        /**
+         * RoundScene
+         * @description When and where a round ended, from `世界` of its state. Missing or non-text fields are empty.
+         */
+        RoundScene: {
+            /**
+             * Date
+             * @default
+             */
+            date: string;
+            /**
+             * Time
+             * @default
+             */
+            time: string;
+            /**
+             * Place
+             * @default
+             */
+            place: string;
         };
         /** RoundSummaryMemory */
         RoundSummaryMemory: {

@@ -48,7 +48,8 @@ def list_rounds(chat_id: str, database: DatabaseDependency):
     with database.read() as session:
         repository = Repository(session)
         repository.get(Chat, chat_id)
-        return [RoundRead.model_validate(record) for record in repository.rounds(chat_id)]
+        worlds = repository.round_worlds(chat_id)
+        return [RoundRead.of(record, worlds.get(record.id)) for record in repository.rounds(chat_id)]
 
 
 @router.get("/rounds/{round_id}", response_model=ArchiveProgress)

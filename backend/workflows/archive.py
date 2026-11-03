@@ -28,7 +28,7 @@ def read_progress(repository: Repository, chat_id: str, round_id: str) -> Archiv
     record = repository.get_owned(Round, round_id, chat_id)
     state = repository.state_for_round(chat_id, round_id)
     episode = repository.episode_for_round(chat_id, round_id)
-    return ArchiveProgress(round=RoundRead.model_validate(record),
+    return ArchiveProgress(round=RoundRead.of(record, state.content.get("世界") if state is not None else None),
                            state=StateRead.model_validate(state) if state is not None else None,
                            episode=EpisodeRead.model_validate(episode) if episode is not None else None)
 

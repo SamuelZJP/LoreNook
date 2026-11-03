@@ -11,7 +11,7 @@ from backend.llm.client import ModelClient
 from backend.repository.archive import ArchiveRepository
 from backend.repository.models import Character, Chat, ChatModelBinding, ModelConfig, Round, WritingPreset
 from backend.repository.queries import Repository
-from backend.schemas.archive import ArchiveConfirm
+from backend.schemas.archive import ArchiveConfirm, RoundScene
 from backend.shared.errors import ArchiveExecutionError, ConflictError
 from backend.tests.test_catalog_api import run_api
 from backend.tests.test_writing import database_contents
@@ -68,6 +68,12 @@ def successful_handler(calls, *, new_day=False):
     return handler
 
 
+def test_round_scene_comes_from_its_state_world():
+    assert RoundScene.from_world(None) is None
+    assert RoundScene.from_world({"日期": "2026-10-19", "时间": 3, "地点": "很长很长的地点名称——校门外的林荫道尽头"}) == RoundScene(
+        date="2026-10-19", place="很长很长的地点名称——校门外的林荫道尽头")
+
+
 def seed_history(database, chat_id, count=5):
     with database.transaction() as session:
         repo = ArchiveRepository(session)
@@ -102,6 +108,8 @@ def test_confirmation_runs_all_steps_and_preserves_original_text(database, archi
         assert record["summary"] == SUMMARY and record["archive_error"] is None
         assert record["episode_required"] is False and progress["episode"] is None
         assert progress["state"]["round_id"] == record["id"]
+        world = progress["state"]["content"]["世界"]
+        assert record["scene"] == {"date": world["日期"], "time": world["时间"], "place": world["地点"]}
         assert (await client.get(root + "/archive")).json() == progress
         assert (await client.get(root + f"/rounds/{record['id']}")).json() == progress
         assert (await client.get(root + "/rounds")).json() == [record]

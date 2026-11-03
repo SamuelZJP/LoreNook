@@ -33,15 +33,15 @@ export function placeholders(workflow: unknown): { hasPrompt: boolean; unknown: 
   return { hasPrompt: names.has('prompt'), unknown: [...names].filter((n) => !KNOWN.has(n)).sort() }
 }
 
-/** The round summary starts with a date—time—place header; it doubles as the plate caption. */
-export function splitSummary(summary: string | null | undefined): { caption: string; body: string } {
+/** The round summary without its leading date—time—place header, which the scene line already shows. */
+export function summaryBody(summary: string | null | undefined): string {
   const text = (summary ?? '').trim()
   const [first, ...rest] = text.split('\n')
-  if (!/^\d{2}/.test(first ?? '')) return { caption: '', body: text }
+  if (!/^\d{2}/.test(first ?? '')) return text
   const parts = first.split(/\s*[—–]+\s*/).filter(Boolean)
   // A header may run straight into narration on the same line; keep only short leading parts.
-  if (parts.length < 2 || parts.slice(0, 3).some((p) => p.length > 24)) return { caption: '', body: text }
-  return { caption: parts.slice(0, 3).join(' · '), body: [parts.slice(3).join('—'), ...rest].join('\n').trim() }
+  if (parts.length < 2 || parts.slice(0, 3).some((p) => p.length > 24)) return text
+  return [parts.slice(3).join('—'), ...rest].join('\n').trim()
 }
 
 // ---- Preferences: this browser only, like the app's own prefs ----

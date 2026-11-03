@@ -24,6 +24,7 @@ import OutputView from '@/components/chat/OutputView.vue'
 import ComposerBar from '@/components/chat/ComposerBar.vue'
 import ArchiveBanner from '@/components/chat/ArchiveBanner.vue'
 import RoundSummaryBlock from '@/components/chat/RoundSummaryBlock.vue'
+import RoundScene from '@/components/chat/RoundScene.vue'
 import EpisodeCard from '@/components/chat/EpisodeCard.vue'
 import ChatPanel from '@/components/panel/ChatPanel.vue'
 import type { PanelTab } from '@/components/panel/ChatPanel.vue'
@@ -192,6 +193,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
                 </span>
               </template>
               <RoundIllustration v-if="!raw.has(r.id)" :round="r" />
+              <RoundScene v-if="!raw.has(r.id)" :round="r" />
               <OutputView :text="r.ai_output" :raw="raw.has(r.id)" />
               <template #actions>
                 <button class="btn ghost small" type="button" @click="toggle(raw, r.id)"><Code2 /> {{ raw.has(r.id) ? '渲染' : '原文' }}</button>
