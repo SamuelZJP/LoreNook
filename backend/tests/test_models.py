@@ -72,7 +72,7 @@ def test_google_request_authentication_merge_and_full_json_response(make_client)
         body = json.loads(request.content)
         assert body["contents"] == BODY["contents"]
         assert body["generationConfig"] == {"temperature": 1, "topP": 0.9, "seed": None}
-        assert request.extensions["timeout"] == {"connect": 10, "read": 120, "write": 30, "pool": 5}
+        assert request.extensions["timeout"] == {"connect": 10, "read": 300, "write": 30, "pool": 5}
         return httpx.Response(200, json=RESULT)
     config = connection(default_parameters={"generationConfig": {"temperature": 0.5, "topP": 0.9}})
     built = BuiltRequest(api_type=API, body={**BODY, "generationConfig": {"temperature": 1, "seed": None}})
@@ -187,8 +187,11 @@ def test_config_api_crud_scope_secrets_and_invocation(database, chat, scope):
         assert (await client.get(path)).json() == item
         assert (await client.patch(path, json={})).json() == item
         assert (await client.patch(path, json={"name": "改名"})).json()["has_api_key"] is True
+        assert item["timeout_seconds"] == 300
+        assert (await client.patch(path, json={"timeout_seconds": 600})).json()["timeout_seconds"] == 600
         for bad in ({"name": " "}, {"api_key": None}, {"base_url": None}, {"model": " "},
-                    {"default_parameters": []}, {"chat_id": chat[0]}, {"base_url": "ftp://bad"}):
+                    {"default_parameters": []}, {"chat_id": chat[0]}, {"base_url": "ftp://bad"},
+                    {"timeout_seconds": None}, {"timeout_seconds": 9}, {"timeout_seconds": 1801}, {"timeout_seconds": 60.5}):
             assert (await client.patch(path, json=bad)).status_code == 422
         foreign = (await client.post(other_root, json=config_payload())).json()
         foreign_path = root + "/" + foreign["id"]
@@ -201,6 +204,7 @@ def test_config_api_crud_scope_secrets_and_invocation(database, chat, scope):
         result = await client.post(path + "/invoke", json={"api_type": API, "body": BODY})
         assert result.status_code == 200, result.text
         assert result.json() == {"response": RESULT} and len(calls) == 1
+        assert calls[0].extensions["timeout"]["read"] == 600
         assert (await client.patch(path, json={"api_key": ""})).json()["has_api_key"] is False
         assert (await client.patch(path, json={"api_key": "new-key"})).json()["has_api_key"] is True
         assert (await client.delete(path)).status_code == 204
@@ -259,14 +263,14 @@ def test_model_copy_bindings_deletion_and_detached_connection(database, chat):
 
 def test_source_model_copy_independence_and_cross_chat_access(database):
     async def scenario(client):
-        source = (await client.post("/api/model-configs", json=config_payload())).json()
+        source = (await client.post("/api/model-configs", json=config_payload(timeout_seconds=900))).json()
         character = (await client.post("/api/characters", json={"name": "角色", "state_schema": STATE_SCHEMA})).json()
         identity = (await client.post("/api/user-identities", json={"name": "身份"})).json()
         payload = {"title": "聊天", "character_id": character["id"], "user_identity_id": identity["id"],
                    "model_bindings": {"writing": source["id"], "state_update": source["id"]}}
         first = (await client.post("/api/chats", json=payload)).json()
         second = (await client.post("/api/chats", json=payload)).json()
-        assert len(first["model_configs"]) == 1
+        assert len(first["model_configs"]) == 1 and first["model_configs"][0]["timeout_seconds"] == 900
         assert first["model_bindings"]["writing"] == first["model_bindings"]["state_update"]
         first_id, second_id = first["model_configs"][0]["id"], second["model_configs"][0]["id"]
         assert len({first_id, second_id, source["id"]}) == 3

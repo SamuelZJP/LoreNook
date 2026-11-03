@@ -43,7 +43,7 @@ def create_chat(
             configs[source_id] = repository.add(ModelConfig(
                 chat_id=chat.id, name=source.name, api_type=source.api_type,
                 base_url=source.base_url, api_key=source.api_key, model=source.model,
-                default_parameters=deepcopy(source.default_parameters),
+                default_parameters=deepcopy(source.default_parameters), timeout_seconds=source.timeout_seconds,
             )).id
         for purpose, source_id in payload.model_bindings.items():
             repository.add(ChatModelBinding(chat_id=chat.id, purpose=purpose, model_config_id=configs[source_id]))

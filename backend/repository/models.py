@@ -145,6 +145,7 @@ class ModelConfig(Identified, Base):
     default_parameters: Mapped[dict[str, Any]] = mapped_column(
         JSON(none_as_null=True), default=dict, server_default="{}"
     )
+    timeout_seconds: Mapped[int] = mapped_column(Integer, default=300, server_default="300")
     __table_args__ = (
         UniqueConstraint("id", "chat_id"),
         CheckConstraint("json_valid(default_parameters) AND json_type(default_parameters) = 'object'",

@@ -47,8 +47,7 @@ def create_app(
         app.state.state_validator = state_validator
         app.state.state_recent_summaries = configuration.state_recent_summaries
         app.state.round_summary_recent_summaries = configuration.round_summary_recent_summaries
-        client = ModelClient(transport=llm_transport, timeout_seconds=configuration.llm_timeout_seconds,
-                             max_response_bytes=configuration.llm_max_response_bytes,
+        client = ModelClient(transport=llm_transport, max_response_bytes=configuration.llm_max_response_bytes,
                              recording_directory=configuration.llm_recording_directory)
         app.state.model_client = client
         app.state.media = MediaStorage(configuration.resolved_media_directory())

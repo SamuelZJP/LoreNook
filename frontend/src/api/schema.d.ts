@@ -2399,6 +2399,11 @@ export interface components {
             default_parameters?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+            /**
+             * Timeout Seconds
+             * @default 300
+             */
+            timeout_seconds: number;
         };
         /** ModelConfigPatch */
         ModelConfigPatch: {
@@ -2416,6 +2421,8 @@ export interface components {
             default_parameters?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
+            /** Timeout Seconds */
+            timeout_seconds?: number | null;
         };
         /** ModelConfigRead */
         ModelConfigRead: {
@@ -2435,6 +2442,8 @@ export interface components {
             default_parameters: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+            /** Timeout Seconds */
+            timeout_seconds: number;
             /** Has Api Key */
             has_api_key: boolean;
         };

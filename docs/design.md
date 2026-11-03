@@ -179,6 +179,7 @@ function parse(response)  { return 'full AI output text'; }  // throw Error to f
 - Supported `api_type`: `google_generate_content`, `deepseek_chat_completions`. The preset's `api_type` must match the config exactly; requests are never converted.
 - `base_url` is the API root including version (e.g. `https://generativelanguage.googleapis.com/v1beta`).
 - Config `default_parameters` are merged recursively into the request; explicit preset values win (including `false`, `0`, `""`, `null`); arrays replace whole.
+- Config `timeout_seconds` (10–1800, default 300) is how long a call may go without receiving data. Calls are non-streaming, so in practice it caps the wait for the whole response.
 - Each chat binds a config to each purpose: `writing`, `state_update`, `round_summary`, `episode_summary`. Purposes may share a config.
 - `LORENOOK_LLM_RECORDING_DIRECTORY` (optional) records full requests/responses. Off by default; records contain chat content. The HTTP client ignores `HTTP(S)_PROXY`.
 

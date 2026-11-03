@@ -49,7 +49,7 @@ class RecallSettingsService:
     def _chat_model(self, chat_id: str, source_id: str) -> str:
         """A chat copy of a library model config, reusing an identical copy it already has."""
         source = self.repository.get_owned(ModelConfig, source_id, None)
-        fields = ("name", "api_type", "base_url", "api_key", "model", "default_parameters")
+        fields = ("name", "api_type", "base_url", "api_key", "model", "default_parameters", "timeout_seconds")
         for record in self.repository.list_owned(ModelConfig, chat_id):
             if all(getattr(record, name) == getattr(source, name) for name in fields):
                 return record.id

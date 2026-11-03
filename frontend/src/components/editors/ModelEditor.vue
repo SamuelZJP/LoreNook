@@ -28,7 +28,7 @@ const DEFAULTS: Record<string, { base_url: string; params: object; test: object 
 }
 
 const original = ref<ModelConfig | null>(null)
-const form = ref({ name: '', api_type: 'deepseek_chat_completions', base_url: '', model: '' })
+const form = ref({ name: '', api_type: 'deepseek_chat_completions', base_url: '', model: '', timeout_seconds: 300 })
 const params = ref('{}')
 /** Credential intent: never send `api_key` unless the user chose to replace or clear it. */
 const keyMode = ref<'keep' | 'replace' | 'clear'>('keep')
@@ -42,11 +42,11 @@ function reset(m: ModelConfig | null) {
   keyMode.value = m ? 'keep' : 'replace'
   keyInput.value = ''
   if (m) {
-    form.value = { name: m.name, api_type: m.api_type, base_url: m.base_url, model: m.model }
+    form.value = { name: m.name, api_type: m.api_type, base_url: m.base_url, model: m.model, timeout_seconds: m.timeout_seconds }
     params.value = pretty(m.default_parameters)
   } else {
     const d = DEFAULTS.deepseek_chat_completions
-    form.value = { name: '', api_type: 'deepseek_chat_completions', base_url: d.base_url, model: '' }
+    form.value = { name: '', api_type: 'deepseek_chat_completions', base_url: d.base_url, model: '', timeout_seconds: 300 }
     params.value = pretty(d.params)
   }
   testBody.value = pretty(DEFAULTS[form.value.api_type]?.test ?? {})
@@ -76,6 +76,7 @@ function onTypeChange() {
 }
 
 const customType = computed(() => !(API_TYPES as readonly string[]).includes(form.value.api_type))
+const timeoutValid = computed(() => Number.isInteger(form.value.timeout_seconds) && form.value.timeout_seconds >= 10 && form.value.timeout_seconds <= 1800)
 
 async function save() {
   if (jsonProblem(params.value)) return
@@ -89,7 +90,7 @@ async function save() {
     } else {
       const o = original.value
       const body: Record<string, unknown> = {}
-      for (const k of ['name', 'api_type', 'base_url', 'model'] as const) if (form.value[k] !== o[k]) body[k] = form.value[k]
+      for (const k of ['name', 'api_type', 'base_url', 'model', 'timeout_seconds'] as const) if (form.value[k] !== o[k]) body[k] = form.value[k]
       if (JSON.stringify(default_parameters) !== JSON.stringify(o.default_parameters)) body.default_parameters = default_parameters
       if (keyMode.value === 'replace' && keyInput.value) body.api_key = keyInput.value
       if (keyMode.value === 'clear') body.api_key = ''
@@ -170,7 +171,14 @@ async function test() {
         <input v-model="form.base_url" class="input mono" placeholder="https://…" />
         <span class="hint">API 根地址，包含所需的版本路径；不要包含模型路径、查询参数或凭据。</span>
       </div>
-      <div class="field"><label>模型</label><input v-model="form.model" class="input mono" placeholder="例如 deepseek-chat" /></div>
+      <div class="grid-2">
+        <div class="field"><label>模型</label><input v-model="form.model" class="input mono" placeholder="例如 deepseek-chat" /></div>
+        <div class="field">
+          <label>请求超时（秒）</label>
+          <input v-model.number="form.timeout_seconds" class="input" type="number" min="10" max="1800" step="1" />
+          <span class="hint">10–1800；超过这么久没有收到响应即判定超时。</span>
+        </div>
+      </div>
 
       <div class="field">
         <label>API Key</label>
@@ -189,7 +197,7 @@ async function test() {
       <div class="row">
         <button v-if="original" class="btn danger" type="button" @click="remove"><Trash2 /> 删除</button>
         <span class="spacer" />
-        <button class="btn primary" type="button" :disabled="saving || !form.name.trim() || !form.model.trim() || !form.base_url.trim() || !!jsonProblem(params)" @click="save">
+        <button class="btn primary" type="button" :disabled="saving || !form.name.trim() || !form.model.trim() || !form.base_url.trim() || !timeoutValid || !!jsonProblem(params)" @click="save">
           <Save /> {{ original ? '保存' : '创建' }}
         </button>
       </div>

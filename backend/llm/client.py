@@ -19,14 +19,13 @@ def _invalid_constant(value):
 
 class ModelClient:
     def __init__(self, *, transport: httpx.BaseTransport | None = None,
-                 timeout_seconds: float = 120, max_response_bytes: int = 8 * 1024 * 1024,
+                 max_response_bytes: int = 8 * 1024 * 1024,
                  recording_directory=None):
         self.journal = CallJournal(recording_directory) if recording_directory else None
         self.adapters = {adapter.api_type: adapter for adapter in (GoogleGenerateContent(), DeepSeekChatCompletions())}
         self.max_response_bytes = max_response_bytes
         self.http = httpx.Client(
             transport=transport, follow_redirects=False, trust_env=False,
-            timeout=httpx.Timeout(timeout_seconds, connect=10, write=30, pool=5),
         )
 
     def close(self) -> None:
@@ -50,7 +49,7 @@ class ModelClient:
         attempt = self.journal.begin(content, api_type=config.api_type,
                                      model=body.get("model", url.rsplit("/", 1)[-1].split(":", 1)[0])) if self.journal else None
         try:
-            result = self._send(url, headers, content, attempt)
+            result = self._send(url, headers, content, attempt, config.timeout_seconds)
         except BaseException as error:
             if attempt:
                 attempt.finish(error)
@@ -59,9 +58,10 @@ class ModelClient:
             attempt.finish()
         return result
 
-    def _send(self, url, headers, content, attempt):
+    def _send(self, url, headers, content, attempt, timeout_seconds):
+        timeout = httpx.Timeout(timeout_seconds, connect=10, write=30, pool=5)
         try:
-            with self.http.stream("POST", url, headers=headers, content=content) as response:
+            with self.http.stream("POST", url, headers=headers, content=content, timeout=timeout) as response:
                 if attempt:
                     attempt.metadata["upstream_status"] = response.status_code
                     attempt.save()

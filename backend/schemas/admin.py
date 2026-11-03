@@ -11,6 +11,7 @@ from backend.schemas.archive import ArchiveStep
 from backend.schemas.chat_templates import ChatTemplateSettings
 from backend.schemas.chats import ModelPurpose
 from backend.schemas.common import Contract, Name, NonnegativeInt
+from backend.schemas.models import DEFAULT_TIMEOUT_SECONDS, TimeoutSeconds
 
 # Any registered table; data management rejects the rest.
 TableName = Name
@@ -86,6 +87,7 @@ class ModelRow(IdentifiedRow):
     api_key: str = ""
     model: str
     default_parameters: dict[str, JsonValue] = Field(default_factory=dict)
+    timeout_seconds: TimeoutSeconds = DEFAULT_TIMEOUT_SECONDS
 
 
 class BindingRow(Contract):

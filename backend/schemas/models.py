@@ -1,7 +1,12 @@
+from typing import Annotated
+
 from pydantic import Field, JsonValue, SecretStr, field_validator
 
 from backend.schemas.common import Contract, Name, PatchContract
 from backend.shared.errors import ModelConfigurationError
+
+DEFAULT_TIMEOUT_SECONDS = 300
+TimeoutSeconds = Annotated[int, Field(ge=10, le=1800)]
 
 
 def validate_base_url(value: str) -> str:
@@ -30,6 +35,7 @@ class ModelConfigCreate(Contract):
     api_key: SecretStr = Field(default_factory=lambda: SecretStr(""))
     model: Name
     default_parameters: dict[str, JsonValue] = Field(default_factory=dict)
+    timeout_seconds: TimeoutSeconds = DEFAULT_TIMEOUT_SECONDS
 
     @field_validator("base_url")
     @classmethod
@@ -44,6 +50,7 @@ class ModelConfigPatch(PatchContract):
     api_key: SecretStr | None = None
     model: Name | None = None
     default_parameters: dict[str, JsonValue] | None = None
+    timeout_seconds: TimeoutSeconds | None = None
 
     @field_validator("base_url")
     @classmethod
@@ -59,6 +66,7 @@ class ModelConfigRead(Contract):
     base_url: str
     model: str
     default_parameters: dict[str, JsonValue]
+    timeout_seconds: int
     has_api_key: bool
 
 
@@ -69,6 +77,7 @@ class ModelConnection(Contract):
     api_key: SecretStr = Field(default_factory=lambda: SecretStr(""))
     model: str
     default_parameters: dict[str, JsonValue] = Field(default_factory=dict)
+    timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS
 
 
 class ModelResponse(Contract):
