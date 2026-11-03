@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { Plus, Trash2, RotateCcw } from 'lucide-vue-next'
 import TopBar from '@/components/TopBar.vue'
 import OutputView from '@/components/chat/OutputView.vue'
-import { categoryDefaultMode, prefs, resetPrefs, type RenderCategory, type SectionMode } from '@/lib/prefs'
+import { categoryDefaultMode, prefs, resetPrefs, REPLY_CAP_RANGE, type RenderCategory, type SectionMode } from '@/lib/prefs'
 import { EN_FONTS, ZH_FONTS } from '@/lib/fonts'
 import BackdropPreference from '@/features/illustrations/components/BackdropPreference.vue'
 
@@ -45,6 +45,21 @@ function commitLimit() {
 }
 function setUnlimited(on: boolean) {
   prefs.floorLimit = on ? null : limitProblem.value ? 100 : Number(limitDraft.value.trim())
+}
+
+// Reply height limit: same draft pattern as the floor limit.
+const capDraft = ref(String(prefs.replyCap ?? 100))
+const capProblem = computed(() => {
+  const text = capDraft.value.trim()
+  const n = Number(text)
+  return /^\d+$/.test(text) && n >= REPLY_CAP_RANGE.min && n <= REPLY_CAP_RANGE.max ? null : `请输入 ${REPLY_CAP_RANGE.min}–${REPLY_CAP_RANGE.max} 的整数`
+})
+watch(() => prefs.replyCap, (v) => { if (v !== null) capDraft.value = String(v) })
+function commitCap() {
+  if (!capProblem.value) prefs.replyCap = Number(capDraft.value.trim())
+}
+function setCapOff(off: boolean) {
+  prefs.replyCap = off ? null : capProblem.value ? 100 : Number(capDraft.value.trim())
 }
 
 const fontSample = `窗外的雨停了。她翻开那本 The Little Prince（1943 年初版），轻声念道："All grown-ups were once children." 然后合上书，说："我们走吧。"`
@@ -172,6 +187,19 @@ const sample = `<think>她还不确定该不该提起那封信，也许先试探
             </div>
             <p v-if="limitProblem && prefs.floorLimit !== null" class="hint warn-text">{{ limitProblem }}</p>
             <p class="hint">只显示最近的楼层，可在聊天顶部加载更早的楼层。不影响聊天记录和发送给模型的上下文。</p>
+          </div>
+          <div class="field">
+            <label for="reply-cap">回复框高度上限</label>
+            <div class="row wrap limit-row">
+              <input
+                id="reply-cap" v-model="capDraft" class="input limit" inputmode="numeric"
+                :disabled="prefs.replyCap === null" :aria-invalid="!!capProblem" @input="commitCap"
+              />
+              <span class="faint">% 聊天区高度</span>
+              <label class="check"><input type="checkbox" :checked="prefs.replyCap === null" @change="setCapOff(($event.target as HTMLInputElement).checked)" /> 不限制</label>
+            </div>
+            <p v-if="capProblem && prefs.replyCap !== null" class="hint warn-text">{{ capProblem }}</p>
+            <p class="hint">超出上限时正文在回复框内滚动，插图和状态栏保持可见。正文至少保留几行高度。</p>
           </div>
         </section>
 

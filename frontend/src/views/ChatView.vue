@@ -130,6 +130,18 @@ const templateLocation = computed(() => {
 
 // Keep the newest entry in view.
 const scroller = ref<HTMLElement>()
+
+// Reply bubbles are capped against the visible chat area, less their name line and buttons.
+const timelineHeight = ref(0)
+const sizeObserver = new ResizeObserver(([entry]) => { timelineHeight.value = entry.contentRect.height })
+watch(scroller, (el, old) => {
+  if (old) sizeObserver.unobserve(old)
+  if (el) sizeObserver.observe(el)
+})
+onBeforeUnmount(() => sizeObserver.disconnect())
+const capped = computed(() => prefs.replyCap !== null && timelineHeight.value > 0)
+const capStyle = computed(() =>
+  capped.value ? { '--reply-cap': `${Math.round((timelineHeight.value * prefs.replyCap!) / 100) - 64}px` } : undefined)
 function scrollToEnd(smooth = true) {
   nextTick(() => scroller.value?.scrollTo({ top: scroller.value.scrollHeight, behavior: smooth ? 'smooth' : 'auto' }))
 }
@@ -161,7 +173,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
       </TopBar>
 
       <ErrorBox v-if="chat.error.value" class="m" :error="chat.error.value" title="无法读取聊天" />
-      <div ref="scroller" class="timeline">
+      <div ref="scroller" class="timeline" :style="capStyle">
         <div class="timeline-inner">
           <div v-if="hiddenFloors" class="earlier">
             <button class="btn small" type="button" @click="loadEarlier">
@@ -169,7 +181,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
             </button>
             <span class="faint">还有 {{ hiddenFloors }} 层未显示</span>
           </div>
-          <MessageBubble v-else-if="character" side="ai" page :name="character.name" :avatar="character.avatar" floor="0">
+          <MessageBubble v-else-if="character" side="ai" page :capped="capped" :name="character.name" :avatar="character.avatar" floor="0">
             <template #meta><span v-if="prefs.showFloorNumbers">#0 开场</span></template>
             <OutputView v-if="rawFirstMessage" :text="firstMessage" :raw="raw.has('first')" />
             <p v-else class="faint">（没有开场消息）</p>
@@ -185,15 +197,17 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
               <template #meta><span v-if="prefs.showFloorNumbers">#{{ r.round_no }}</span></template>
               <div class="plain user-text">{{ r.user_input || '（空输入）' }}</div>
             </MessageBubble>
-            <MessageBubble side="ai" page :wide="illustrations.occupies(r.id) && !raw.has(r.id)" :name="character?.name ?? 'AI'" :avatar="character?.avatar">
+            <MessageBubble side="ai" page :capped="capped" :wide="illustrations.occupies(r.id) && !raw.has(r.id)" :name="character?.name ?? 'AI'" :avatar="character?.avatar">
               <template #meta>
                 <span v-if="prefs.showFloorNumbers">#{{ r.round_no }}</span>
                 <span v-if="r.archive_step !== 'complete'" class="badge warn">
                   已保存 · 待{{ STEP_LABELS[r.archive_step] }}
                 </span>
               </template>
-              <RoundIllustration v-if="!raw.has(r.id)" :round="r" />
-              <RoundScene v-if="!raw.has(r.id)" :round="r" />
+              <template v-if="!raw.has(r.id)" #head>
+                <RoundIllustration :round="r" />
+                <RoundScene :round="r" />
+              </template>
               <OutputView :text="r.ai_output" :raw="raw.has(r.id)" />
               <template #actions>
                 <button class="btn ghost small" type="button" @click="toggle(raw, r.id)"><Code2 /> {{ raw.has(r.id) ? '渲染' : '原文' }}</button>
@@ -228,7 +242,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
                 <div class="plain">{{ flow.usedInstruction.value }}</div>
               </div>
             </MessageBubble>
-            <MessageBubble side="ai" page :name="character?.name ?? 'AI'" :avatar="character?.avatar" pending>
+            <MessageBubble side="ai" page :capped="capped && !flow.editing.value" :name="character?.name ?? 'AI'" :avatar="character?.avatar" pending>
               <template #meta>
                 <span class="badge accent">未保存的候选</span>
                 <span v-if="flow.edited.value" class="badge">已编辑</span>

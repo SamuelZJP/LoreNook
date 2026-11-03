@@ -32,6 +32,8 @@ export interface Prefs {
   showSummaries: boolean
   /** Most recent floors rendered in a chat; `null` renders all. Display only. */
   floorLimit: number | null
+  /** Reply bubble height limit, in % of the chat area; the body scrolls inside. `null` turns it off. */
+  replyCap: number | null
   /** Data management: list round-ordered rows newest first. */
   dataNewestFirst: boolean
   /** Stored-format version; see `load`. */
@@ -56,6 +58,7 @@ const defaults: Prefs = {
   showFloorNumbers: true,
   showSummaries: false,
   floorLimit: 100,
+  replyCap: 100,
   dataNewestFirst: true,
   version: VERSION,
   sections: {
@@ -86,6 +89,13 @@ function toFloorLimit(value: unknown): number | null {
   return Number.isInteger(value) && (value as number) > 0 ? (value as number) : defaults.floorLimit
 }
 
+export const REPLY_CAP_RANGE = { min: 30, max: 300 }
+function toReplyCap(value: unknown): number | null {
+  if (value === null) return null
+  const ok = Number.isInteger(value) && (value as number) >= REPLY_CAP_RANGE.min && (value as number) <= REPLY_CAP_RANGE.max
+  return ok ? (value as number) : defaults.replyCap
+}
+
 function load(): Prefs {
   try {
     const stored = JSON.parse(localStorage.getItem(KEY) ?? '{}')
@@ -106,6 +116,7 @@ function load(): Prefs {
       zhFont: ZH_FONTS.some((f) => f.id === stored.zhFont) ? stored.zhFont : defaults.zhFont,
       enFont: EN_FONTS.some((f) => f.id === stored.enFont) ? stored.enFont : defaults.enFont,
       floorLimit: toFloorLimit(stored.floorLimit),
+      replyCap: toReplyCap(stored.replyCap),
       version: VERSION,
     }
   } catch {
