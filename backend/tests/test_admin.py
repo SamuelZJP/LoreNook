@@ -62,7 +62,7 @@ def test_schema_and_full_snapshot_are_read_only_and_secrets_are_explicit(databas
     async def scenario(client):
         schema = (await client.get("/api/admin/schema")).json()
         assert {entry["name"] for entry in schema} == set(TABLES)
-        assert len(schema) == 18
+        assert len(schema) == 20
         bindings = next(entry for entry in schema if entry["name"] == "chat_model_bindings")
         assert bindings["primary_key"] == ["chat_id", "purpose"]
         assert "api_key" in next(entry for entry in schema if entry["name"] == "model_configs")["row_schema"]["properties"]
@@ -102,6 +102,8 @@ def test_create_complete_graph_in_one_batch_with_forward_references(database):
         create("image_workflows", id="workflow", chat_id="chat", name="工作流", base_url="待配置", workflow={"未校验": 1}),
         create("chat_illustration_settings", chat_id="chat", mode="manual", image_workflow_id="workflow"),
         create("chat_recall_settings", chat_id="chat", enabled=True, model_config_id="model", depth=4, episode_limit=1, summary_limit=3),
+        create("chat_status_bar_settings", chat_id="chat", enabled=False),
+        create("character_status_bars", character_id="character", code="<p>状态</p>"),
         create("illustrations", id="illustration", chat_id="chat", round_id="r1", status="failed", seed=7,
                error="失败", width=1344, height=768),
         create("cast_members", id="member", character_id="character", name="人物"),

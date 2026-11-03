@@ -9,8 +9,9 @@ import { javascript } from '@codemirror/lang-javascript'
 import { python } from '@codemirror/lang-python'
 import { json } from '@codemirror/lang-json'
 import { jinja2 } from '@codemirror/legacy-modes/mode/jinja2'
+import { html } from '@codemirror/legacy-modes/mode/xml'
 
-export type EditorLanguage = 'javascript' | 'python' | 'json' | 'jinja' | 'text'
+export type EditorLanguage = 'javascript' | 'python' | 'json' | 'jinja' | 'html' | 'text'
 
 const props = withDefaults(
   defineProps<{ modelValue: string; language?: EditorLanguage; minHeight?: string; maxHeight?: string; errorLine?: number | null; readonly?: boolean }>(),
@@ -42,6 +43,7 @@ function languageExtension(lang: EditorLanguage): Extension {
     case 'python': return python()
     case 'json': return json()
     case 'jinja': return StreamLanguage.define(jinja2)
+    case 'html': return StreamLanguage.define(html)
     default: return []
   }
 }

@@ -21,6 +21,7 @@ The concepts, rules and reasons behind the code. For *how* something is implemen
 | Image workflow | A ComfyUI workflow with placeholders for what LoreNook provides. |
 | Cast | The people on a character card who can be drawn, each with an appearance and optional reference image. |
 | Main characters | Who an illustration centers on, chosen from the cast and the user identity. |
+| Status bar | Character-authored HTML at the foot of a reply, drawn from the state that round ended in. |
 | Chat template (聊天配置) | Named starting values for a new chat's parameters: presets, model bindings, memory X/Y and each feature's settings. One may be the default. |
 
 **Chats are fully independent.** Creating a chat copies the selected character (with only the selected scene), identity, definitions, presets and model configs into chat-owned records with new IDs. Editing a library resource never changes an existing chat. Library records have `chat_id = NULL`.
@@ -224,10 +225,27 @@ Avatars and reference images are uploaded through `/api/media` (PNG, JPEG, WebP;
 
 ### Display
 
-- **Inline plate.** The image is shown at the head of its round, inside the reading page, framed like a book plate, with a caption from the round summary's date—time—place header. Space is reserved at the workflow's aspect ratio, so the page doesn't jump when the image arrives; a portrait image narrows the plate rather than being cropped.
+- **Inline plate.** The image is shown at the head of its round, inside the reading page, framed like a book plate, above the round's scene line. Space is reserved at the workflow's aspect ratio, so the page doesn't jump when the image arrives; a portrait image narrows the plate rather than being cropped.
 - **Full-screen scene view.** Clicking a plate opens it full-screen with the caption and round summary; the chat's illustrations can be browsed in round order.
 - **Ambient backdrop** (preference: off / subtle / strong): the latest illustration, blurred and dimmed, behind the chat column. Always off on phones.
-- Per-plate actions: regenerate, change main characters, hide, view prompt.
+- Per-plate actions: regenerate, change main characters, hide, view prompt. On touch screens they fold into one toggle so they don't cover the image.
+
+## Reading a round
+
+A reply's reading page is, top to bottom: the illustration (if any), the **scene line**, the body, the status bar (if any), then the round's buttons.
+
+- **Scene line**: `日期 · 时间 · 地点` from `世界` of the state the round ended in, sent as the round's `scene`. Never parsed from the summary, so it doesn't depend on how the model wrote the header. Absent until the state update has run.
+- **Height cap** (browser preference, % of the chat area, default 100, can be off): past it, only the body scrolls, so the illustration and status bar stay in view. The body keeps a few lines at least, so a tall illustration can push a reply past the cap.
+
+## Status bar
+
+A character may carry status bar code: one HTML document, copied into chats with the card and editable there. It renders in a frame sandboxed without same-origin, and its CSP blocks requests and form posts, so the code can draw but can't reach LoreNook. It may load scripts (e.g. Vue from a CDN).
+
+- `lorenook.onData(cb)` delivers `{state, round_no, character, identity, theme}`, where `state` is the full state that round ended in. The app's theme variables are set on the frame's root.
+- **Which rounds**: the newest round that has a state always shows its bar; earlier rounds open theirs on demand, to keep the number of frames small.
+- **Per-chat switch**, on by default, only offered when the chat's character has code.
+
+It is a separate feature: `backend/status_bar/` and `frontend/src/features/status_bar/`.
 
 ## Data management
 

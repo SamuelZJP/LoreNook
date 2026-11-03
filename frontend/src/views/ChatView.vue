@@ -16,6 +16,9 @@ import RoundIllustration from '@/features/illustrations/components/RoundIllustra
 import RoundIllustrationAction from '@/features/illustrations/components/RoundIllustrationAction.vue'
 import ChatIllustrationBackdrop from '@/features/illustrations/components/ChatIllustrationBackdrop.vue'
 import ChatIllustrationOverlays from '@/features/illustrations/components/ChatIllustrationOverlays.vue'
+import { provideChatStatusBar } from '@/features/status_bar/useChatStatusBar'
+import RoundStatusBar from '@/features/status_bar/components/RoundStatusBar.vue'
+import RoundStatusBarAction from '@/features/status_bar/components/RoundStatusBarAction.vue'
 import { isWide } from '@/composables/layout'
 import TopBar from '@/components/TopBar.vue'
 import ErrorBox from '@/components/ErrorBox.vue'
@@ -59,6 +62,7 @@ const firstMessage = computed(() =>
   character.value && identity.value ? substituteNames(rawFirstMessage.value, identity.value.name, character.value.name) : '')
 const roundList = computed(() => rounds.data.value ?? [])
 const illustrations = provideChatIllustrations(chatId, roundList)
+provideChatStatusBar(chatId, roundList, computed(() => ({ character: character.value?.name ?? '', identity: identity.value?.name ?? '' })))
 const roundNo = computed(() => new Map(roundList.value.map((r) => [r.id, r.round_no])))
 const latest = computed(() => roundList.value.at(-1) ?? null)
 const latestComplete = computed(() => !latest.value || latest.value.archive_step === 'complete')
@@ -209,9 +213,11 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
                 <RoundScene :round="r" />
               </template>
               <OutputView :text="r.ai_output" :raw="raw.has(r.id)" />
+              <template v-if="!raw.has(r.id)" #foot><RoundStatusBar :round="r" /></template>
               <template #actions>
                 <button class="btn ghost small" type="button" @click="toggle(raw, r.id)"><Code2 /> {{ raw.has(r.id) ? '渲染' : '原文' }}</button>
                 <RoundIllustrationAction :round="r" />
+                <RoundStatusBarAction :round="r" />
                 <button
                   v-if="r.summary || r.archive_step !== 'state_update'" class="btn ghost small" type="button"
                   :aria-expanded="summaryOpen(r.id)" :aria-controls="`summary-${r.id}`" @click="toggle(openSummaries, r.id)"

@@ -8,6 +8,7 @@ import { PURPOSE_LABELS } from '@/lib/archive'
 import ErrorBox from '../ErrorBox.vue'
 import IllustrationSettingsSection from '@/features/illustrations/components/IllustrationSettingsSection.vue'
 import RecallSettingsSection from '@/features/recall/components/RecallSettingsSection.vue'
+import StatusBarSettingsSection from '@/features/status_bar/components/StatusBarSettingsSection.vue'
 import { toast } from '@/composables/toast'
 
 const props = defineProps<{ chat: ChatDetail }>()
@@ -108,5 +109,6 @@ async function removeChat() {
     </div>
     <RecallSettingsSection :chat-id="chat.id" :model-configs="chat.model_configs" />
     <IllustrationSettingsSection :chat-id="chat.id" />
+    <StatusBarSettingsSection :chat-id="chat.id" />
   </div>
 </template>

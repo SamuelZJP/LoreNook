@@ -8,6 +8,7 @@ import ErrorBox from '../ErrorBox.vue'
 import AvatarBadge from '../AvatarBadge.vue'
 import ImageUpload from '../ImageUpload.vue'
 import PortraitEditor from '@/features/illustrations/components/PortraitEditor.vue'
+import StatusBarEditor from '@/features/status_bar/components/StatusBarEditor.vue'
 import ScopeNote from './ScopeNote.vue'
 import DefinitionsEditor from './DefinitionsEditor.vue'
 import ScenesEditor, { newScene, type SceneDraft } from './ScenesEditor.vue'
@@ -150,7 +151,7 @@ async function remove() {
   }
 }
 
-type Tab = 'basic' | 'scenes' | 'state' | 'definitions' | 'portrait'
+type Tab = 'basic' | 'scenes' | 'state' | 'definitions' | 'portrait' | 'status-bar'
 const tab = ref<Tab>('basic')
 const tabs = computed(() => [
   { id: 'basic' as const, label: '基本信息', fields: ['name', 'avatar', 'description'] as Field[] },
@@ -158,9 +159,10 @@ const tabs = computed(() => [
   ...(isCharacter.value ? [{ id: 'state' as const, label: '状态', fields: ['state_schema', 'state_reference', 'state_update_rules'] as Field[] }] : []),
   { id: 'definitions' as const, label: `${noun.value}定义`, fields: [] as Field[] },
   { id: 'portrait' as const, label: '画像', fields: [] as Field[] },
+  ...(isCharacter.value ? [{ id: 'status-bar' as const, label: '状态栏', fields: [] as Field[] }] : []),
 ])
 // These tabs save on their own, so the profile's save row doesn't apply to them.
-const ownSave = computed(() => tab.value === 'definitions' || tab.value === 'portrait')
+const ownSave = computed(() => tab.value === 'definitions' || tab.value === 'portrait' || tab.value === 'status-bar')
 watch(() => props.kind, () => { if (!tabs.value.some((t) => t.id === tab.value)) tab.value = 'basic' })
 const tabDirty = (id: Tab, fs: Field[]) =>
   !creating.value && (fs.some((f) => changed.value.includes(f)) || (id === 'scenes' && scenesChanged.value))
@@ -241,6 +243,11 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
       <section v-if="tab === 'portrait'" class="stack">
         <PortraitEditor v-if="original" :kind="kind" :owner-id="original.id" :chat-id="chatId" />
         <p v-else class="hint">创建后可以设置画像。</p>
+      </section>
+
+      <section v-if="tab === 'status-bar'" class="stack">
+        <StatusBarEditor v-if="original && 'scenes' in original" :character="original" :chat-id="chatId" />
+        <p v-else class="hint">创建后可以编写状态栏。</p>
       </section>
     </template>
   </div>

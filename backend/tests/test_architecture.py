@@ -16,7 +16,7 @@ def imports(package: str):
 
 def test_core_never_imports_a_feature():
     assert [(str(path), module) for package in CORE for path, module in imports(package)
-            if module.startswith(("backend.illustrations", "backend.recall"))] == []
+            if module.startswith(("backend.illustrations", "backend.recall", "backend.status_bar"))] == []
 
 
 def test_modules_never_import_workflows_or_api():
