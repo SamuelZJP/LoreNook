@@ -62,7 +62,7 @@ def test_schema_and_full_snapshot_are_read_only_and_secrets_are_explicit(databas
     async def scenario(client):
         schema = (await client.get("/api/admin/schema")).json()
         assert {entry["name"] for entry in schema} == set(TABLES)
-        assert len(schema) == 17
+        assert len(schema) == 18
         bindings = next(entry for entry in schema if entry["name"] == "chat_model_bindings")
         assert bindings["primary_key"] == ["chat_id", "purpose"]
         assert "api_key" in next(entry for entry in schema if entry["name"] == "model_configs")["row_schema"]["properties"]
@@ -110,6 +110,7 @@ def test_create_complete_graph_in_one_batch_with_forward_references(database):
         create("character_scenes", id="scene", character_id="character", name="开场", initial_state={"未校验": True}),
         create("user_identities", id="identity", chat_id="chat", name="身份"),
         create("chats", id="chat", title="完整聊天", writing_preset_id="preset", created_at="2026-10-19T08:00:00+08:00"),
+        create("chat_templates", id="template", name="配置", is_default=True, settings={"model_bindings": {"writing": "model"}}),
     ]
     async def scenario(client):
         result = await apply(client, operations)

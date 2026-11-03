@@ -16,6 +16,10 @@ export type Chat = Schemas['ChatRead']
 export type ChatDetail = Schemas['ChatDetail']
 export type ChatCreate = Schemas['ChatCreate']
 export type ChatPatch = Schemas['ChatPatch']
+export type ChatTemplate = Schemas['ChatTemplateRead']
+export type ChatTemplateSettings = Schemas['ChatTemplateSettings']
+export type ChatTemplateCreate = Schemas['ChatTemplateCreate']
+export type ChatTemplatePatch = Schemas['ChatTemplatePatch']
 export type Preset = Schemas['PresetRead']
 export type ModelConfig = Schemas['ModelConfigRead']
 export type ModelConfigCreate = Schemas['ModelConfigCreate']
@@ -86,6 +90,13 @@ export const api = {
   deleteChat: (id: string) => request<void>(`/api/chats/${id}`, json('DELETE')),
   memory: (chatId: string) => request<ChatMemory>(`/api/chats/${chatId}/memory`),
   memoryMaterials: (chatId: string) => request<Schemas['MemoryMaterials']>(`/api/chats/${chatId}/memory/materials`),
+
+  // Chat templates (library only)
+  chatTemplates: () => request<ChatTemplate[]>('/api/chat-templates'),
+  createChatTemplate: (body: ChatTemplateCreate) => request<ChatTemplate>('/api/chat-templates', json('POST', body)),
+  patchChatTemplate: (id: string, body: ChatTemplatePatch) =>
+    request<ChatTemplate>(`/api/chat-templates/${id}`, json('PATCH', body)),
+  deleteChatTemplate: (id: string) => request<void>(`/api/chat-templates/${id}`, json('DELETE')),
 
   // Presets (source or chat scope)
   presets: (s: Scope) => request<Preset[]>(presetBase(s)),

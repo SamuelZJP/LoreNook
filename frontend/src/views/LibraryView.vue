@@ -10,10 +10,11 @@ import ErrorBox from '@/components/ErrorBox.vue'
 import ProfileEditor from '@/components/editors/ProfileEditor.vue'
 import PresetEditor from '@/components/editors/PresetEditor.vue'
 import ModelEditor from '@/components/editors/ModelEditor.vue'
+import ChatTemplateEditor from '@/components/editors/ChatTemplateEditor.vue'
 import WorkflowEditor from '@/features/illustrations/components/WorkflowEditor.vue'
 import { illustrationApi } from '@/features/illustrations/api'
 
-type Tab = 'characters' | 'identities' | 'presets' | 'models' | 'workflows'
+type Tab = 'characters' | 'identities' | 'presets' | 'models' | 'workflows' | 'templates'
 const route = useRoute()
 const router = useRouter()
 const tab = computed<Tab>(() => (route.params.tab as Tab) || 'characters')
@@ -26,6 +27,7 @@ const tabs: { id: Tab; label: string; noun: string }[] = [
   { id: 'presets', label: '写作预设', noun: '预设' },
   { id: 'models', label: '模型配置', noun: '模型' },
   { id: 'workflows', label: '图像工作流', noun: '工作流' },
+  { id: 'templates', label: '聊天配置', noun: '配置' },
 ]
 
 const characters = useQuery({ queryKey: ['characters'], queryFn: api.characters })
@@ -33,13 +35,15 @@ const identities = useQuery({ queryKey: ['identities'], queryFn: api.identities 
 const presets = useQuery({ queryKey: ['presets', null], queryFn: () => api.presets({ chatId: null }) })
 const models = useQuery({ queryKey: ['models', null], queryFn: () => api.models({ chatId: null }) })
 const workflows = useQuery({ queryKey: ['workflows', null], queryFn: () => illustrationApi.workflows({ chatId: null }) })
+const templates = useQuery({ queryKey: ['chat-templates'], queryFn: api.chatTemplates })
 
-const current = computed(() => ({ characters, identities, presets, models, workflows })[tab.value])
+const current = computed(() => ({ characters, identities, presets, models, workflows, templates })[tab.value])
 const items = computed(() => {
   switch (tab.value) {
     case 'characters': return (characters.data.value ?? []).map((c) => ({ id: c.id, name: c.name, avatar: c.avatar, sub: c.description }))
     case 'identities': return (identities.data.value ?? []).map((c) => ({ id: c.id, name: c.name, avatar: c.avatar, sub: c.description }))
     case 'presets': return (presets.data.value ?? []).map((p) => ({ id: p.id, name: p.name, avatar: undefined, sub: `${p.source.length} 字符` }))
+    case 'templates': return (templates.data.value ?? []).map((t) => ({ id: t.id, name: t.name, avatar: undefined, sub: t.is_default ? '默认' : '' }))
     case 'workflows': return (workflows.data.value ?? []).map((w) => ({ id: w.id, name: w.name, avatar: undefined, sub: `${w.width}×${w.height}` }))
     default: return (models.data.value ?? []).map((m) => ({ id: m.id, name: m.name, avatar: undefined, sub: `${m.api_type} · ${m.model}`, key: m.has_api_key }))
   }
@@ -91,6 +95,7 @@ function go(id: string | null) {
               @saved="(id) => selected === 'new' && go(id)" @deleted="go(null)"
             />
             <PresetEditor v-else-if="tab === 'presets'" :key="`p-${selected}`" :id="editId" :chat-id="null" @saved="(id) => selected === 'new' && go(id)" @deleted="go(null)" />
+            <ChatTemplateEditor v-else-if="tab === 'templates'" :key="`t-${selected}`" :id="editId" @saved="(id) => selected === 'new' && go(id)" @deleted="go(null)" />
             <WorkflowEditor v-else-if="tab === 'workflows'" :key="`w-${selected}`" :id="editId" :chat-id="null" @saved="(id) => selected === 'new' && go(id)" @deleted="go(null)" />
             <ModelEditor v-else :key="`m-${selected}`" :id="editId" :chat-id="null" @saved="(id) => selected === 'new' && go(id)" @deleted="go(null)" />
           </div>

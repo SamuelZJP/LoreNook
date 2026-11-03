@@ -171,6 +171,42 @@ export interface paths {
         patch: operations["update_identity_api_chats__chat_id__user_identity_patch"];
         trace?: never;
     };
+    "/api/chat-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Templates */
+        get: operations["list_templates_api_chat_templates_get"];
+        put?: never;
+        /** Create */
+        post: operations["create_api_chat_templates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat-templates/{template_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete */
+        delete: operations["delete_api_chat_templates__template_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update */
+        patch: operations["update_api_chat_templates__template_id__patch"];
+        trace?: never;
+    };
     "/api/characters/{owner_id}/definitions": {
         parameters: {
             query?: never;
@@ -1773,6 +1809,72 @@ export interface components {
             /** State Snapshot Id */
             state_snapshot_id: string;
         };
+        /** ChatTemplateCreate */
+        ChatTemplateCreate: {
+            /** Name */
+            name: string;
+            /**
+             * Is Default
+             * @default false
+             */
+            is_default: boolean;
+            settings?: components["schemas"]["ChatTemplateSettings"];
+        };
+        /** ChatTemplatePatch */
+        ChatTemplatePatch: {
+            /** Name */
+            name?: string | null;
+            /** Is Default */
+            is_default?: boolean | null;
+            settings?: components["schemas"]["ChatTemplateSettings"] | null;
+        };
+        /** ChatTemplateRead */
+        ChatTemplateRead: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Is Default */
+            is_default: boolean;
+            settings: components["schemas"]["ChatTemplateSettings"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * ChatTemplateSettings
+         * @description The new-chat form's parameters; field names match `ChatCreate`.
+         */
+        ChatTemplateSettings: {
+            /** Writing Preset Id */
+            writing_preset_id?: string | null;
+            /** Writing Preset Ids */
+            writing_preset_ids?: string[];
+            /** Model Config Ids */
+            model_config_ids?: string[];
+            /** Model Bindings */
+            model_bindings?: {
+                [key: string]: string;
+            };
+            /**
+             * Recent Rounds
+             * @default 5
+             */
+            recent_rounds: number;
+            /**
+             * Min Summaries
+             * @default 6
+             */
+            min_summaries: number;
+            /** Features */
+            features?: {
+                [key: string]: {
+                    [key: string]: components["schemas"]["JsonValue"];
+                };
+            };
+        };
         /** DefinitionInput */
         DefinitionInput: {
             /**
@@ -3255,6 +3357,123 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IdentityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_templates_api_chat_templates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatTemplateRead"][];
+                };
+            };
+        };
+    };
+    create_api_chat_templates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatTemplateCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatTemplateRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_api_chat_templates__template_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_api_chat_templates__template_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatTemplatePatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatTemplateRead"];
                 };
             };
             /** @description Validation Error */

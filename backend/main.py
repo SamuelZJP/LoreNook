@@ -7,6 +7,7 @@ import httpx
 
 from backend.api.catalog import router as catalog_router
 from backend.api.chats import router as chats_router
+from backend.api.chat_templates import router as chat_templates_router
 from backend.api.definitions import router as definitions_router
 from backend.api.memory import router as memory_router
 from backend.api.presets import router as presets_router
@@ -65,6 +66,7 @@ def create_app(
     register_error_handlers(app)
     app.include_router(catalog_router)
     app.include_router(chats_router)
+    app.include_router(chat_templates_router)
     app.include_router(definitions_router)
     app.include_router(memory_router)
     app.include_router(presets_router)

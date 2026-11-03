@@ -243,3 +243,17 @@ class Episode(Identified, Timestamped, Base):
         ForeignKeyConstraint(["created_by_round_id", "chat_id"], ["rounds.id", "rounds.chat_id"],
                              name="fk_episodes_creator", deferrable=True, initially="DEFERRED"),
     )
+
+
+class ChatTemplate(Identified, Timestamped, Base):
+    """Starting values for the new-chat form. Library IDs inside are references only, never enforced."""
+    __tablename__ = "chat_templates"
+    name: Mapped[str] = mapped_column(Text)
+    is_default: Mapped[bool] = mapped_column(
+        Boolean(create_constraint=True, name="default_bool"), default=False, server_default="0"
+    )
+    settings: Mapped[dict[str, Any]] = mapped_column(JSON(none_as_null=True), default=dict, server_default="{}")
+    __table_args__ = (
+        CheckConstraint("json_valid(settings) AND json_type(settings) = 'object'", name="settings_object"),
+        Index("uq_chat_templates_one_default", "is_default", unique=True, sqlite_where=text("is_default = 1")),
+    )

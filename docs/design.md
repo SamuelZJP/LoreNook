@@ -21,8 +21,11 @@ The concepts, rules and reasons behind the code. For *how* something is implemen
 | Image workflow | A ComfyUI workflow with placeholders for what LoreNook provides. |
 | Cast | The people on a character card who can be drawn, each with an appearance and optional reference image. |
 | Main characters | Who an illustration centers on, chosen from the cast and the user identity. |
+| Chat template (聊天配置) | Named starting values for a new chat's parameters: presets, model bindings, memory X/Y and each feature's settings. One may be the default. |
 
 **Chats are fully independent.** Creating a chat copies the selected character (with only the selected scene), identity, definitions, presets and model configs into chat-owned records with new IDs. Editing a library resource never changes an existing chat. Library records have `chat_id = NULL`.
+
+**Chat templates only prefill the new-chat form.** They never set the character, identity or scene, and creation still goes through the same request. They store library IDs as plain references, so a deleted preset or model is dropped (with a notice) when the template is used. Each optional feature stores its own entry under `features.<name>` and is the only code that reads it; the backend checks only that it is a JSON object.
 
 ## Round lifecycle
 

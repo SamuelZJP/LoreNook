@@ -2,11 +2,11 @@
 
 from typing import NamedTuple, TypeVar
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session, aliased
 
 from backend.repository.models import (
-    Base, Character, CharacterScene, Chat, ChatModelBinding, Definition, Episode, ModelConfig, Round,
+    Base, Character, CharacterScene, Chat, ChatModelBinding, ChatTemplate, Definition, Episode, ModelConfig, Round,
     StateSnapshot, UserIdentity, WritingPreset,
 )
 from backend.shared.errors import ConflictError, NotFoundError
@@ -41,6 +41,12 @@ class Repository:
 
     def list_chats(self) -> list[Chat]:
         return list(self.session.scalars(select(Chat).order_by(Chat.created_at.desc(), Chat.id)))
+
+    def chat_templates(self) -> list[ChatTemplate]:
+        return list(self.session.scalars(select(ChatTemplate).order_by(ChatTemplate.created_at, ChatTemplate.id)))
+
+    def clear_default_template(self) -> None:
+        self.session.execute(update(ChatTemplate).where(ChatTemplate.is_default.is_(True)).values(is_default=False))
 
     def owner_id(self, chat_id: str, model: type[Character | UserIdentity]) -> str:
         """The chat's own character or identity copy."""

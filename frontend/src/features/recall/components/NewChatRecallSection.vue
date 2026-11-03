@@ -3,15 +3,37 @@ import { reactive } from 'vue'
 import type { ModelConfig } from '@/api/endpoints'
 import { recallApi } from '../api'
 
-/** Optional recall choices in the new-chat dialog; `apply` runs once the chat exists. */
-defineProps<{ models: ModelConfig[] }>()
-const form = reactive({ enabled: false, model_config_id: '', depth: 3, episode_limit: 2, summary_limit: 5 })
+/**
+ * Optional recall choices in the new-chat form. `snapshot`/`restore` carry them in a chat template;
+ * `apply` runs once the chat exists.
+ */
+const props = defineProps<{ models: ModelConfig[] }>()
+const DEFAULTS = { enabled: false, model_config_id: '', depth: 3, episode_limit: 2, summary_limit: 5 }
+const form = reactive({ ...DEFAULTS })
+
+const count = (value: unknown, fallback: number) => (Number.isInteger(value) && (value as number) >= 0 ? (value as number) : fallback)
+
+function restore(entry: Record<string, unknown> | undefined) {
+  const e = entry ?? {}
+  const model = typeof e.model_config_id === 'string' ? e.model_config_id : ''
+  Object.assign(form, {
+    enabled: e.enabled === true,
+    model_config_id: props.models.some((m) => m.id === model) ? model : '',
+    depth: count(e.depth, DEFAULTS.depth),
+    episode_limit: count(e.episode_limit, DEFAULTS.episode_limit),
+    summary_limit: count(e.summary_limit, DEFAULTS.summary_limit),
+  })
+}
+
+function snapshot(): Record<string, unknown> {
+  return { ...form }
+}
 
 async function apply(chatId: string) {
   if (!form.enabled) return
   await recallApi.setup(chatId, { ...form, model_config_id: form.model_config_id || null })
 }
-defineExpose({ apply })
+defineExpose({ apply, snapshot, restore })
 </script>
 
 <template>

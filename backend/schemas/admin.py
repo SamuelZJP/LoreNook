@@ -8,6 +8,7 @@ from uuid import uuid4
 from pydantic import AwareDatetime, BeforeValidator, Field, JsonValue, TypeAdapter
 
 from backend.schemas.archive import ArchiveStep
+from backend.schemas.chat_templates import ChatTemplateSettings
 from backend.schemas.chats import ModelPurpose
 from backend.schemas.common import Contract, Name, NonnegativeInt
 
@@ -122,6 +123,12 @@ class EpisodeRow(TimestampedRow):
     created_by_round_id: RecordId | None = None
 
 
+class ChatTemplateRow(TimestampedRow):
+    name: Name
+    is_default: bool = False
+    settings: ChatTemplateSettings = Field(default_factory=ChatTemplateSettings)
+
+
 class AdminCreate(Contract):
     action: Literal["create"]
     table: TableName
@@ -175,4 +182,5 @@ ROW_SCHEMAS = {
     "chats": ChatRow, "characters": CharacterRow, "character_scenes": SceneRow, "user_identities": IdentityRow,
     "definitions": DefinitionRow, "writing_presets": PresetRow, "model_configs": ModelRow,
     "chat_model_bindings": BindingRow, "rounds": RoundRow, "state_snapshots": StateRow, "episodes": EpisodeRow,
+    "chat_templates": ChatTemplateRow,
 }

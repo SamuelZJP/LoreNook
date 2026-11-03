@@ -113,7 +113,7 @@ export function templateFromSchema(schema: Record<string, any>): Row {
 
 export const TABLE_LABELS: Record<string, string> = {
   chats: '聊天', characters: '角色', character_scenes: '开场', user_identities: '用户身份', definitions: '定义', writing_presets: '写作预设',
-  model_configs: '模型配置', chat_model_bindings: '模型绑定', image_workflows: '图像工作流', chat_illustration_settings: '插图设置', chat_recall_settings: '记忆召回设置',
+  model_configs: '模型配置', chat_model_bindings: '模型绑定', image_workflows: '图像工作流', chat_illustration_settings: '插图设置', chat_recall_settings: '记忆召回设置', chat_templates: '聊天配置',
   cast_members: '画像人物', identity_appearances: '身份外貌',
   rounds: '回合', state_snapshots: '状态快照', episodes: '情节', illustrations: '插图',
 }
@@ -133,7 +133,7 @@ export const CHAT_TABLE_GROUPS: { label: string; tables: string[] }[] = [
   { label: '历史', tables: ['rounds', 'state_snapshots', 'episodes', 'illustrations'] },
   { label: '聊天副本', tables: ['chats', 'characters', 'character_scenes', 'user_identities', 'definitions', 'writing_presets', 'model_configs', 'chat_model_bindings', 'image_workflows', 'chat_illustration_settings', 'chat_recall_settings', 'cast_members', 'identity_appearances'] },
 ]
-export const LIBRARY_TABLES = ['characters', 'character_scenes', 'user_identities', 'definitions', 'writing_presets', 'model_configs', 'image_workflows', 'cast_members', 'identity_appearances']
+export const LIBRARY_TABLES = ['characters', 'character_scenes', 'user_identities', 'definitions', 'writing_presets', 'model_configs', 'image_workflows', 'cast_members', 'identity_appearances', 'chat_templates']
 
 /** Tables whose rows are ordered by round and can be sorted either way. */
 export const ROUND_ORDERED = ['rounds', 'state_snapshots', 'episodes', 'illustrations']
@@ -239,6 +239,7 @@ export function rowDetails(table: string, row: Row, lookup: Lookup): Detail[] {
     ]
     case 'state_snapshots': return [d('世界', worldLine(row.content)), d('角色', nameOf(lookupRow(lookup, 'characters', row.character_id)) || null)]
     case 'episodes': return [d('范围', roundRange(lookup, row.start_round_id, row.end_round_id)), d('摘要', row.summary)]
+    case 'chat_templates': return [d('默认', row.is_default ? '是' : '否')]
     case 'image_workflows': return [d('地址', row.base_url), d('尺寸', `${row.width}×${row.height}`)]
     case 'chat_recall_settings': return [d('启用', row.enabled ? '是' : '否'), d('情节上限', row.episode_limit), d('摘要上限', row.summary_limit), d('模型', nameOf(lookupRow(lookup, 'model_configs', row.model_config_id)) || null), d('深度', row.depth)]
     case 'chat_illustration_settings': return [d('时机', row.mode), d('工作流', nameOf(lookupRow(lookup, 'image_workflows', row.image_workflow_id)) || null)]

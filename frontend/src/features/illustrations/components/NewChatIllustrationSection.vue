@@ -4,15 +4,31 @@ import { useQuery } from '@tanstack/vue-query'
 import { illustrationApi, type IllustrationMode } from '../api'
 import { MODE_LABELS } from '../lib'
 
-/** Optional illustration choices in the new-chat dialog; `apply` runs once the chat exists. */
+/**
+ * Optional illustration choices in the new-chat form. `snapshot`/`restore` carry them in a chat
+ * template; `apply` runs once the chat exists.
+ */
 const workflows = useQuery({ queryKey: ['workflows', null], queryFn: () => illustrationApi.workflows({ chatId: null }) })
 const form = reactive({ mode: 'off' as IllustrationMode, image_workflow_id: '' })
 
+function restore(entry: Record<string, unknown> | undefined) {
+  const e = entry ?? {}
+  form.mode = typeof e.mode === 'string' && e.mode in MODE_LABELS ? (e.mode as IllustrationMode) : 'off'
+  form.image_workflow_id = typeof e.image_workflow_id === 'string' ? e.image_workflow_id : ''
+}
+
+function snapshot(): Record<string, unknown> {
+  return { ...form }
+}
+
 async function apply(chatId: string) {
   if (form.mode === 'off') return
-  await illustrationApi.setup(chatId, { mode: form.mode, image_workflow_id: form.image_workflow_id || null })
+  // A template may name a workflow deleted since; leave it unselected rather than fail.
+  const list = workflows.data.value
+  const id = form.image_workflow_id && (!list || list.some((w) => w.id === form.image_workflow_id)) ? form.image_workflow_id : null
+  await illustrationApi.setup(chatId, { mode: form.mode, image_workflow_id: id })
 }
-defineExpose({ apply })
+defineExpose({ apply, snapshot, restore })
 </script>
 
 <template>

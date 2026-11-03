@@ -6,7 +6,7 @@ export const router = createRouter({
     { path: '/', name: 'home', component: () => import('./views/HomeView.vue') },
     { path: '/chats/:id', name: 'chat', component: () => import('./views/ChatView.vue'), props: true },
     {
-      path: '/library/:tab(characters|identities|presets|models|workflows)?/:id?',
+      path: '/library/:tab(characters|identities|presets|models|workflows|templates)?/:id?',
       name: 'library',
       component: () => import('./views/LibraryView.vue'),
     },
