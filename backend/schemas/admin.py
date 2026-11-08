@@ -10,7 +10,7 @@ from pydantic import AwareDatetime, BeforeValidator, Field, JsonValue, TypeAdapt
 from backend.schemas.archive import ArchiveStep
 from backend.schemas.chat_templates import ChatTemplateSettings
 from backend.schemas.chats import ModelPurpose
-from backend.schemas.common import Contract, Name, NonnegativeInt
+from backend.schemas.common import Contract, Name, NonnegativeInt, StateScriptHistory
 from backend.schemas.models import DEFAULT_TIMEOUT_SECONDS, TimeoutSeconds
 
 # Any registered table; data management rejects the rest.
@@ -53,6 +53,8 @@ class CharacterRow(IdentityRow):
     state_schema: str = ""
     state_reference: str = ""
     state_update_rules: str = ""
+    state_script: str = ""
+    state_script_history: StateScriptHistory = 0
 
 
 class SceneRow(IdentifiedRow):

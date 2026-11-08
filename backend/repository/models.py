@@ -73,6 +73,8 @@ class Character(Identified, Timestamped, Base):
     state_schema: Mapped[str] = mapped_column(Text, default="", server_default="")
     state_reference: Mapped[str] = mapped_column(Text, default="", server_default="")
     state_update_rules: Mapped[str] = mapped_column(Text, default="", server_default="")
+    state_script: Mapped[str] = mapped_column(Text, default="", server_default="")
+    state_script_history: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     __table_args__ = (UniqueConstraint("id", "chat_id"),)
 
 

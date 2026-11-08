@@ -11,7 +11,7 @@ from backend.repository.models import Character, Round, UserIdentity
 from backend.repository.queries import Repository
 from backend.schemas.chats import StateRead
 from backend.schemas.state import StateUpdateContext, StateUpdateResult
-from backend.shared.errors import ConflictError, StateSchemaError, StateUpdateError
+from backend.shared.errors import ConflictError, StateSchemaError, StateScriptError, StateUpdateError
 from backend.workflows.archive_step import run_archive_step
 
 
@@ -25,11 +25,14 @@ def _context(repository: Repository, chat_id: str, round_id: str, window: int) -
     state = repository.latest_state(character.id)
     if state is None or state.round_id == round_id:
         raise ConflictError("状态更新缺少合法的上一状态")
+    history = [{"round_no": number, "state": content} for number, content in
+               repository.states_before(character.id, record.round_no, character.state_script_history)]
     names = {"user_name": identity.name, "character_name": character.name}
     return StateUpdateContext(
         chat_id=chat_id, round_id=round_id, round_no=record.round_no,
         user_input=record.user_input, ai_output=record.ai_output,
         state_snapshot_id=state.id, state=state.content, schema_source=character.state_schema,
+        script_source=character.state_script, history=history,
         reference=substitute_names(character.state_reference, **names),
         update_rules=substitute_names(character.state_update_rules, **names), user_name=identity.name,
         summaries=[f"第{r.round_no}回合：{r.summary}" for r in repository.summaries_before(chat_id, record.round_no, window)],
@@ -50,5 +53,5 @@ def run_state_update(database: Database, client: ModelClient, chat_id: str, roun
         database, round_id=round_id, step="state_update",
         load=lambda repository: _context(repository, chat_id, round_id, recent_summaries),
         generate=lambda context: update_state(context, client, validator), save=save,
-        failures=(StateSchemaError, StateUpdateError), changed_message="状态更新期间输入已变化，请重新执行当前步骤",
+        failures=(StateSchemaError, StateScriptError, StateUpdateError), changed_message="状态更新期间输入已变化，请重新执行当前步骤",
     )

@@ -1668,6 +1668,16 @@ export interface components {
              * @default
              */
             state_update_rules: string;
+            /**
+             * State Script
+             * @default
+             */
+            state_script: string;
+            /**
+             * State Script History
+             * @default 0
+             */
+            state_script_history: number;
         };
         /** CharacterPatch */
         CharacterPatch: {
@@ -1687,6 +1697,10 @@ export interface components {
             state_reference?: string | null;
             /** State Update Rules */
             state_update_rules?: string | null;
+            /** State Script */
+            state_script?: string | null;
+            /** State Script History */
+            state_script_history?: number | null;
         };
         /** CharacterRead */
         CharacterRead: {
@@ -1718,6 +1732,16 @@ export interface components {
              * @default
              */
             state_update_rules: string;
+            /**
+             * State Script
+             * @default
+             */
+            state_script: string;
+            /**
+             * State Script History
+             * @default 0
+             */
+            state_script_history: number;
             /** Id */
             id: string;
             /** Chat Id */

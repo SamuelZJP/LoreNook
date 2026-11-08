@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from backend.shared.errors import (
     AdminDataError, ArchiveExecutionError, ConflictError, DefinitionTemplateError, ModelCallError, ModelConfigurationError,
     NotFoundError, PresetExecutionError, StateInitializationError,
-    StateSchemaError, StateUpdateError,
+    StateSchemaError, StateScriptError, StateUpdateError,
     RoundSummaryError, EpisodeDecisionError, EpisodeSummaryError,
 )
 
@@ -27,6 +27,7 @@ def register_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(AdminDataError)
     @app.exception_handler(StateSchemaError)
+    @app.exception_handler(StateScriptError)
     @app.exception_handler(StateUpdateError)
     @app.exception_handler(RoundSummaryError)
     @app.exception_handler(EpisodeDecisionError)

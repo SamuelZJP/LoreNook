@@ -182,6 +182,19 @@ class Repository:
             .order_by(Round.round_no.desc().nulls_last()).limit(1)
         )
 
+    def states_before(self, character_id: str, round_no: int, limit: int) -> list[tuple[int, dict]]:
+        """Up to `limit` snapshots before `round_no`, oldest first, as (round_no, content); initial is 0."""
+        if limit <= 0:
+            return []
+        rows = self.session.execute(
+            select(Round.round_no, StateSnapshot.content).select_from(StateSnapshot)
+            .outerjoin(Round, StateSnapshot.round_id == Round.id)
+            .where(StateSnapshot.character_id == character_id,
+                   (Round.round_no < round_no) | StateSnapshot.round_id.is_(None))
+            .order_by(Round.round_no.desc().nulls_last()).limit(limit)
+        )
+        return [(number or 0, content) for number, content in reversed(list(rows))]
+
     def state_for_round(self, chat_id: str, round_id: str) -> StateSnapshot | None:
         return self.session.scalar(select(StateSnapshot).where(
             StateSnapshot.chat_id == chat_id, StateSnapshot.round_id == round_id,

@@ -26,6 +26,9 @@ class StateUpdateContext(Contract):
     state_snapshot_id: str
     state: dict[str, JsonValue]
     schema_source: str
+    script_source: str = ""
+    # Earlier snapshots, oldest first, ending with `state`: [{"round_no": n, "state": {...}}]. Initial is 0.
+    history: list[dict[str, JsonValue]] = []
     reference: str
     update_rules: str
     user_name: str

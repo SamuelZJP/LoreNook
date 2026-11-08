@@ -3,7 +3,7 @@ from typing import Annotated
 
 from pydantic import Field, JsonValue
 
-from backend.schemas.common import Contract, Name, NonnegativeInt, PatchContract
+from backend.schemas.common import Contract, Name, NonnegativeInt, PatchContract, StateScriptHistory
 
 
 class DefinitionInput(Contract):
@@ -63,6 +63,8 @@ class CharacterCreate(IdentityCreate):
     state_schema: str = ""
     state_reference: str = ""
     state_update_rules: str = ""
+    state_script: str = ""
+    state_script_history: StateScriptHistory = 0
 
 
 class CharacterPatch(IdentityPatch):
@@ -70,6 +72,8 @@ class CharacterPatch(IdentityPatch):
     state_schema: str | None = None
     state_reference: str | None = None
     state_update_rules: str | None = None
+    state_script: str | None = None
+    state_script_history: StateScriptHistory | None = None
 
 
 class CharacterRead(CharacterCreate):

@@ -24,21 +24,27 @@ def json_state(content) -> dict[str, JsonValue]:
 
 
 @contextmanager
-def schema_model(source: str):
+def loaded_module(source: str, filename: str):
     # A unique module gives forward annotations and nested classes a correct namespace.
-    # Schema source is ordinary application Python code, not a sandboxed template.
+    # Character-authored source is ordinary application Python code, not a sandboxed template.
     name = f"lorenook_state_{uuid4().hex}"
     module = ModuleType(name)
     sys.modules[name] = module
     try:
-        exec(compile(source, "<state_schema>", "exec"), module.__dict__)
+        exec(compile(source, filename, "exec"), module.__dict__)
+        yield module
+    finally:
+        sys.modules.pop(name, None)
+
+
+@contextmanager
+def schema_model(source: str):
+    with loaded_module(source, "<state_schema>") as module:
         model = getattr(module, "Schema", None)
         if not isinstance(model, type) or not issubclass(model, BaseModel) or model is BaseModel:
             raise ValueError("源码必须定义 Pydantic BaseModel 子类 Schema")
         model.model_rebuild(_types_namespace=module.__dict__)
         yield model
-    finally:
-        sys.modules.pop(name, None)
 
 
 def validate_state(source: str, content: dict[str, JsonValue]) -> dict[str, JsonValue]:

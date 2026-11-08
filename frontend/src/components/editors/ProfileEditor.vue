@@ -15,6 +15,7 @@ import ScenesEditor, { newScene, type SceneDraft } from './ScenesEditor.vue'
 import { jsonProblem } from './JsonField.vue'
 import { toast } from '@/composables/toast'
 import schemaExample from '@examples/state/examples/basic.py?raw'
+import scriptExample from '@examples/state/examples/script.py?raw'
 
 /**
  * Character or user-identity editor. `chatId` selects the chat-owned copy;
@@ -35,11 +36,13 @@ const isCharacter = computed(() => props.kind === 'character')
 const noun = computed(() => (isCharacter.value ? '角色' : '用户身份'))
 const creating = computed(() => !props.chatId && !props.id)
 
-const fields = ['name', 'avatar', 'description', 'state_schema', 'state_reference', 'state_update_rules'] as const
+const fields = ['name', 'avatar', 'description', 'state_schema', 'state_reference', 'state_update_rules', 'state_script'] as const
 type Field = (typeof fields)[number]
 const draft = reactive<Record<Field, string>>({
-  name: '', avatar: '', description: '', state_schema: '', state_reference: '', state_update_rules: '',
+  name: '', avatar: '', description: '', state_schema: '', state_reference: '', state_update_rules: '', state_script: '',
 })
+// How many earlier states the state script receives; the one numeric profile field.
+const scriptHistory = ref(0)
 const scenes = ref<SceneDraft[]>([])
 const activeFields = computed(() => (isCharacter.value ? fields : (['name', 'avatar', 'description'] as const)))
 
@@ -49,6 +52,7 @@ function fill(p: Profile | null, keepKeys = false) {
     draft[f] = typeof v === 'string' ? v : ''
   }
   if (!p && isCharacter.value) draft.state_schema = schemaExample
+  scriptHistory.value = p && 'state_script_history' in p ? p.state_script_history : 0
   const saved = p && 'scenes' in p ? p.scenes : []
   scenes.value = saved.length
     // Saving replaces scene rows, so keep the editor's keys to preserve expanded cards.
@@ -72,6 +76,12 @@ const scenesChanged = computed(() => {
 function fillSchemaExample() {
   if (!draft.state_schema.trim() || draft.state_schema === schemaExample || confirm('用示例覆盖当前 Schema？')) draft.state_schema = schemaExample
 }
+function fillScriptExample() {
+  if (!draft.state_script.trim() || draft.state_script === scriptExample || confirm('用示例覆盖当前状态脚本？')) draft.state_script = scriptExample
+}
+const historyInvalid = computed(() => isCharacter.value && !(Number.isInteger(scriptHistory.value) && scriptHistory.value >= 0 && scriptHistory.value <= 100))
+const historyChanged = computed(() => isCharacter.value && !historyInvalid.value
+  && scriptHistory.value !== (original.value && 'state_script_history' in original.value ? original.value.state_script_history : 0))
 
 async function load() {
   loadError.value = null
@@ -112,13 +122,14 @@ async function save() {
     if (creating.value) {
       const body: Record<string, unknown> = {}
       for (const f of activeFields.value) body[f] = f === 'avatar' ? (draft.avatar.trim() || null) : draft[f]
-      if (isCharacter.value) body.scenes = sceneInputs()
+      if (isCharacter.value) Object.assign(body, { scenes: sceneInputs(), state_script_history: scriptHistory.value })
       saved = isCharacter.value ? await api.createCharacter(body as never) : await api.createIdentity(body as never)
     } else {
       // PATCH only what changed; avatar is the one nullable field.
       const body: Record<string, unknown> = {}
       for (const f of changed.value) body[f] = f === 'avatar' ? (draft.avatar.trim() || null) : draft[f]
       if (scenesChanged.value) body.scenes = sceneInputs()
+      if (historyChanged.value) body.state_script_history = scriptHistory.value
       if (props.chatId) {
         saved = isCharacter.value ? await api.patchChatCharacter(props.chatId, body) : await api.patchChatIdentity(props.chatId, body)
       } else {
@@ -156,7 +167,7 @@ const tab = ref<Tab>('basic')
 const tabs = computed(() => [
   { id: 'basic' as const, label: '基本信息', fields: ['name', 'avatar', 'description'] as Field[] },
   ...(isCharacter.value ? [{ id: 'scenes' as const, label: '开场', fields: [] as Field[] }] : []),
-  ...(isCharacter.value ? [{ id: 'state' as const, label: '状态', fields: ['state_schema', 'state_reference', 'state_update_rules'] as Field[] }] : []),
+  ...(isCharacter.value ? [{ id: 'state' as const, label: '状态', fields: ['state_schema', 'state_reference', 'state_update_rules', 'state_script'] as Field[] }] : []),
   { id: 'definitions' as const, label: `${noun.value}定义`, fields: [] as Field[] },
   { id: 'portrait' as const, label: '画像', fields: [] as Field[] },
   ...(isCharacter.value ? [{ id: 'status-bar' as const, label: '状态栏', fields: [] as Field[] }] : []),
@@ -165,8 +176,8 @@ const tabs = computed(() => [
 const ownSave = computed(() => tab.value === 'definitions' || tab.value === 'portrait' || tab.value === 'status-bar')
 watch(() => props.kind, () => { if (!tabs.value.some((t) => t.id === tab.value)) tab.value = 'basic' })
 const tabDirty = (id: Tab, fs: Field[]) =>
-  !creating.value && (fs.some((f) => changed.value.includes(f)) || (id === 'scenes' && scenesChanged.value))
-const unsaved = computed(() => changed.value.length + (scenesChanged.value ? 1 : 0))
+  !creating.value && (fs.some((f) => changed.value.includes(f)) || (id === 'scenes' && scenesChanged.value) || (id === 'state' && historyChanged.value))
+const unsaved = computed(() => changed.value.length + (scenesChanged.value ? 1 : 0) + (historyChanged.value ? 1 : 0))
 
 const defBase = computed(() => (original.value ? definitionBase(props.kind, original.value.id, props.chatId) : null))
 </script>
@@ -219,6 +230,23 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
         </div>
         <div class="field"><label>状态参考信息</label><textarea v-model="draft.state_reference" class="textarea" rows="4" /></div>
         <div class="field"><label>状态更新规则</label><textarea v-model="draft.state_update_rules" class="textarea" rows="4" /></div>
+        <div class="field">
+          <div class="row">
+            <label class="label grow">状态脚本（Python，可留空）</label>
+            <button class="btn small" type="button" @click="fillScriptExample"><FileCode /> 填入示例</button>
+          </div>
+          <CodeEditor v-model="draft.state_script" language="python" min-height="160px" />
+          <span class="hint">
+            每次状态更新在模型的变更通过 Schema 校验后运行：<code>process(state, previous, history)</code> 返回要保存的状态，抛出异常则本次状态更新失败。
+            <code>previous</code> 是本回合之前的状态，<code>history</code> 是最近若干个之前的状态（旧→新，以 <code>previous</code> 结尾，<code>[{round_no, state}]</code>，初始状态的 round_no 为 0）。
+            返回结果会再次经过 Schema 校验。
+          </span>
+        </div>
+        <div class="field">
+          <label>历史状态数量</label>
+          <input v-model.number="scriptHistory" class="input" type="number" min="0" max="100" step="1" />
+          <span class="hint"><code>history</code> 包含的状态数，0–100，0 表示空列表。</span>
+        </div>
       </section>
 
       <ErrorBox v-if="saveError && !ownSave" :error="saveError" title="保存失败" />
@@ -226,8 +254,9 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
         <button v-if="id && !chatId" class="btn danger" type="button" @click="remove"><Trash2 /> 删除</button>
         <span class="spacer" />
         <span v-if="scenesInvalid" class="hint bad">开场需要名称和有效的 JSON 初始变量</span>
+        <span v-else-if="historyInvalid" class="hint bad">历史状态数量需为 0–100 的整数</span>
         <span v-else-if="!creating && unsaved" class="hint">{{ unsaved }} 项未保存</span>
-        <button class="btn primary" type="button" :disabled="saving || !draft.name.trim() || scenesInvalid || (!creating && !unsaved)" @click="save">
+        <button class="btn primary" type="button" :disabled="saving || !draft.name.trim() || scenesInvalid || historyInvalid || (!creating && !unsaved)" @click="save">
           <Save /> {{ creating ? '创建' : '保存' }}
         </button>
       </div>

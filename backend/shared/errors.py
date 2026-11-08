@@ -27,6 +27,10 @@ class StateSchemaError(ValueError):
     """State schema compilation, validation or correction failed."""
 
 
+class StateScriptError(ValueError):
+    """A character's state script failed to load, raised, or returned something other than an object."""
+
+
 class StateUpdateError(ValueError):
     """Current round content or model patch response is invalid."""
 

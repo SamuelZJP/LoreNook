@@ -6,6 +6,8 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_vali
 
 Name = Annotated[str, StringConstraints(min_length=1, pattern=r"\S")]
 NonnegativeInt = Annotated[int, Field(ge=0)]
+# How many earlier states a state script receives as history.
+StateScriptHistory = Annotated[int, Field(ge=0, le=100)]
 
 
 class Contract(BaseModel):

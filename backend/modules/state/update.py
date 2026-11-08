@@ -9,6 +9,7 @@ from backend.llm.generation import text_request, response_text
 from backend.modules.state.patch import apply_operations
 from backend.modules.state.prompts import SYSTEM, render_update_prompt
 from backend.modules.state.schema import StateValidator, checked_state
+from backend.modules.state.script import run_state_script
 from backend.schemas.state import StateUpdateContext
 from backend.shared.content import extract_content
 from backend.shared.errors import StateUpdateError
@@ -55,4 +56,8 @@ def update_state(context: StateUpdateContext, client: ModelClient, validator: St
         context.state, sort_keys=True, ensure_ascii=False, allow_nan=False
     ):
         raise StateUpdateError("状态更新失败：Patch 应用及 Schema 校验修正后的最终状态与更新前完全相同")
+    # The unchanged check above judges the model alone; the script may then change or reject the state.
+    if context.script_source.strip():
+        scripted = run_state_script(context.script_source, state, context.state, context.history)
+        state = checked_state(validator, context.schema_source, scripted)
     return state, skipped

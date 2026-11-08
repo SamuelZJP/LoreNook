@@ -1,6 +1,7 @@
 from backend.modules.definitions.storage import DefinitionStorage
 from backend.modules.state.initial import InitialStateFactory, build_initial_state
 from backend.modules.state.schema import python_initial_state
+from backend.modules.state.script import check_state_script
 from backend.repository.models import Character, CharacterScene
 from backend.repository.queries import Repository
 from backend.schemas.catalog import CharacterCreate, CharacterPatch, CharacterRead, SceneInput, SceneRead
@@ -35,6 +36,7 @@ class CharacterService:
 
     def create(self, payload: CharacterCreate, chat_id: str | None = None) -> CharacterRead:
         self._validate_scenes(payload.state_schema, payload.scenes)
+        check_state_script(payload.state_script)
         return self._create(payload, chat_id)
 
     def _create(self, payload: CharacterCreate, chat_id: str | None) -> CharacterRead:
@@ -61,6 +63,8 @@ class CharacterService:
             ]
             self._validate_scenes(payload.state_schema if payload.state_schema is not None else record.state_schema,
                                   scenes)
+        if payload.state_script is not None:
+            check_state_script(payload.state_script)
         for name, value in payload.model_dump(exclude_unset=True, exclude={"definitions", "scenes"}).items():
             setattr(record, name, value)
         if "definitions" in fields:

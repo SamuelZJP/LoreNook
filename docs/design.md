@@ -13,6 +13,7 @@ The concepts, rules and reasons behind the code. For *how* something is implemen
 | First Message | The selected scene's opening text, shown as entry 0 and always passed to the preset. |
 | Round | One user input plus one user-approved AI output. |
 | State | A JSON snapshot at the end of a round: time, place, character attributes, any variables. |
+| State script (状态脚本) | Optional character Python that runs on each generated state with the states before it, and can change or reject it. |
 | Round summary | ~150-character factual summary of one round. |
 | Episode | Title + ~200–300-character summary of a continuous range of rounds. |
 | Memory recall | A per-request judgment that expands relevant old memories in place before writing. |
@@ -60,6 +61,19 @@ The model gets the old state (as YAML), the current input and AI body, recent ro
 Ops are `add` / `replace` / `remove`. Individually invalid ops are skipped. The patched copy then goes through Schema validation/correction and the world-contract check, and is saved as a complete snapshot.
 
 **If the final state is identical to the previous state, the step fails** (empty patch, all ops skipped, write-back of the same value, Schema correction reverting the change — all count). The model is told not to invent changes to pass.
+
+### State script
+
+A character may carry a Python `state_script` defining `process(state, previous, history)`. It runs inside the state update, after the unchanged check, so the check still judges the model alone:
+
+```text
+patch → Schema + world → unchanged check → process → Schema + world → save
+```
+
+- `state` is the new state, `previous` the state before this round (the initial state for round 1). `history` is the latest N earlier snapshots, oldest first and ending with `previous`, as `{round_no, state}` with the initial state as 0. N is the character's `state_script_history` (0–100, default 0).
+- It returns the state to save. Raising fails the step with its message; retry reruns the whole step, model call included.
+- It runs only on generated updates: not on initial states, chat-UI edits or data management. Saving a character only checks that it defines `process`.
+- Like the Schema it is ordinary unsandboxed Python, copied into chats with the card. Example: `backend/modules/state/examples/script.py`.
 
 ### Round summary
 
