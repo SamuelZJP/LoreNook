@@ -36,6 +36,7 @@ class ModelConfigCreate(Contract):
     model: Name
     default_parameters: dict[str, JsonValue] = Field(default_factory=dict)
     timeout_seconds: TimeoutSeconds = DEFAULT_TIMEOUT_SECONDS
+    streaming: bool = False
 
     @field_validator("base_url")
     @classmethod
@@ -51,6 +52,7 @@ class ModelConfigPatch(PatchContract):
     model: Name | None = None
     default_parameters: dict[str, JsonValue] | None = None
     timeout_seconds: TimeoutSeconds | None = None
+    streaming: bool | None = None
 
     @field_validator("base_url")
     @classmethod
@@ -67,6 +69,7 @@ class ModelConfigRead(Contract):
     model: str
     default_parameters: dict[str, JsonValue]
     timeout_seconds: int
+    streaming: bool
     has_api_key: bool
 
 
@@ -78,6 +81,7 @@ class ModelConnection(Contract):
     model: str
     default_parameters: dict[str, JsonValue] = Field(default_factory=dict)
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS
+    streaming: bool = False
 
 
 class ModelResponse(Contract):

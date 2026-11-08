@@ -148,6 +148,9 @@ class ModelConfig(Identified, Base):
         JSON(none_as_null=True), default=dict, server_default="{}"
     )
     timeout_seconds: Mapped[int] = mapped_column(Integer, default=300, server_default="300")
+    streaming: Mapped[bool] = mapped_column(
+        Boolean(create_constraint=True, name="streaming_bool"), default=False, server_default="0"
+    )
     __table_args__ = (
         UniqueConstraint("id", "chat_id"),
         CheckConstraint("json_valid(default_parameters) AND json_type(default_parameters) = 'object'",

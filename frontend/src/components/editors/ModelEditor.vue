@@ -22,13 +22,13 @@ const DEFAULTS: Record<string, { base_url: string; params: object; test: object 
   },
   deepseek_chat_completions: {
     base_url: 'https://api.deepseek.com',
-    params: { temperature: 0.7, max_tokens: 4096, stream: false },
-    test: { messages: [{ role: 'user', content: '请用一句话打个招呼。' }], stream: false },
+    params: { temperature: 0.7, max_tokens: 4096 },
+    test: { messages: [{ role: 'user', content: '请用一句话打个招呼。' }] },
   },
 }
 
 const original = ref<ModelConfig | null>(null)
-const form = ref({ name: '', api_type: 'deepseek_chat_completions', base_url: '', model: '', timeout_seconds: 300 })
+const form = ref({ name: '', api_type: 'deepseek_chat_completions', base_url: '', model: '', timeout_seconds: 300, streaming: false })
 const params = ref('{}')
 /** Credential intent: never send `api_key` unless the user chose to replace or clear it. */
 const keyMode = ref<'keep' | 'replace' | 'clear'>('keep')
@@ -42,11 +42,11 @@ function reset(m: ModelConfig | null) {
   keyMode.value = m ? 'keep' : 'replace'
   keyInput.value = ''
   if (m) {
-    form.value = { name: m.name, api_type: m.api_type, base_url: m.base_url, model: m.model, timeout_seconds: m.timeout_seconds }
+    form.value = { name: m.name, api_type: m.api_type, base_url: m.base_url, model: m.model, timeout_seconds: m.timeout_seconds, streaming: m.streaming }
     params.value = pretty(m.default_parameters)
   } else {
     const d = DEFAULTS.deepseek_chat_completions
-    form.value = { name: '', api_type: 'deepseek_chat_completions', base_url: d.base_url, model: '', timeout_seconds: 300 }
+    form.value = { name: '', api_type: 'deepseek_chat_completions', base_url: d.base_url, model: '', timeout_seconds: 300, streaming: false }
     params.value = pretty(d.params)
   }
   testBody.value = pretty(DEFAULTS[form.value.api_type]?.test ?? {})
@@ -90,7 +90,7 @@ async function save() {
     } else {
       const o = original.value
       const body: Record<string, unknown> = {}
-      for (const k of ['name', 'api_type', 'base_url', 'model', 'timeout_seconds'] as const) if (form.value[k] !== o[k]) body[k] = form.value[k]
+      for (const k of ['name', 'api_type', 'base_url', 'model', 'timeout_seconds', 'streaming'] as const) if (form.value[k] !== o[k]) body[k] = form.value[k]
       if (JSON.stringify(default_parameters) !== JSON.stringify(o.default_parameters)) body.default_parameters = default_parameters
       if (keyMode.value === 'replace' && keyInput.value) body.api_key = keyInput.value
       if (keyMode.value === 'clear') body.api_key = ''
@@ -176,8 +176,12 @@ async function test() {
         <div class="field">
           <label>请求超时（秒）</label>
           <input v-model.number="form.timeout_seconds" class="input" type="number" min="10" max="1800" step="1" />
-          <span class="hint">10–1800；超过这么久没有收到响应即判定超时。</span>
+          <span class="hint">10–1800；超过这么久没有收到任何数据即判定超时。</span>
         </div>
+      </div>
+      <div class="field">
+        <label class="check"><input v-model="form.streaming" type="checkbox" /> 流式输出</label>
+        <span class="hint">以流式接收模型响应，再拼合成完整结果；网关对首字节等待有时长限制时开启。</span>
       </div>
 
       <div class="field">

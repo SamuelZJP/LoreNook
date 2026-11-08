@@ -90,6 +90,7 @@ class ModelRow(IdentifiedRow):
     model: str
     default_parameters: dict[str, JsonValue] = Field(default_factory=dict)
     timeout_seconds: TimeoutSeconds = DEFAULT_TIMEOUT_SECONDS
+    streaming: bool = False
 
 
 class BindingRow(Contract):

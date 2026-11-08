@@ -59,7 +59,6 @@ def test_native_transport_exact_log_defaults_auth_and_full_reply(tmp_path):
 
 @pytest.mark.parametrize("body,config_values", [
     ({}, {}), ({"messages": []}, {}), ({"messages": "bad"}, {}),
-    ({"messages": [{}], "stream": True}, {}), ({"messages": [{}], "stream": 1}, {}),
     ({"messages": [{}], "model": None}, {}), ({"messages": [{}], "model": " "}, {}),
     ({"messages": [{}]}, {"api_key": "bad\nkey"}),
     ({"messages": [{}]}, {"base_url": "http://provider.test?key=secret"}),
@@ -101,7 +100,7 @@ def test_native_request_keeps_same_system_user_text_as_google():
     assert deepseek.body["messages"][0]["content"] == google.body["systemInstruction"]["parts"][0]["text"]
     assert deepseek.body["messages"][1]["content"] == google.body["contents"][0]["parts"][0]["text"]
     assert deepseek.body["response_format"] == {"type": "text"}
-    assert deepseek.body["stream"] is False
+    assert "stream" not in deepseek.body  # owned by the config's streaming switch
 
 
 @pytest.mark.parametrize("failed_step", [None, "state_update", "round_summary", "episode_summary"])

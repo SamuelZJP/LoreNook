@@ -1,4 +1,8 @@
-"""Single synchronous JSON model call, with injectable HTTP transport for tests."""
+"""Single synchronous JSON model call, with injectable HTTP transport for tests.
+
+A streaming config reads server-sent events and joins them into the non-streaming response shape,
+so callers never see the difference.
+"""
 
 import json
 
@@ -8,6 +12,7 @@ from backend.llm.google import GoogleGenerateContent
 from backend.llm.deepseek import DeepSeekChatCompletions
 from backend.llm.parameters import merge_parameters
 from backend.llm.recording import CallJournal
+from backend.llm.sse import sse_events
 from backend.schemas.models import ModelConnection, ModelResponse
 from backend.schemas.presets import BuiltRequest
 from backend.shared.errors import ModelCallError, ModelConfigurationError
@@ -48,8 +53,11 @@ class ModelClient:
             raise ModelConfigurationError("模型请求参数必须是有效 JSON") from None
         attempt = self.journal.begin(content, api_type=config.api_type,
                                      model=body.get("model", url.rsplit("/", 1)[-1].split(":", 1)[0])) if self.journal else None
+        if attempt:
+            attempt.metadata["streaming"] = config.streaming
         try:
-            result = self._send(url, headers, content, attempt, config.timeout_seconds)
+            result = self._send(url, headers, content, attempt, config.timeout_seconds,
+                                adapter if config.streaming else None)
         except BaseException as error:
             if attempt:
                 attempt.finish(error)
@@ -58,7 +66,7 @@ class ModelClient:
             attempt.finish()
         return result
 
-    def _send(self, url, headers, content, attempt, timeout_seconds):
+    def _send(self, url, headers, content, attempt, timeout_seconds, stream_adapter):
         timeout = httpx.Timeout(timeout_seconds, connect=10, write=30, pool=5)
         try:
             with self.http.stream("POST", url, headers=headers, content=content, timeout=timeout) as response:
@@ -84,20 +92,46 @@ class ModelClient:
                     raise ModelCallError("http", "模型接口返回非成功状态", response.status_code)
                 if oversized:
                     raise ModelCallError("response_too_large", "模型响应超过长度限制")
+                # A gateway may answer a streaming request with plain JSON (e.g. an error); read it as such.
+                sse = stream_adapter is not None and not response.headers.get("content-type", "").startswith(
+                    "application/json")
+            if sse:
+                return self._joined(stream_adapter, raw)
             try:
                 result = json.loads(raw, parse_constant=_invalid_constant)
                 if not isinstance(result, dict):
                     raise ValueError
-                json.dumps(result, ensure_ascii=False, allow_nan=False).encode("utf-8")
-                parsed = ModelResponse(response=result)
             except (ValueError, UnicodeError, RecursionError):
                 raise ModelCallError("invalid_response", "模型响应必须是有效 JSON 对象") from None
-            if "error" in result:
-                raise ModelCallError("provider", "模型接口返回错误对象")
-            return parsed
+            return self._checked(result)
         except httpx.TimeoutException:
             raise ModelCallError("timeout", "模型请求超时") from None
         except httpx.HTTPError:
             raise ModelCallError("network", "模型请求连接或传输失败") from None
         except httpx.InvalidURL:
             raise ModelConfigurationError("模型请求地址不合法") from None
+
+    @staticmethod
+    def _joined(adapter, raw: bytes) -> ModelResponse:
+        try:
+            events = sse_events(raw)
+        except (ValueError, UnicodeError, RecursionError):
+            raise ModelCallError("invalid_response", "模型流式响应必须由有效 JSON 事件组成") from None
+        if any("error" in event for event in events):
+            raise ModelCallError("provider", "模型接口返回错误对象")
+        try:
+            result = adapter.join_stream(events)
+        except (ValueError, TypeError, KeyError, AttributeError):
+            raise ModelCallError("invalid_response", "模型流式响应不完整或格式不正确") from None
+        return ModelClient._checked(result)
+
+    @staticmethod
+    def _checked(result: dict) -> ModelResponse:
+        try:
+            json.dumps(result, ensure_ascii=False, allow_nan=False).encode("utf-8")
+            parsed = ModelResponse(response=result)
+        except (ValueError, UnicodeError, RecursionError):
+            raise ModelCallError("invalid_response", "模型响应必须是有效 JSON 对象") from None
+        if "error" in result:
+            raise ModelCallError("provider", "模型接口返回错误对象")
+        return parsed

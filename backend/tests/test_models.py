@@ -187,11 +187,13 @@ def test_config_api_crud_scope_secrets_and_invocation(database, chat, scope):
         assert (await client.get(path)).json() == item
         assert (await client.patch(path, json={})).json() == item
         assert (await client.patch(path, json={"name": "改名"})).json()["has_api_key"] is True
-        assert item["timeout_seconds"] == 300
+        assert item["timeout_seconds"] == 300 and item["streaming"] is False
+        assert (await client.patch(path, json={"streaming": True})).json()["streaming"] is True
+        assert (await client.patch(path, json={"streaming": False})).json()["streaming"] is False
         assert (await client.patch(path, json={"timeout_seconds": 600})).json()["timeout_seconds"] == 600
         for bad in ({"name": " "}, {"api_key": None}, {"base_url": None}, {"model": " "},
                     {"default_parameters": []}, {"chat_id": chat[0]}, {"base_url": "ftp://bad"},
-                    {"timeout_seconds": None}, {"timeout_seconds": 9}, {"timeout_seconds": 1801}, {"timeout_seconds": 60.5}):
+                    {"timeout_seconds": None}, {"streaming": None}, {"streaming": "yes"}, {"timeout_seconds": 9}, {"timeout_seconds": 1801}, {"timeout_seconds": 60.5}):
             assert (await client.patch(path, json=bad)).status_code == 422
         foreign = (await client.post(other_root, json=config_payload())).json()
         foreign_path = root + "/" + foreign["id"]
@@ -263,7 +265,7 @@ def test_model_copy_bindings_deletion_and_detached_connection(database, chat):
 
 def test_source_model_copy_independence_and_cross_chat_access(database):
     async def scenario(client):
-        source = (await client.post("/api/model-configs", json=config_payload(timeout_seconds=900))).json()
+        source = (await client.post("/api/model-configs", json=config_payload(timeout_seconds=900, streaming=True))).json()
         character = (await client.post("/api/characters", json={"name": "角色", "state_schema": STATE_SCHEMA})).json()
         identity = (await client.post("/api/user-identities", json={"name": "身份"})).json()
         payload = {"title": "聊天", "character_id": character["id"], "user_identity_id": identity["id"],
@@ -271,6 +273,7 @@ def test_source_model_copy_independence_and_cross_chat_access(database):
         first = (await client.post("/api/chats", json=payload)).json()
         second = (await client.post("/api/chats", json=payload)).json()
         assert len(first["model_configs"]) == 1 and first["model_configs"][0]["timeout_seconds"] == 900
+        assert first["model_configs"][0]["streaming"] is True
         assert first["model_bindings"]["writing"] == first["model_bindings"]["state_update"]
         first_id, second_id = first["model_configs"][0]["id"], second["model_configs"][0]["id"]
         assert len({first_id, second_id, source["id"]}) == 3

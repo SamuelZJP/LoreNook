@@ -2428,6 +2428,11 @@ export interface components {
              * @default 300
              */
             timeout_seconds: number;
+            /**
+             * Streaming
+             * @default false
+             */
+            streaming: boolean;
         };
         /** ModelConfigPatch */
         ModelConfigPatch: {
@@ -2447,6 +2452,8 @@ export interface components {
             } | null;
             /** Timeout Seconds */
             timeout_seconds?: number | null;
+            /** Streaming */
+            streaming?: boolean | null;
         };
         /** ModelConfigRead */
         ModelConfigRead: {
@@ -2468,6 +2475,8 @@ export interface components {
             };
             /** Timeout Seconds */
             timeout_seconds: number;
+            /** Streaming */
+            streaming: boolean;
             /** Has Api Key */
             has_api_key: boolean;
         };

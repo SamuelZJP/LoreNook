@@ -16,7 +16,7 @@ def text_request(api_type: str, system: str, prompt: str, *, json_output: bool =
         }
     elif api_type == DeepSeekChatCompletions.api_type:
         body = {"messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
-                "stream": False, "response_format": {"type": "json_object" if json_output else "text"}}
+                "response_format": {"type": "json_object" if json_output else "text"}}
     else:
         raise ModelConfigurationError("内置生成当前仅支持 google_generate_content 和 deepseek_chat_completions")
     return BuiltRequest(api_type=api_type, body=body)
