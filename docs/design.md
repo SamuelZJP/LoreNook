@@ -183,7 +183,7 @@ function parse(response)  { return 'full AI output text'; }  // throw Error to f
 - `memory` is finished text with no tags, empty when there is nothing older than the recent rounds. An episode with a title shows `【标题】` on the line after its date and location. It may contain expanded rounds. The preset defines the `<memory>` tags and placement; it never assembles memory itself.
 - `recent_rounds` is a list of `{id, round_no, user_input, ai_output}`, so the preset can build whatever structure it wants from them.
 
-- `user_input` ends with a `<instruction>` block when the user adds a temporary instruction. It is plot guidance for that one request: never saved, and absent from history, summaries and state updates.
+- `user_input` ends with a `<instruction>` block when the user adds a temporary instruction. It is plot guidance for that one request: never saved, and absent from history, summaries and state updates. The composer clears it after each confirmed round unless the user turns on keep, which holds it for later rounds in the same chat.
 - The preset decides roles, message layout, whether to send First Message, and which stored tags to resend. The stored AI output keeps all its tags.
 - A custom `<think>` tag is ordinary text, unrelated to a model's native thinking output.
 - Example: `backend/modules/presets/examples/google_tool.js` — forces a `game_content(content)` tool call to carry the output, requires `<content>` and a report tag, and includes First Message until `memory` is non-empty.

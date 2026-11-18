@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { Send, RefreshCw, Loader2, StickyNote } from 'lucide-vue-next'
+import { Send, RefreshCw, Loader2, StickyNote, Pin } from 'lucide-vue-next'
 import type { RoundFlow } from '@/composables/roundFlow'
 import { prefs } from '@/lib/prefs'
 
@@ -8,6 +8,7 @@ const props = defineProps<{ flow: RoundFlow; canWrite: boolean; blockReason?: st
 const area = ref<HTMLTextAreaElement>()
 const input = props.flow.input
 const instruction = props.flow.instruction
+const keepInstruction = props.flow.keepInstruction
 const instructionOpen = ref(false)
 
 const phase = computed(() => props.flow.phase.value)
@@ -106,11 +107,22 @@ const placeholder = computed(() => {
       @pointerdown="onHandleDown" @pointermove="onHandleMove" @pointerup="onHandleUp" @pointercancel="onHandleUp"
       @dblclick="resetHeight"
     />
-    <textarea
-      v-if="instructionOpen" v-model="instruction" class="instruction" rows="2" aria-label="临时指令"
-      placeholder="临时指令：这一回合想要的剧情走向。只发给写作模型，不保存，归档后清除"
-      :disabled="locked" @keydown="onKey"
-    />
+    <div v-if="instructionOpen" class="row-instruction">
+      <textarea
+        v-model="instruction" class="instruction" rows="2" aria-label="临时指令"
+        :placeholder="keepInstruction
+          ? '临时指令：想要的剧情走向。只发给写作模型，不保存；已保持，归档后不清除'
+          : '临时指令：这一回合想要的剧情走向。只发给写作模型，不保存，归档后清除'"
+        :disabled="locked" @keydown="onKey"
+      />
+      <button
+        class="btn ghost keep" :class="{ on: keepInstruction }" type="button"
+        :title="keepInstruction ? '保持临时指令：开（归档后不清除）' : '保持临时指令：关（归档后清除）'"
+        aria-label="保持临时指令" :aria-pressed="keepInstruction" @click="keepInstruction = !keepInstruction"
+      >
+        <Pin />
+      </button>
+    </div>
     <div class="row-main">
       <button
         class="btn ghost toggle" :class="{ on: instructionOpen || instruction.trim() }" type="button"
@@ -142,14 +154,17 @@ const placeholder = computed(() => {
   background: var(--bg-elev); border: 1px solid var(--border); border-radius: var(--radius-l); box-shadow: var(--shadow);
 }
 .row-main { display: flex; gap: 8px; align-items: flex-end; }
+.row-instruction { display: flex; gap: 8px; align-items: flex-start; }
 .instruction {
-  border: 1px dashed var(--border); border-radius: var(--radius-s); background: transparent; color: var(--text);
+  flex: 1; min-width: 0; border: 1px dashed var(--border); border-radius: var(--radius-s); background: transparent; color: var(--text);
   resize: vertical; font: inherit; font-size: 13px; line-height: 1.5; max-height: 25vh; padding: 6px 8px; outline: none;
 }
 .instruction:focus { border-color: var(--accent); }
 .instruction:disabled { opacity: 0.6; }
 .toggle { position: relative; flex-shrink: 0; width: 38px; min-height: 38px; padding: 0; }
 .toggle.on { color: var(--accent); }
+.keep { flex-shrink: 0; width: 38px; min-height: 38px; padding: 0; color: var(--text-muted); }
+.keep.on { color: var(--accent); }
 .dot { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
 .area {
   flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text); resize: none; font: inherit;

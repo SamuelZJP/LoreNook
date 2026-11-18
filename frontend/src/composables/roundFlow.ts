@@ -34,6 +34,12 @@ export interface WriteStep {
 }
 
 /**
+ * Keep the temporary instruction across confirmed rounds. Shared by all chats for this page
+ * session (ChatView remounts per chat); switching chats still clears the instruction itself.
+ */
+const keepInstruction = ref(false)
+
+/**
  * Round lifecycle for one chat. Server progress is the source of truth for anything saved;
  * only the unsaved candidate lives in memory (and is lost on reload by design).
  */
@@ -62,6 +68,7 @@ export function useRoundFlow(chatId: Ref<string>, writeStep?: WriteStep) {
 
   watch(chatId, () => {
     clearInputs()
+    instruction.value = ''
     candidate.value = null
     error.value = null
     busy.value = null
@@ -113,7 +120,7 @@ export function useRoundFlow(chatId: Ref<string>, writeStep?: WriteStep) {
 
   function clearInputs() {
     input.value = ''
-    instruction.value = ''
+    if (!keepInstruction.value) instruction.value = ''
   }
 
   function refreshAll() {
@@ -274,7 +281,7 @@ export function useRoundFlow(chatId: Ref<string>, writeStep?: WriteStep) {
   const elapsed = computed(() => (busy.value ? Math.max(0, Math.floor((now.value - startedAt.value) / 1000)) : 0))
 
   return {
-    input, instruction, usedInstruction, candidate, phase, error, elapsed, inputChanged, archive, latestRound, unfinished,
+    input, instruction, keepInstruction, usedInstruction, candidate, phase, error, elapsed, inputChanged, archive, latestRound, unfinished,
     draft, editing, edited, hasEdits, preparedLayout, prepareLabel: writeStep?.label ?? '',
     generate, confirm, retry, discardCandidate, checkProgress, refreshAll,
     startEdit, applyEdit, cancelEdit, revertEdit,
