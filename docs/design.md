@@ -222,7 +222,7 @@ An image workflow is a library resource (imported into chats as a copy) holding 
 ### Cast and main characters
 
 - A **cast** (画像人物) belongs to a character card: name, appearance, optional reference image. A multi-protagonist card lists each protagonist; the card's own name isn't a person. A user identity has one appearance and optional reference image. Both are copied into chats with their owner.
-- **Main characters** decide who `## 中心人物` names and whose reference images come first. The default is the first cast member, or the card itself if it has no cast. A chat's manual choice overrides the default, and one attempt can override both when regenerating.
+- **Main characters** decide who `## 中心人物` names and whose reference images come first. With no choice and a cast, `## 中心人物` holds a fixed line asking the workflow to pick them from the story; a card without a cast is its own default. A chat's manual choice overrides the default, and one attempt can override both when regenerating.
 - **More than two is allowed and warned about**: models usually do best with one or two. A main character with neither appearance nor reference image is also warned about.
 - **Reference images**: `{{images}}` carries everyone's, not just the main characters', because the workflow decides who appears. Up to 8 are sent, and people sharing a file share a number. A missing image is not an error, and a workflow without `{{images}}` gets none.
 

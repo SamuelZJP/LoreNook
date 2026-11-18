@@ -28,7 +28,7 @@ const undescribed = computed(() => {
       <input type="checkbox" :checked="chosen.has(o.id)" @change="toggle(o.id)" />
       {{ o.name }}<span v-if="o.has_reference" class="badge">有参考图</span>
     </label>
-    <p v-if="!modelValue.length" class="hint">未选择时默认：{{ defaultNames }}</p>
+    <p v-if="!modelValue.length" class="hint">{{ defaultNames ? `未选择时默认：${defaultNames}` : '未选择时由剧情自动判断中心人物' }}</p>
     <p v-if="undescribed" class="hint warn"><AlertTriangle /> 未填写外貌：{{ undescribed }}。可以在“画像”标签中填写外貌或上传参考图。</p>
     <p v-if="modelValue.length > FOCUS_SOFT_LIMIT" class="hint warn"><AlertTriangle /> 目前的图像模型通常在 1–2 位主要人物时效果最好。</p>
   </div>

@@ -129,13 +129,16 @@ class CastService:
         people = [*(cast or [char]), user]
         return FocusOptions(options=[FocusOption(id=p.id, name=p.name, has_reference=p.reference_image is not None,
                                                 has_appearance=bool(p.appearance.strip())) for p in people],
-                            default=[(cast or [char])[0].id])
+                            default=[] if cast else [char.id])
 
     def resolve_focus(self, chat_id: str, requested: list[str]) -> tuple[list[Subject], list[Subject]]:
-        """(main characters, everyone else). Choices that no longer exist are dropped."""
+        """(main characters, everyone else). Choices that no longer exist are dropped.
+
+        Without a choice, a cast leaves the main characters to the workflow; a card without one is its own.
+        """
         cast, char, user = self._subjects(chat_id)
         people = {p.id: p for p in [*(cast or [char]), user]}
-        focus = [people[i] for i in dict.fromkeys(requested) if i in people] or [(cast or [char])[0]]
+        focus = [people[i] for i in dict.fromkeys(requested) if i in people] or ([] if cast else [char])
         chosen = {p.id for p in focus}
         return focus, [p for p in people.values() if p.id not in chosen]
 

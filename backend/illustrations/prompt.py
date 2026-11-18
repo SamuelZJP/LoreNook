@@ -11,6 +11,7 @@ from backend.shared.content import extract_content
 from backend.shared.errors import StateUpdateError
 
 MAX_IMAGES = 8
+AUTO_FOCUS = "（未指定。请根据剧情内容自行判断本画面的中心人物。）"
 
 
 def reference_images(people: list[Subject]) -> list[str]:
@@ -47,6 +48,6 @@ def render_prompt(context: IllustrationContext, images: list[str]) -> str:
 {chr(10).join(people) or '（无）'}
 
 ## 中心人物
-{'、'.join(person.name for person in context.focus)}
+{'、'.join(person.name for person in context.focus) or AUTO_FOCUS}
 
 请按系统说明从以上上下文选定画面瞬间，直接输出提示词正文。"""

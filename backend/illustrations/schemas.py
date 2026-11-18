@@ -111,7 +111,7 @@ class FocusOption(Contract):
 
 
 class FocusOptions(Contract):
-    """Everyone who can be a main character in this chat, and who is the current default."""
+    """Everyone who can be a main character in this chat, and who is the current default (empty: decided from the story)."""
     options: list[FocusOption]
     default: list[str]
 

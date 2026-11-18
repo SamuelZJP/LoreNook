@@ -489,7 +489,7 @@ def test_chat_setup_import_and_cast_copy(database, tmp_path):
         assert member["name"] == "小红" and member["id"] != kept["id"]
         assert (await client.get(chat + "/appearance")).json()["appearance"] == "眼镜"
         options = (await client.get(chat + "/focus-options")).json()
-        assert [o["name"] for o in options["options"]] == ["小红", "身份"] and options["default"] == [member["id"]]
+        assert [o["name"] for o in options["options"]] == ["小红", "身份"] and options["default"] == []
         assert [o["has_appearance"] for o in options["options"]] == [True, True]
 
         settings = await client.post(chat + "/illustration-setup", json={
@@ -520,9 +520,9 @@ def test_focus_defaults_overrides_and_soft_limit(database, illustrated_chat, tmp
         assert [(o["name"], o["has_appearance"]) for o in options] == [("角色", False), ("身份", False)]
         members = (await client.put(chat + "/cast", json={"members": [
             {"name": "甲", "appearance": "tall"}, {"name": "乙", "appearance": "short"}, {"name": "丙"}]})).json()
-        # With a cast: its first member, and the card's name is no longer offered.
+        # With a cast: no default, the workflow is asked to decide from the story; the card's name is no longer offered.
         first = await preview()
-        assert first["focus"] == ["甲"]
+        assert first["focus"] == [] and "## 中心人物\n（未指定。请根据剧情内容自行判断本画面的中心人物。）\n" in first["prompt"]
         assert "<甲>\ntall\n</甲>\n<乙>\nshort\n</乙>" in first["prompt"] and "<丙>" not in first["prompt"]
         # The chat's manual choice overrides the default; a removed id is dropped.
         await client.put(chat + "/illustration-settings", json={
