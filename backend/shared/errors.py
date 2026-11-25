@@ -2,6 +2,10 @@ class NotFoundError(LookupError):
     """A requested record does not exist."""
 
 
+class ForbiddenError(PermissionError):
+    """The current user may not do this."""
+
+
 class ConflictError(ValueError):
     """Stored data no longer permits the requested operation."""
 

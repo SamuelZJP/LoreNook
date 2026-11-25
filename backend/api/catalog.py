@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, Response
 from pydantic import JsonValue
 
 from backend.api.dependencies import DatabaseDependency
+from backend.modules.characters.code import check_code_allowed
 from backend.modules.characters.service import CharacterService
 from backend.modules.state.initial import build_initial_state
 from backend.modules.users.service import IdentityService
@@ -28,6 +29,7 @@ def create_character(payload: CharacterCreate, request: Request, database: Datab
 @router.post("/characters/initial-state-preview", response_model=dict[str, JsonValue])
 def preview_initial_state(payload: InitialStatePreview, request: Request):
     """Compute a scene's full initial state from an unsaved Schema draft; nothing is stored."""
+    check_code_allowed(payload.state_schema)
     return build_initial_state(request.app.state.initial_state_factory, payload.state_schema, payload.initial_state)
 
 

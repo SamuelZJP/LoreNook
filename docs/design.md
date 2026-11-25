@@ -328,11 +328,12 @@ Imported episodes may have `created_by_round_id = NULL`; they work normally for 
 - **Ownership lives in the storage session.** Owned tables carry `owner_id`; every statement on them is filtered to the current user and new rows take the current user as owner. Other tables are reached through an owned parent: an ID in the path (chat, character, preset…) must belong to the user, and queries under a chat also filter by that chat. Code that touches owned rows without a scope fails rather than seeing everything.
 - **Uploaded images** are stored once by content hash; `media_files` records who may read each. A card export packs only images its user may read.
 - **Administrators** additionally get data management (all users' rows, raw) and illustrations, whose renders run on the server's own ComfyUI. New rows created in data management belong to the acting administrator.
+- **Character Python** (state Schema and script) is for administrators only; see Security.
 - **Model addresses.** A user's model request may only reach public addresses: the host is resolved, every address must be public, and the connection is pinned to the checked one. Administrators may use private addresses.
 
 ## Security
 
-State Schemas and state scripts execute arbitrary Python on the server, and the admin API can reveal every user's model API keys. Give accounts only to people you trust.
+State Schemas and state scripts execute arbitrary Python on the server, so only administrators may save them, preview them, or keep them when importing a card; other users' characters have none, and their scenes must give the whole `世界`. The admin API can reveal every user's model API keys.
 
 ## Out of scope
 

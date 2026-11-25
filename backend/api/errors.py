@@ -7,7 +7,7 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy.exc import IntegrityError
 
 from backend.shared.errors import (
-    AdminDataError, ArchiveExecutionError, CharacterCardError, ConflictError, DefinitionTemplateError, ModelCallError, ModelConfigurationError,
+    AdminDataError, ArchiveExecutionError, CharacterCardError, ConflictError, ForbiddenError, DefinitionTemplateError, ModelCallError, ModelConfigurationError,
     NotFoundError, PresetExecutionError, StateInitializationError,
     StateSchemaError, StateScriptError, StateUpdateError,
     RoundSummaryError, EpisodeDecisionError, EpisodeSummaryError,
@@ -68,6 +68,10 @@ def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(NotFoundError)
     async def not_found(request: Request, error: NotFoundError):
         return JSONResponse(status_code=404, content={"detail": str(error)})
+
+    @app.exception_handler(ForbiddenError)
+    async def forbidden(request: Request, error: ForbiddenError):
+        return JSONResponse(status_code=403, content={"detail": str(error)})
 
     @app.exception_handler(ConflictError)
     async def conflict(request: Request, error: ConflictError):

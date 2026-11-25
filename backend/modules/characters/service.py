@@ -1,3 +1,4 @@
+from backend.modules.characters.code import check_code_allowed
 from backend.modules.definitions.storage import DefinitionStorage
 from backend.modules.state.initial import InitialStateFactory, build_initial_state
 from backend.modules.state.schema import python_initial_state
@@ -36,6 +37,7 @@ class CharacterService:
 
     def create(self, payload: CharacterCreate, chat_id: str | None = None, *, check_scenes: bool = True) -> CharacterRead:
         """`check_scenes=False` is for a card imported without its Schema: creating a chat checks the scene."""
+        check_code_allowed(payload.state_schema, payload.state_script)
         if check_scenes:
             self._validate_scenes(payload.state_schema, payload.scenes)
         check_state_script(payload.state_script)
@@ -56,6 +58,7 @@ class CharacterService:
     def update(self, character_id: str, payload: CharacterPatch, chat_id: str | None = None) -> CharacterRead:
         record = self.repository.get_owned(Character, character_id, chat_id)
         fields = payload.model_fields_set
+        check_code_allowed(payload.state_schema, payload.state_script)
         if chat_id is not None and payload.scenes is not None and len(payload.scenes) != 1:
             raise ConflictError("聊天角色只能保留创建时选择的一个开场")
         if fields & {"state_schema", "scenes"}:

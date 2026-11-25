@@ -13,7 +13,8 @@ import StatusBarEditor from '@/features/status_bar/components/StatusBarEditor.vu
 import ScopeNote from './ScopeNote.vue'
 import InfoTip from '../InfoTip.vue'
 import DefinitionsEditor from './DefinitionsEditor.vue'
-import ScenesEditor, { newScene, type SceneDraft } from './ScenesEditor.vue'
+import ScenesEditor, { newScene, worldState, type SceneDraft } from './ScenesEditor.vue'
+import { isAdmin } from '@/features/account/session'
 import { jsonProblem } from './JsonField.vue'
 import { toast } from '@/composables/toast'
 import schemaExample from '@examples/state/examples/basic.py?raw'
@@ -53,14 +54,15 @@ function fill(p: Profile | null, keepKeys = false) {
     const v = p ? (p as unknown as Record<string, unknown>)[f] : undefined
     draft[f] = typeof v === 'string' ? v : ''
   }
-  if (!p && isCharacter.value) draft.state_schema = schemaExample
+  // Character Python runs on the server, so only administrators start from the example Schema.
+  if (!p && isCharacter.value && isAdmin.value) draft.state_schema = schemaExample
   scriptHistory.value = p && 'state_script_history' in p ? p.state_script_history : 0
   const saved = p && 'scenes' in p ? p.scenes : []
   scenes.value = saved.length
     // Saving replaces scene rows, so keep the editor's keys to preserve expanded cards.
     ? saved.map((s, i) => ({ key: (keepKeys && scenes.value[i]?.key) || s.id, name: s.name, description: s.description, first_message: s.first_message,
       state: JSON.stringify(s.initial_state ?? {}, null, 2) }))
-    : [newScene()]
+    : [newScene('默认', draft.state_schema.trim() ? '{}' : worldState())]
 }
 
 function sceneInputs(): SceneInput[] {
@@ -235,7 +237,10 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
       </section>
 
       <section v-if="isCharacter" v-show="tab === 'state'" class="stack">
-        <div class="field">
+        <p v-if="!isAdmin" class="hint">
+          状态 Schema 和状态脚本是在服务器上运行的 Python 代码，只有管理员可以编写。没有 Schema 时，开场的初始变量需要写全「世界」的日期、星期、时间和地点。
+        </p>
+        <div v-if="isAdmin" class="field">
           <div class="row">
             <label class="label">状态 Schema（Python / Pydantic）</label>
             <InfoTip>
@@ -249,7 +254,7 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
         </div>
         <div class="field"><label>状态参考信息</label><textarea v-model="draft.state_reference" class="textarea" rows="4" /></div>
         <div class="field"><label>状态更新规则</label><textarea v-model="draft.state_update_rules" class="textarea" rows="4" /></div>
-        <div class="field">
+        <div v-if="isAdmin" class="field">
           <div class="row">
             <label class="label">状态脚本（Python，可留空）</label>
             <InfoTip>
@@ -261,7 +266,7 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
           </div>
           <CodeEditor v-model="draft.state_script" language="python" min-height="160px" />
         </div>
-        <div class="field">
+        <div v-if="isAdmin" class="field">
           <div class="row tight-row"><label class="label">脚本可见的历史状态数</label><InfoTip>0–100。0 表示 <code>history</code> 为空。</InfoTip></div>
           <input v-model.number="scriptHistory" class="input history" type="number" min="0" max="100" step="1" />
         </div>

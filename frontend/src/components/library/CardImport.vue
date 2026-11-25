@@ -7,6 +7,7 @@ import { api, type CardSummary } from '@/api/endpoints'
 import { toast } from '@/composables/toast'
 import ModalDialog from '../ModalDialog.vue'
 import ErrorBox from '../ErrorBox.vue'
+import { isAdmin } from '@/features/account/session'
 
 /** Pick a card file, show what it brings in, then import it as a new library character. */
 const qc = useQueryClient()
@@ -79,11 +80,19 @@ async function confirm() {
 
       <div v-if="code" class="risk stack tight">
         <div class="row tight"><TriangleAlert class="ic" /><strong>这张卡带有{{ code }}</strong></div>
-        <p>它们是不受限制的 Python，会在服务器上运行，可以读写文件、访问网络。只保留你信任的来源。</p>
-        <label class="check"><input v-model="keepCode" type="checkbox" /> 保留代码</label>
-        <p v-if="!keepCode && summary.has_state_schema" class="hint">
-          不保留时，开场的初始变量不会校验；补上状态 Schema 后才能用它开始聊天。
-        </p>
+        <template v-if="isAdmin">
+          <p>它们是不受限制的 Python，会在服务器上运行，可以读写文件、访问网络。只保留你信任的来源。</p>
+          <label class="check"><input v-model="keepCode" type="checkbox" /> 保留代码</label>
+          <p v-if="!keepCode && summary.has_state_schema" class="hint">
+            不保留时，开场的初始变量不会校验；补上状态 Schema 后才能用它开始聊天。
+          </p>
+        </template>
+        <template v-else>
+          <p>它们是在服务器上运行的 Python，只有管理员可以保留，导入时会去掉。</p>
+          <p v-if="summary.has_state_schema" class="hint">
+            去掉 Schema 后，开场的初始变量需要写全「世界」的日期、星期、时间和地点，才能开始聊天。
+          </p>
+        </template>
       </div>
 
       <p v-if="summary.unknown_features.length" class="hint warn">

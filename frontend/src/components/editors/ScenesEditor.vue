@@ -22,7 +22,7 @@ function toggle(key: string) {
 }
 
 function add() {
-  const scene = newScene(`开场 ${scenes.value.length + 1}`)
+  const scene = newScene(`开场 ${scenes.value.length + 1}`, props.stateSchema.trim() ? '{}' : worldState())
   scenes.value = [...scenes.value, scene]
   open.value = new Set([...open.value, scene.key])
 }
@@ -52,8 +52,18 @@ async function preview(scene: SceneDraft) {
 
 <script lang="ts">
 let counter = 0
-export function newScene(name = '默认'): SceneDraft {
-  return { key: `new-${++counter}`, name, description: '', first_message: '', state: '{}' }
+export function newScene(name = '默认', state = '{}'): SceneDraft {
+  return { key: `new-${++counter}`, name, description: '', first_message: '', state }
+}
+
+const WEEKDAYS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+
+/** Without a Schema nothing fills in defaults, so a scene's initial state must name the whole 世界; start from today. */
+export function worldState(): string {
+  const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const world = { 日期: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`, 星期: WEEKDAYS[now.getDay()], 时间: '08:00', 地点: '' }
+  return JSON.stringify({ 世界: world }, null, 2)
 }
 </script>
 

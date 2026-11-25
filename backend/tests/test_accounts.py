@@ -259,3 +259,39 @@ def test_command_line_user_administration(database):
     assert out[0] == "已创建 writer（user）" and "writer\tuser\t停用" in out
     with pytest.raises(ValueError):
         run_cli(["user", "add", "w"], database, read_password=lambda: "short", out=out.append)
+
+
+def test_only_administrators_write_character_python(database):
+    from backend.tests.state_fixtures import WORLD
+
+    add_user(database, "writer")
+    scene = {"name": "开场", "first_message": "第0楼", "initial_state": {"世界": WORLD}}
+
+    async def scenario(client):
+        async with client() as admin, client() as writer:
+            await sign_in(admin)
+            await sign_in(writer, "writer")
+            refused = await writer.post("/api/characters", json={"name": "带代码", "state_schema": STATE_SCHEMA,
+                                                                 "scenes": [scene]})
+            assert refused.status_code == 403 and "管理员" in refused.json()["detail"]
+            plain = await writer.post("/api/characters", json={"name": "无代码", "scenes": [scene]})
+            assert plain.status_code == 201, plain.text
+            url = f"/api/characters/{plain.json()['id']}"
+            assert (await writer.patch(url, json={"state_script": "def process(s, p, h):\n    return s"})).status_code == 403
+            assert (await writer.patch(url, json={"state_schema": "", "state_script": "  "})).status_code == 200
+            preview = "/api/characters/initial-state-preview"
+            assert (await writer.post(preview, json={"state_schema": STATE_SCHEMA, "initial_state": {}})).status_code == 403
+            assert (await writer.post(preview, json={"state_schema": "", "initial_state": {"世界": WORLD}})).status_code == 200
+            identity = (await writer.post("/api/user-identities", json={"name": "身份"})).json()
+            chat = await writer.post("/api/chats", json={"title": "聊天", "character_id": plain.json()["id"],
+                                                         "user_identity_id": identity["id"]})
+            assert chat.status_code == 201, chat.text
+
+            source = await admin.post("/api/characters", json={"name": "管理员的", "state_schema": STATE_SCHEMA,
+                                                               "scenes": [scene]})
+            assert source.status_code == 201, source.text
+            card = (await admin.get(f"/api/characters/{source.json()['id']}/card")).content
+            assert (await writer.post("/api/character-cards/import?keep_code=true", content=card)).status_code == 403
+            dropped = await writer.post("/api/character-cards/import", content=card)
+            assert dropped.status_code == 201 and dropped.json()["state_schema"] == ""
+    run_app(database, scenario)
