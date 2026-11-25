@@ -9,7 +9,7 @@ import { toast } from '@/composables/toast'
 import { illustrationApi } from '../api'
 import { mediaUrl } from '../lib'
 
-/** The "画像" tab of a profile: a cast on a character, an appearance on a user identity. */
+/** The "插图外貌" tab of a profile: a cast on a character, an appearance on a user identity. */
 const props = defineProps<{ kind: 'character' | 'identity'; ownerId: string; chatId: string | null }>()
 const qc = useQueryClient()
 
@@ -68,7 +68,7 @@ async function save() {
     }
     loaded.value = snapshot()
     if (props.chatId) qc.invalidateQueries({ queryKey: ['focus-options', props.chatId] })
-    toast('画像已保存')
+    toast('插图外貌已保存')
   } catch (e) {
     saveError.value = e
   } finally {
@@ -113,7 +113,7 @@ async function save() {
     <div class="row">
       <span v-if="invalid" class="hint bad">人物需要姓名</span>
       <span class="spacer" />
-      <button class="btn primary" type="button" :disabled="!dirty || invalid || saving" @click="save"><Save /> 保存画像</button>
+      <button class="btn primary" type="button" :disabled="!dirty || invalid || saving" @click="save"><Save /> 保存</button>
     </div>
   </div>
 </template>

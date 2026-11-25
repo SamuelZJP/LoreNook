@@ -6,6 +6,7 @@ import { api } from '@/api/endpoints'
 import TopBar from '@/components/TopBar.vue'
 import ProfileCover from '@/components/ProfileCover.vue'
 import ErrorBox from '@/components/ErrorBox.vue'
+import ScrollRow from '@/components/ScrollRow.vue'
 import { formatTime } from '@/lib/format'
 
 const characters = useQuery({ queryKey: ['characters'], queryFn: api.characters })
@@ -49,15 +50,14 @@ const tagline = (text?: string | null) => text?.replace(/\s+/g, ' ').trim() ?? '
 
         <section v-if="recent.length" class="block">
           <h2 class="title">继续</h2>
-          <div class="recent">
+          <ScrollRow>
             <RouterLink v-for="c in recent" :key="c.id" :to="`/chats/${c.id}`" class="recent-card">
-              <ProfileCover :name="c.title" :portrait="c.portrait" :avatar="c.avatar" class="recent-cover">
-                <span class="recent-title ellipsis">{{ c.title }}</span>
-                <span v-if="c.last_line" class="recent-line">{{ c.last_line }}</span>
-                <span v-else class="recent-time">{{ formatTime(c.created_at) }}</span>
+              <ProfileCover :name="c.title" :portrait="c.portrait" :avatar="c.avatar">
+                <span class="caption-title ellipsis">{{ c.title }}</span>
+                <span class="caption-line">{{ c.last_line || formatTime(c.created_at) }}</span>
               </ProfileCover>
             </RouterLink>
-          </div>
+          </ScrollRow>
         </section>
 
         <section class="block">
@@ -66,8 +66,8 @@ const tagline = (text?: string | null) => text?.replace(/\s+/g, ' ').trim() ?? '
           <div class="gallery">
             <RouterLink v-for="c in characters.data.value" :key="c.id" :to="`/characters/${c.id}`" class="card-link">
               <ProfileCover :name="c.name" :portrait="c.portrait" :avatar="c.avatar" class="gallery-cover">
-                <span class="name">{{ c.name }}</span>
-                <span v-if="tagline(c.description)" class="tagline">{{ tagline(c.description) }}</span>
+                <span class="name ellipsis">{{ c.name }}</span>
+                <span class="tagline">{{ tagline(c.description) }}</span>
               </ProfileCover>
             </RouterLink>
             <RouterLink to="/library/characters/new" class="card-link new-card">
@@ -100,14 +100,12 @@ const tagline = (text?: string | null) => text?.replace(/\s+/g, ' ').trim() ?? '
 .setup-icon { width: 22px; height: 22px; color: var(--accent); }
 .arrow { width: 16px; height: 16px; color: var(--text-muted); }
 
-.recent { display: flex; gap: var(--space-3); overflow-x: auto; scrollbar-width: none; scroll-snap-type: x mandatory; }
 .recent-card { flex: 0 0 160px; scroll-snap-align: start; border-radius: var(--radius-l); overflow: hidden; color: inherit; text-decoration: none; }
-.recent-cover :deep(.overlay) { padding-top: var(--space-6); }
-.recent-title { display: block; font-weight: 600; font-size: var(--text-sm); }
-.recent-time { display: block; font-size: var(--text-xs); opacity: 0.8; }
-.recent-line {
-  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-top: 2px;
-  font-family: var(--font-reading); font-size: var(--text-xs); line-height: 1.55; opacity: 0.9;
+/* Captions keep a fixed shape, so titles line up whatever the text below them. */
+.caption-title { display: block; font-weight: 600; font-size: var(--text-sm); line-height: 1.4; }
+.caption-line {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  height: calc(2 * 1.55em); margin-top: 2px; font-family: var(--font-reading); font-size: var(--text-xs); line-height: 1.55; opacity: 0.9;
 }
 
 .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--space-4); }
@@ -119,7 +117,7 @@ const tagline = (text?: string | null) => text?.replace(/\s+/g, ' ').trim() ?? '
 .name { display: block; font-family: var(--font-reading); font-size: var(--text-2xl); font-weight: 600; line-height: 1.25; }
 .tagline {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-  margin-top: var(--space-1); font-size: var(--text-xs); line-height: 1.5; opacity: 0.85;
+  height: calc(2 * 1.5em); margin-top: var(--space-1); font-size: var(--text-xs); line-height: 1.5; opacity: 0.85;
 }
 .new-card {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2);

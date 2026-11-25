@@ -25,8 +25,8 @@ const oneLine = (text?: string) => text?.replace(/\s+/g, ' ').trim() ?? ''
   <div v-if="isProfile" class="covers">
     <RouterLink v-for="it in items" :key="it.id" :to="`/library/${kind}/${it.id}`" class="cover-card">
       <ProfileCover :name="it.name" :portrait="it.portrait" :avatar="it.avatar">
-        <span class="name">{{ it.name }}</span>
-        <span v-if="oneLine(it.sub)" class="tagline">{{ oneLine(it.sub) }}</span>
+        <span class="name ellipsis">{{ it.name }}</span>
+        <span class="tagline">{{ oneLine(it.sub) }}</span>
       </ProfileCover>
     </RouterLink>
     <RouterLink :to="`/library/${kind}/new`" class="cover-card new"><Plus /><span>新建{{ info.noun }}</span></RouterLink>
@@ -52,7 +52,8 @@ const oneLine = (text?: string) => text?.replace(/\s+/g, ' ').trim() ?? ''
 }
 .cover-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-pop); }
 .name { display: block; font-family: var(--font-reading); font-size: var(--text-2xl); font-weight: 600; line-height: 1.25; }
-.tagline { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: var(--space-1); font-size: var(--text-xs); line-height: 1.5; opacity: 0.85; }
+/* Fixed two-line height, so names line up across cards. */
+.tagline { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: calc(2 * 1.5em); margin-top: var(--space-1); font-size: var(--text-xs); line-height: 1.5; opacity: 0.85; }
 .cover-card.new {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2);
   aspect-ratio: 3 / 4; border: 1.5px dashed var(--border-strong); box-shadow: none; color: var(--text-muted);

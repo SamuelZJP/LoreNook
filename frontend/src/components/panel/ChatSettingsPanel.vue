@@ -1,69 +1,83 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch, type Component } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
-import { Save, Trash2 } from 'lucide-vue-next'
-import { api, MODEL_PURPOSES, type ChatDetail, type ChatPatch, type ModelPurpose } from '@/api/endpoints'
-import { PURPOSE_LABELS } from '@/lib/archive'
-import ErrorBox from '../ErrorBox.vue'
-import InfoTip from '../InfoTip.vue'
-import IllustrationSettingsSection from '@/features/illustrations/components/IllustrationSettingsSection.vue'
-import RecallSettingsSection from '@/features/recall/components/RecallSettingsSection.vue'
-import StatusBarSettingsSection from '@/features/status_bar/components/StatusBarSettingsSection.vue'
+import { Archive, Brain, Check, ChevronRight, Feather, Trash2 } from 'lucide-vue-next'
+import { api, type ChatDetail } from '@/api/endpoints'
+import { provideSaveTracker } from '@/composables/autosave'
 import { toast } from '@/composables/toast'
+import { CHAT_SETTINGS } from '@/features/chatSettings'
+import type { CorePage } from './settings/contract'
+import { ARCHIVE_PURPOSES, useChatPatch } from './settings/chatPatch'
+import WritingPage from './settings/WritingPage.vue'
+import MemoryPage from './settings/MemoryPage.vue'
+import ArchivePage from './settings/ArchivePage.vue'
+import SaveStatusLine from './settings/SaveStatusLine.vue'
 
+/**
+ * A chat's settings in two levels: a short list of rows with what each is set to,
+ * and a page per row. Every change saves itself.
+ */
 const props = defineProps<{ chat: ChatDetail }>()
 const qc = useQueryClient()
 const router = useRouter()
+const tracker = provideSaveTracker()
+const patch = useChatPatch(() => props.chat.id)
 
-const form = reactive({
-  title: '', recent_rounds: 0, min_summaries: 0, writing_preset_id: '',
-  bindings: {} as Record<ModelPurpose, string>,
-})
-function fill(c: ChatDetail) {
-  form.title = c.title
-  form.recent_rounds = c.recent_rounds
-  form.min_summaries = c.min_summaries
-  form.writing_preset_id = c.writing_preset_id ?? ''
-  for (const p of MODEL_PURPOSES) form.bindings[p] = c.model_bindings[p] ?? ''
+// ---- Rows: the core ones, then whatever features add, by order ----
+interface Row {
+  id: string
+  label: string
+  icon: Component
+  order: number
+  summary?: string
+  Summary?: Component
+  Page?: Component
+  core?: CorePage
 }
-watch(() => props.chat, fill, { immediate: true })
-
-const patch = computed<ChatPatch>(() => {
-  const c = props.chat
-  const body: ChatPatch = {}
-  if (form.title !== c.title) body.title = form.title
-  if (form.recent_rounds !== c.recent_rounds) body.recent_rounds = form.recent_rounds
-  if (form.min_summaries !== c.min_summaries) body.min_summaries = form.min_summaries
-  if ((form.writing_preset_id || null) !== c.writing_preset_id) body.writing_preset_id = form.writing_preset_id || null
-  const bindings: Partial<Record<ModelPurpose, string>> = {}
-  for (const p of MODEL_PURPOSES) if (form.bindings[p]) bindings[p] = form.bindings[p]
-  if (JSON.stringify(bindings) !== JSON.stringify(Object.fromEntries(MODEL_PURPOSES.filter((p) => c.model_bindings[p]).map((p) => [p, c.model_bindings[p]])))) {
-    body.model_bindings = bindings // replaces the whole mapping
-  }
-  return body
+const modelName = (id?: string | null) => props.chat.model_configs.find((m) => m.id === id)?.name
+const writingSummary = computed(() => {
+  const preset = props.chat.writing_presets.find((p) => p.id === props.chat.writing_preset_id)?.name ?? '未选写作风格'
+  return `${preset} · ${modelName(props.chat.model_bindings.writing) ?? '未选模型'}`
 })
-const dirty = computed(() => Object.keys(patch.value).length > 0)
+const archiveSummary = computed(() => {
+  const names = ARCHIVE_PURPOSES.map((p) => modelName(props.chat.model_bindings[p]))
+  if (names.every((n) => !n)) return '未设置'
+  if (names.every((n) => n && n === names[0])) return `都用 ${names[0]}`
+  return `${names.filter(Boolean).length} / ${names.length} 项已设置`
+})
+const rows = computed<Row[]>(() => {
+  const core: Row[] = [
+    { id: 'writing', label: '写作', icon: Feather, order: 10, summary: writingSummary.value, Page: WritingPage, core: 'writing' },
+    { id: 'memory', label: '记忆', icon: Brain, order: 20, summary: `原文 ${props.chat.recent_rounds} 回合`, Page: MemoryPage, core: 'memory' },
+    { id: 'archive', label: '后台整理', icon: Archive, order: 30, summary: archiveSummary.value, Page: ArchivePage, core: 'archive' },
+  ]
+  return [...core, ...CHAT_SETTINGS.flatMap((c) => c.rows ?? [])].sort((a, b) => a.order - b.order)
+})
+const blocks = (page?: CorePage) => CHAT_SETTINGS.flatMap((c) => c.blocks ?? []).filter((b) => b.page === page).sort((a, b) => a.order - b.order)
 
-const saving = ref(false)
-const error = ref<unknown>(null)
-async function save() {
-  saving.value = true
-  error.value = null
-  try {
-    const updated = await api.patchChat(props.chat.id, patch.value)
-    qc.setQueryData(['chat', props.chat.id], updated)
-    qc.invalidateQueries({ queryKey: ['chats'] })
-    qc.invalidateQueries({ queryKey: ['memory', props.chat.id] })
-    toast('设置已保存')
-  } catch (e) {
-    error.value = e
-  } finally {
-    saving.value = false
-  }
+// ---- Navigation ----
+const openId = ref<string | null>(null)
+const open = computed(() => rows.value.find((r) => r.id === openId.value) ?? null)
+const done = ref(false)
+async function finish() {
+  if (!(await tracker.flush())) return
+  done.value = true
+  setTimeout(() => {
+    done.value = false
+    openId.value = null
+  }, 450)
 }
+watch(() => props.chat.id, () => (openId.value = null))
+onBeforeUnmount(() => tracker.flush())
 
-const writingModel = computed(() => props.chat.model_configs.find((m) => m.id === form.bindings.writing))
+// ---- Title, edited right on the list ----
+const title = ref(props.chat.title)
+watch(() => props.chat.title, (v) => (title.value = v))
+function saveTitle(delay = 600) {
+  const t = title.value.trim()
+  if (t && t !== props.chat.title) tracker.schedule('title', () => patch({ title: t }), delay)
+}
 
 async function removeChat() {
   if (!confirm(`删除聊天“${props.chat.title}”及其全部回合、状态和副本？此操作不可撤销。`)) return
@@ -73,47 +87,83 @@ async function removeChat() {
     toast('聊天已删除')
     router.push('/')
   } catch (e) {
-    error.value = e
+    toast(e instanceof Error ? e.message : String(e), 'error')
   }
 }
 </script>
 
 <template>
-  <div class="stack">
-    <div class="field"><label>标题</label><input v-model="form.title" class="input" /></div>
-    <div class="row">
-      <h3>记忆</h3>
-      <InfoTip>最近的若干回合以原文交给 AI，更早的压缩成摘要和情节。原文越多越连贯，也越耗费额度。</InfoTip>
+  <!-- One row's page -->
+  <div v-if="open" class="settings-page">
+    <div class="page-head">
+      <button class="crumb" type="button" @click="finish"><component :is="open.icon" /> {{ open.label }}</button>
+      <span class="grow" />
+      <button class="btn small primary" type="button" :disabled="tracker.status.value === 'saving'" @click="finish">
+        <template v-if="done"><Check /> 已保存</template><template v-else>完成</template>
+      </button>
     </div>
-    <div class="grid-2">
-      <div class="field"><label>保留原文的回合</label><input v-model.number="form.recent_rounds" class="input" type="number" min="0" /></div>
-      <div class="field"><label>至少保留的摘要</label><input v-model.number="form.min_summaries" class="input" type="number" min="0" /></div>
+    <component :is="open.Page" :chat="chat" />
+    <template v-for="(b, i) in blocks(open.core)" :key="i">
+      <hr class="divider" />
+      <component :is="b.Block" :chat="chat" />
+    </template>
+    <SaveStatusLine :tracker="tracker" class="status" />
+  </div>
+
+  <!-- The list -->
+  <div v-else class="settings-list">
+    <div class="field">
+      <label for="chat-title">标题</label>
+      <input id="chat-title" v-model="title" class="input title-input" @input="saveTitle()" @blur="saveTitle(0)" @keydown.enter="saveTitle(0)" />
     </div>
-    <h3>写作风格</h3>
-    <select v-model="form.writing_preset_id" class="select">
-      <option value="">（未选择）</option>
-      <option v-for="p in chat.writing_presets" :key="p.id" :value="p.id">{{ p.name }}</option>
-    </select>
-    <div class="row">
-      <h3>模型</h3>
-      <InfoTip>只能选择本聊天里的模型和预设，可在“资源”中添加。<template v-if="writingModel">写作模型的接口类型（<code>{{ writingModel.api_type }}</code>）需与预设一致。</template></InfoTip>
+    <div class="rows card">
+      <component
+        :is="r.Page ? 'button' : 'div'" v-for="r in rows" :key="r.id" class="row-item" :class="{ link: !!r.Page }"
+        :type="r.Page ? 'button' : undefined" @click="r.Page && (openId = r.id)"
+      >
+        <component :is="r.icon" class="row-icon" />
+        <span class="row-label">{{ r.label }}</span>
+        <span class="row-summary">
+          <template v-if="r.summary">{{ r.summary }}</template>
+          <template v-for="(b, i) in blocks(r.core).filter((b) => b.Summary)" :key="i"> · <component :is="b.Summary" :chat="chat" /></template>
+          <component :is="r.Summary" v-if="r.Summary" :chat="chat" />
+        </span>
+        <ChevronRight v-if="r.Page" class="chev" />
+      </component>
     </div>
-    <div v-for="p in MODEL_PURPOSES" :key="p" class="field">
-      <label>{{ PURPOSE_LABELS[p] }}</label>
-      <select v-model="form.bindings[p]" class="select">
-        <option value="">（未绑定）</option>
-        <option v-for="m in chat.model_configs" :key="m.id" :value="m.id">{{ m.name }} · {{ m.model }}</option>
-      </select>
+    <SaveStatusLine :tracker="tracker" />
+    <div class="danger-zone">
+      <button class="btn ghost small danger" type="button" @click="removeChat"><Trash2 /> 删除这个聊天</button>
     </div>
-    <ErrorBox v-if="error" :error="error" title="保存失败" />
-    <div class="row">
-      <button class="btn danger" type="button" @click="removeChat"><Trash2 /> 删除聊天</button>
-      <span class="spacer" />
-      <button class="btn" type="button" :disabled="!dirty" @click="fill(chat)">还原</button>
-      <button class="btn primary" type="button" :disabled="!dirty || saving || !form.title.trim()" @click="save"><Save /> 保存</button>
-    </div>
-    <RecallSettingsSection :chat-id="chat.id" :model-configs="chat.model_configs" />
-    <IllustrationSettingsSection :chat-id="chat.id" />
-    <StatusBarSettingsSection :chat-id="chat.id" />
   </div>
 </template>
+
+<style scoped>
+.settings-list, .settings-page { display: flex; flex-direction: column; gap: var(--space-3); }
+.title-input { font-family: var(--font-reading); font-size: var(--text-lg); }
+.rows { display: flex; flex-direction: column; overflow: hidden; }
+.row-item {
+  display: flex; align-items: center; gap: var(--space-3); min-height: 56px; padding: var(--space-2) var(--space-3);
+  border: 0; border-bottom: 1px solid var(--border); background: none; color: inherit; font: inherit; text-align: left; width: 100%;
+}
+.row-item:last-child { border-bottom: 0; }
+.row-item.link { cursor: pointer; }
+.row-item.link:hover { background: var(--bg-hover); }
+.row-icon { width: 18px; height: 18px; color: var(--accent); flex-shrink: 0; }
+.row-label { font-weight: 600; flex-shrink: 0; }
+.row-summary {
+  flex: 1; min-width: 0; text-align: right; font-size: var(--text-xs); color: var(--text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.chev { width: 16px; height: 16px; color: var(--text-faint); flex-shrink: 0; }
+.danger-zone { margin-top: var(--space-6); padding-top: var(--space-3); border-top: 1px solid var(--border); }
+
+.page-head { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1); }
+.crumb {
+  display: inline-flex; align-items: center; gap: var(--space-1-5); border: 0; background: none; padding: 0; cursor: pointer;
+  font: inherit; font-size: var(--text-lg); font-weight: 600; color: var(--text);
+}
+.crumb svg { width: 18px; height: 18px; color: var(--accent); }
+.divider { border: 0; border-top: 1px solid var(--border); margin: var(--space-2) 0; width: 100%; }
+.status { margin-top: var(--space-2); }
+</style>

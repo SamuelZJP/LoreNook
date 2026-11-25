@@ -1,42 +1,28 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
-import ErrorBox from '@/components/ErrorBox.vue'
+import type { ChatDetail } from '@/api/endpoints'
+import { useSaveTracker } from '@/composables/autosave'
 import { statusBarApi } from '../api'
 
-/** A chat's status bar switch. Saves on change; only offered when the chat's character has code. */
-const props = defineProps<{ chatId: string }>()
+/** The status bar row's inline switch. Only offered when the chat's character has code. */
+const props = defineProps<{ chat: ChatDetail }>()
 const qc = useQueryClient()
-const bar = useQuery({ queryKey: computed(() => ['status-bar', props.chatId]), queryFn: () => statusBarApi.chat(props.chatId) })
+const tracker = useSaveTracker()
+const bar = useQuery({ queryKey: computed(() => ['status-bar', props.chat.id]), queryFn: () => statusBarApi.chat(props.chat.id) })
 const hasCode = computed(() => !!bar.data.value?.code.trim())
 
-const saving = ref(false)
-const error = ref<unknown>(null)
-async function setEnabled(enabled: boolean) {
-  saving.value = true
-  error.value = null
-  try {
-    qc.setQueryData(['status-bar', props.chatId], await statusBarApi.patchChat(props.chatId, { enabled }))
-  } catch (e) {
-    error.value = e
-  } finally {
-    saving.value = false
-  }
+function setEnabled(enabled: boolean) {
+  tracker.schedule('status-bar', async () => {
+    qc.setQueryData(['status-bar', props.chat.id], await statusBarApi.patchChat(props.chat.id, { enabled }))
+  })
 }
 </script>
 
 <template>
-  <div class="stack">
-    <h3>状态栏</h3>
-    <ErrorBox v-if="bar.error.value" :error="bar.error.value" title="读取失败" />
-    <template v-else-if="bar.data.value">
-      <label class="check">
-        <input type="checkbox" :checked="bar.data.value.enabled && hasCode" :disabled="!hasCode || saving"
-               @change="setEnabled(($event.target as HTMLInputElement).checked)" />
-        在回复底部显示状态栏
-      </label>
-      <span v-if="!hasCode" class="hint">这个角色还没有状态栏。</span>
-    </template>
-    <ErrorBox v-if="error" :error="error" title="保存失败" />
-  </div>
+  <span v-if="bar.data.value && !hasCode" class="faint">角色没有状态栏</span>
+  <input
+    v-else-if="bar.data.value" type="checkbox" class="switch" aria-label="在回复底部显示状态栏"
+    :checked="bar.data.value.enabled" @click.stop @change="setEnabled(($event.target as HTMLInputElement).checked)"
+  />
 </template>

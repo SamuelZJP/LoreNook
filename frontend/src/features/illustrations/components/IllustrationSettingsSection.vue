@@ -1,92 +1,79 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
-import { Save } from 'lucide-vue-next'
+import type { ChatDetail } from '@/api/endpoints'
 import ErrorBox from '@/components/ErrorBox.vue'
-import { toast } from '@/composables/toast'
+import InfoTip from '@/components/InfoTip.vue'
+import { useSaveTracker } from '@/composables/autosave'
 import { illustrationApi, type IllustrationMode, type IllustrationSettings } from '../api'
 import { MODE_LABELS } from '../lib'
 import FocusPicker from './FocusPicker.vue'
 
-/** A chat's illustration settings. Saves on its own, separately from the rest of the chat. */
-const props = defineProps<{ chatId: string }>()
+/** A chat's illustration settings, saved as they change. */
+const props = defineProps<{ chat: ChatDetail }>()
 const qc = useQueryClient()
-const settings = useQuery({ queryKey: computed(() => ['illustration-settings', props.chatId]), queryFn: () => illustrationApi.settings(props.chatId) })
-const workflows = useQuery({ queryKey: computed(() => ['workflows', props.chatId]), queryFn: () => illustrationApi.workflows({ chatId: props.chatId }) })
-const options = useQuery({ queryKey: computed(() => ['focus-options', props.chatId]), queryFn: () => illustrationApi.focusOptions(props.chatId) })
+const tracker = useSaveTracker()
+const chatId = computed(() => props.chat.id)
+const settings = useQuery({ queryKey: computed(() => ['illustration-settings', chatId.value]), queryFn: () => illustrationApi.settings(chatId.value) })
+const workflows = useQuery({ queryKey: computed(() => ['workflows', chatId.value]), queryFn: () => illustrationApi.workflows({ chatId: chatId.value }) })
+const options = useQuery({ queryKey: computed(() => ['focus-options', chatId.value]), queryFn: () => illustrationApi.focusOptions(chatId.value) })
 
 const form = reactive({ mode: 'off' as IllustrationMode, image_workflow_id: '', focus: [] as string[] })
-function fill(s: IllustrationSettings | undefined) {
-  if (!s) return
-  form.mode = s.mode ?? 'off'
-  form.image_workflow_id = s.image_workflow_id ?? ''
-  form.focus = [...(s.focus ?? [])]
-}
-watch(() => settings.data.value, fill, { immediate: true })
+// Filled once; after that the form leads, so a late save can't undo newer edits.
+const loaded = computed(() => !!settings.data.value)
+let filled = false
+watch(() => settings.data.value, (s) => {
+  if (!s || filled) return
+  filled = true
+  Object.assign(form, { mode: s.mode ?? 'off', image_workflow_id: s.image_workflow_id ?? '', focus: [...(s.focus ?? [])] })
+}, { immediate: true })
 
-const body = computed<IllustrationSettings>(() => ({
-  mode: form.mode, image_workflow_id: form.image_workflow_id || null, focus: form.focus,
-}))
-const dirty = computed(() => {
+const body = (): IllustrationSettings => ({ mode: form.mode, image_workflow_id: form.image_workflow_id || null, focus: [...form.focus] })
+watch(() => JSON.stringify(body()), (now) => {
   const s = settings.data.value
-  return !!s && JSON.stringify(body.value) !== JSON.stringify({
-    mode: s.mode, image_workflow_id: s.image_workflow_id ?? null, focus: s.focus ?? [],
-  })
+  if (!filled || !s) return
+  if (now === JSON.stringify({ mode: s.mode ?? 'off', image_workflow_id: s.image_workflow_id ?? null, focus: s.focus ?? [] })) return
+  tracker.schedule('illustration', async () => {
+    qc.setQueryData(['illustration-settings', chatId.value], await illustrationApi.putSettings(chatId.value, body()))
+  }, 300)
 })
-const incomplete = computed(() => form.mode !== 'off' && !form.image_workflow_id)
-
-const saving = ref(false)
-const error = ref<unknown>(null)
-async function save() {
-  saving.value = true
-  error.value = null
-  try {
-    qc.setQueryData(['illustration-settings', props.chatId], await illustrationApi.putSettings(props.chatId, body.value))
-    toast('插图设置已保存')
-  } catch (e) {
-    error.value = e
-  } finally {
-    saving.value = false
-  }
-}
 </script>
 
 <template>
   <div class="stack">
-    <h3>插图</h3>
     <ErrorBox v-if="settings.error.value" :error="settings.error.value" title="读取失败" />
-    <div class="field">
-      <label>生成时机</label>
-      <select v-model="form.mode" class="select">
-        <option v-for="(label, mode) in MODE_LABELS" :key="mode" :value="mode">{{ label }}</option>
-      </select>
-      <span class="hint">回合归档完成后在后台生成，不会阻塞下一回合。除“关闭”外都可以在回合下方手动生成。</span>
-    </div>
-    <template v-if="form.mode !== 'off'">
+    <template v-if="loaded">
       <div class="field">
-        <label>绘图工作流</label>
-        <select v-model="form.image_workflow_id" class="select">
-          <option value="">（未选择）</option>
-          <option v-for="w in workflows.data.value" :key="w.id" :value="w.id">{{ w.name }} · {{ w.width }}×{{ w.height }}</option>
+        <div class="row tip-row">
+          <label class="label">生成时机</label>
+          <InfoTip>回合整理完成后在后台生成，不会耽误下一回合。除“关闭”外，都可以在回合下方手动生成。</InfoTip>
+        </div>
+        <select v-model="form.mode" class="select">
+          <option v-for="(label, mode) in MODE_LABELS" :key="mode" :value="mode">{{ label }}</option>
         </select>
-        <span v-if="!workflows.data.value?.length" class="hint">本聊天还没有绘图工作流，可以在“资源”标签中从资源库导入。</span>
       </div>
-      <div class="field">
-        <label>主要人物</label>
-        <FocusPicker v-if="options.data.value" v-model="form.focus" :options="options.data.value" />
-        <span class="hint">人物来自角色卡的“画像”标签。生成时也可以为单次更换。</span>
-      </div>
-      <p v-if="incomplete" class="hint warn">选择工作流后才会生成插图。</p>
+      <template v-if="form.mode !== 'off'">
+        <div class="field">
+          <label>绘图工作流</label>
+          <select v-model="form.image_workflow_id" class="select">
+            <option value="">（未选择）</option>
+            <option v-for="w in workflows.data.value" :key="w.id" :value="w.id">{{ w.name }} · {{ w.width }}×{{ w.height }}</option>
+          </select>
+          <span v-if="!workflows.data.value?.length" class="hint">本聊天还没有绘图工作流，可在“幕后 › 本聊天资源”中导入。</span>
+          <span v-else-if="!form.image_workflow_id" class="hint warn">选择工作流后才会生成插图。</span>
+        </div>
+        <div class="field">
+          <div class="row tip-row">
+            <label class="label">主要人物</label>
+            <InfoTip>人物来自角色的“插图外貌”。生成时也可以临时更换。</InfoTip>
+          </div>
+          <FocusPicker v-if="options.data.value" v-model="form.focus" :options="options.data.value" />
+        </div>
+      </template>
     </template>
-    <ErrorBox v-if="error" :error="error" title="保存失败" />
-    <div class="row">
-      <span class="spacer" />
-      <button class="btn" type="button" :disabled="!dirty" @click="fill(settings.data.value)">还原</button>
-      <button class="btn primary" type="button" :disabled="!dirty || saving" @click="save"><Save /> 保存插图设置</button>
-    </div>
   </div>
 </template>
 
 <style scoped>
-.warn { color: var(--warn); }
+.tip-row { gap: var(--space-1); }
 </style>

@@ -29,7 +29,7 @@ const undescribed = computed(() => {
       {{ o.name }}<span v-if="o.has_reference" class="badge">有参考图</span>
     </label>
     <p v-if="!modelValue.length" class="hint">{{ defaultNames ? `未选择时默认：${defaultNames}` : '未选择时由剧情自动判断中心人物' }}</p>
-    <p v-if="undescribed" class="hint warn"><AlertTriangle /> 未填写外貌：{{ undescribed }}。可以在“画像”标签中填写外貌或上传参考图。</p>
+    <p v-if="undescribed" class="hint warn"><AlertTriangle /> 未填写外貌：{{ undescribed }}。可在角色的“插图外貌”中填写或上传参考图。</p>
     <p v-if="modelValue.length > FOCUS_SOFT_LIMIT" class="hint warn"><AlertTriangle /> 目前的图像模型通常在 1–2 位主要人物时效果最好。</p>
   </div>
 </template>
