@@ -23,6 +23,8 @@ async function start() {
   busy.value = true
   try {
     const { chat_id } = await demoApi.redeem(props.token)
+    // A visitor starts from the default layout, not from whatever this browser remembered.
+    try { localStorage.removeItem('lorenook.panel') } catch { /* ignore */ }
     await reloadAccount()
     await router.replace(chat_id ? `/chats/${chat_id}` : '/hall')
   } catch (e) {
