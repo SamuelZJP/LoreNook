@@ -1,7 +1,8 @@
 /**
- * Plans the "最近变化" list: what changed between consecutive state snapshots.
- * Labels follow the chat Schema like the state display; the clock (世界.时间 / 星期) and hidden
- * fields are left out, since they change every round or are not for the reader. Plain data only.
+ * Plans what the latest round changed in the state, grouped like the state display: `世界`,
+ * then one group per top-level object, then loose fields under 其他. Labels follow the chat
+ * Schema; the clock (世界.时间 / 星期) and hidden fields are left out, since they change every
+ * round or are not for the reader. Plain data only; components render it.
  */
 import { child, isObject, isScalar, label, resolve, type Json, type SchemaNode } from './stateDisplay'
 
@@ -12,19 +13,27 @@ export type Change =
   | { kind: 'list'; label: string; added: string[]; removed: string[] }
   | { kind: 'cleared'; label: string }
 
-export interface RoundChanges { roundNo: number; changes: Change[] }
+export interface ChangeGroup { key: string; title: string; changes: Change[] }
+
+export interface LatestChanges {
+  /** The round that made these changes; 0 never appears, since the opening has nothing before it. */
+  roundNo: number
+  groups: ChangeGroup[]
+}
 
 const SKIP_WORLD = ['时间', '星期']
 const same = (a: Json | undefined, b: Json | undefined) => JSON.stringify(a) === JSON.stringify(b)
 const isEmpty = (v: Json | undefined) => v === undefined || v === null || v === '' || (Array.isArray(v) && !v.length)
+const asObject = (v: Json | undefined): Record<string, Json> => (isObject(v) ? v : {})
+const keys = (a: Record<string, Json>, b: Record<string, Json>) => [...new Set([...Object.keys(a), ...Object.keys(b)])]
 
 function diff(path: string[], before: Json | undefined, after: Json | undefined, node: SchemaNode, root: SchemaNode | null, out: Change[]) {
   if (node.display === 'hidden' || same(before, after)) return
   const name = path.join(' · ')
   if (isObject(after) || isObject(before)) {
-    const a = isObject(before) ? before : {}
-    const b = isObject(after) ? after : {}
-    for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) {
+    const a = asObject(before)
+    const b = asObject(after)
+    for (const key of keys(a, b)) {
       const sub = child(node, key, root)
       diff([...path, label(key, sub)], a[key], b[key], sub, root, out)
     }
@@ -44,7 +53,9 @@ function diff(path: string[], before: Json | undefined, after: Json | undefined,
     if (after.every(isScalar) && prev.every(isScalar)) {
       const was = prev.map(String)
       const now = after.map(String)
-      out.push({ kind: 'list', label: name, added: now.filter((v) => !was.includes(v)), removed: was.filter((v) => !now.includes(v)) })
+      const added = now.filter((v) => !was.includes(v))
+      const removed = was.filter((v) => !now.includes(v))
+      if (added.length || removed.length) out.push({ kind: 'list', label: name, added, removed })
     } else {
       out.push({ kind: 'text', label: name, to: `${after.length} 项` })
     }
@@ -53,37 +64,36 @@ function diff(path: string[], before: Json | undefined, after: Json | undefined,
   }
 }
 
-/** Changes per round, newest first, for at most `rounds` rounds and `limit` lines in all. */
-export function planStateChanges(
+/** Changes between the last two snapshots (oldest first), or null before the first round. */
+export function planLatestChanges(
   history: { round_no: number; content: Record<string, unknown> }[],
   schema: SchemaNode | null,
-  { rounds = 3, limit = 8 } = {},
-): RoundChanges[] {
+): LatestChanges | null {
+  if (history.length < 2) return null
   const root = schema ? resolve(schema, schema) : {}
-  const out: RoundChanges[] = []
-  let left = limit
-  for (let i = history.length - 1; i > 0 && out.length < rounds && left > 0; i--) {
-    const before = history[i - 1].content as Record<string, Json>
-    const after = history[i].content as Record<string, Json>
-    const changes: Change[] = []
-    for (const key of new Set([...Object.keys(before), ...Object.keys(after)])) {
-      const node = child(root, key, schema)
-      if (key === '世界') {
-        const a = isObject(before[key]) ? before[key] : {}
-        const b = isObject(after[key]) ? after[key] : {}
-        for (const field of new Set([...Object.keys(a), ...Object.keys(b)])) {
-          if (SKIP_WORLD.includes(field)) continue
-          const sub = child(node, field, schema)
-          diff([label(field, sub)], a[field], b[field], sub, schema, changes)
-        }
-      } else {
-        diff([label(key, node)], before[key], after[key], node, schema, changes)
+  const before = history.at(-2)!.content as Record<string, Json>
+  const after = history.at(-1)!.content as Record<string, Json>
+  const groups: ChangeGroup[] = []
+  const loose: Change[] = []
+  for (const key of keys(before, after)) {
+    const node = child(root, key, schema)
+    if (node.display === 'hidden') continue
+    if (isObject(before[key]) || isObject(after[key])) {
+      const a = asObject(before[key])
+      const b = asObject(after[key])
+      const changes: Change[] = []
+      for (const field of keys(a, b)) {
+        if (key === '世界' && SKIP_WORLD.includes(field)) continue
+        const sub = child(node, field, schema)
+        diff([label(field, sub)], a[field], b[field], sub, schema, changes)
       }
+      if (changes.length) groups.push({ key, title: label(key, node), changes })
+    } else {
+      diff([label(key, node)], before[key], after[key], node, schema, loose)
     }
-    const list = changes.filter((c) => c.kind !== 'list' || c.added.length || c.removed.length)
-    if (!list.length) continue
-    out.push({ roundNo: history[i].round_no, changes: list.slice(0, left) })
-    left -= Math.min(list.length, left)
   }
-  return out
+  // The world leads, as in the state display; loose fields close.
+  groups.sort((a, b) => Number(b.key === '世界') - Number(a.key === '世界'))
+  if (loose.length) groups.push({ key: '', title: '其他', changes: loose })
+  return { roundNo: history.at(-1)!.round_no, groups }
 }

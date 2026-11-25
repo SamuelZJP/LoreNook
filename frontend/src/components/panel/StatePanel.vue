@@ -12,12 +12,26 @@ import { formatTime, pretty } from '@/lib/format'
 import { planStateDisplay } from '@/lib/stateDisplay'
 import StateItems from './StateItems.vue'
 import StateChanges from './StateChanges.vue'
+import { planLatestChanges } from '@/lib/stateChanges'
 
 const props = defineProps<{ chatId: string; editable: boolean }>()
 const qc = useQueryClient()
 const state = useQuery({ queryKey: computed(() => ['state', props.chatId]), queryFn: () => api.state(props.chatId) })
 const schema = useQuery({ queryKey: computed(() => ['state-schema', props.chatId]), queryFn: () => api.stateSchema(props.chatId) })
-const display = computed(() => planStateDisplay(state.data.value?.content, (schema.data.value?.json_schema ?? null) as Record<string, any> | null))
+const jsonSchema = computed(() => (schema.data.value?.json_schema ?? null) as Record<string, any> | null)
+const display = computed(() => planStateDisplay(state.data.value?.content, jsonSchema.value))
+
+// Below the scene: the state, or what the latest round changed. Not persisted on purpose.
+const view = ref<'state' | 'changes'>('state')
+// Keyed by the state's refresh time, so a new round or a manual save brings fresh changes.
+const history = useQuery({
+  queryKey: computed(() => ['state-history', props.chatId, state.dataUpdatedAt.value]),
+  queryFn: () => api.stateHistory(props.chatId, 2),
+  enabled: computed(() => view.value === 'changes'),
+  // Keep the last result on screen while a newer one loads.
+  placeholderData: (previous) => previous,
+})
+const latestChanges = computed(() => (history.data.value ? planLatestChanges(history.data.value, jsonSchema.value) : null))
 
 const WEEKDAYS = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日']
 const editing = ref(false)
@@ -142,13 +156,23 @@ async function save() {
         <div class="place"><MapPin /><span>{{ display.scene.place || '未设定地点' }}</span></div>
         <StateItems v-if="display.world.length" class="world-extra" :items="display.world" />
       </section>
-      <section v-for="card in display.cards" :key="card.key" class="person">
-        <h4 :title="card.hint">{{ card.title }}</h4>
-        <StateItems :items="card.items" />
-      </section>
-      <StateChanges
-        :chat-id="chatId" :schema="(schema.data.value?.json_schema ?? null) as Record<string, any> | null" :stamp="state.dataUpdatedAt.value"
-      />
+      <div class="view-bar">
+        <span class="view-note">{{ view === 'changes' && latestChanges ? `#${latestChanges.roundNo} 的变化` : '' }}</span>
+        <div class="switch" role="group" aria-label="显示内容">
+          <button type="button" :class="{ on: view === 'state' }" :aria-pressed="view === 'state'" @click="view = 'state'">状态</button>
+          <button type="button" :class="{ on: view === 'changes' }" :aria-pressed="view === 'changes'" @click="view = 'changes'">变化</button>
+        </div>
+      </div>
+      <template v-if="view === 'state'">
+        <section v-for="card in display.cards" :key="card.key" class="person">
+          <h4 :title="card.hint">{{ card.title }}</h4>
+          <StateItems :items="card.items" />
+        </section>
+      </template>
+      <template v-else>
+        <ErrorBox v-if="history.error.value" :error="history.error.value" title="无法读取变化" />
+        <StateChanges v-else :changes="latestChanges" :loading="history.isLoading.value" />
+      </template>
       <CodeEditor v-if="showRaw" :model-value="draft" language="json" readonly min-height="160px" />
     </template>
     <ul v-if="editing && worldProblems.length" class="problems">
@@ -174,6 +198,16 @@ async function save() {
 .place svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--accent); }
 .world-extra { margin-top: var(--space-2); }
 .person { padding: 0 var(--space-1); }
+/* A small segmented switch between the state and the latest round's changes. */
+.view-bar { display: flex; align-items: center; gap: var(--space-2); margin-bottom: calc(-1 * var(--space-1)); padding-left: var(--space-1); }
+.view-note { flex: 1; min-width: 0; font-size: var(--text-xs); color: var(--text-faint); }
+.switch { display: inline-flex; padding: 2px; border-radius: var(--radius-s); background: var(--bg-sunken); }
+.switch button {
+  min-height: 24px; padding: 0 var(--space-2); border: 0; border-radius: 6px; background: none; cursor: pointer;
+  font: inherit; font-size: var(--text-xs); font-weight: 500; color: var(--text-muted);
+}
+.switch button:hover { color: var(--text); }
+.switch button.on { background: var(--bg-elev); color: var(--text); box-shadow: 0 1px 2px rgb(0 0 0 / 8%); }
 .person h4 { margin: 0 0 var(--space-1); font-size: var(--text-md); font-weight: 600; }
 .problems { margin: 0; padding-left: var(--space-5); color: var(--warn); font-size: var(--text-xs); }
 .bad { font-size: var(--text-xs); color: var(--danger); }

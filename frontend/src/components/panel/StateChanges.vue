@@ -1,20 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
-import { api } from '@/api/endpoints'
-import { planStateChanges, type Change } from '@/lib/stateChanges'
+import type { Change, LatestChanges } from '@/lib/stateChanges'
 
-/** "最近变化": what the last few rounds changed in the state. Hidden when nothing did. */
-const props = defineProps<{ chatId: string; schema: Record<string, any> | null; stamp: number }>()
+/** What the latest round changed, grouped like the state it replaces in the panel. */
+defineProps<{ changes: LatestChanges | null; loading: boolean }>()
 
-// `stamp` moves whenever the latest state is refetched or saved, so the history follows it.
-const history = useQuery({
-  queryKey: computed(() => ['state-history', props.chatId, props.stamp]),
-  queryFn: () => api.stateHistory(props.chatId),
-})
-const rounds = computed(() => planStateChanges(history.data.value ?? [], props.schema))
-
-function text(c: Change): string {
+function value(c: Change): string {
   switch (c.kind) {
     case 'number': return c.from === null ? `${c.to}` : `${c.from} → ${c.to}`
     case 'text': return `→ ${c.to}`
@@ -23,34 +13,36 @@ function text(c: Change): string {
     case 'list': return [...c.added.map((v) => `+${v}`), ...c.removed.map((v) => `−${v}`)].join('  ')
   }
 }
-const tone = (c: Change) => (c.kind === 'number' && c.from !== null ? (c.to > c.from ? 'up' : 'down') : '')
+const tone = (c: Change) => (c.kind === 'number' && c.from !== null && c.to !== c.from ? (c.to > c.from ? 'up' : 'down') : '')
 </script>
 
 <template>
-  <section v-if="rounds.length" class="changes">
-    <h4>最近变化</h4>
-    <ol>
-      <template v-for="(r, i) in rounds" :key="r.roundNo">
-        <li v-for="(c, j) in r.changes" :key="`${r.roundNo}-${j}`" :class="{ newest: i === 0 }">
-          <span class="what"><span class="label">{{ c.label }}</span> <span class="value" :class="tone(c)">{{ text(c) }}</span></span>
-          <span v-if="j === 0" class="round">#{{ r.roundNo }}</span>
-        </li>
-      </template>
-    </ol>
-  </section>
+  <p v-if="loading && !changes" class="note">读取中…</p>
+  <p v-else-if="!changes" class="note">还没有回合</p>
+  <p v-else-if="!changes.groups.length" class="note">这一回合没有变化</p>
+  <template v-else>
+    <section v-for="g in changes.groups" :key="g.key" class="group">
+      <h4>{{ g.title }}</h4>
+      <dl>
+        <div v-for="(c, i) in g.changes" :key="i" class="item">
+          <dt>{{ c.label }}</dt>
+          <dd :class="tone(c)">{{ value(c) }}</dd>
+        </div>
+      </dl>
+    </section>
+  </template>
 </template>
 
 <style scoped>
-.changes { padding: 0 var(--space-1); }
-h4 { margin: 0 0 var(--space-2); font-size: var(--text-md); font-weight: 600; }
-ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-2); }
-li { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; gap: var(--space-2); align-items: baseline; font-size: var(--text-sm); }
-li::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--border-strong); transform: translateY(-1px); }
-li.newest::before { background: var(--accent); }
-.what { min-width: 0; overflow-wrap: anywhere; color: var(--text-muted); }
-.label { color: var(--text); font-weight: 500; }
-.value { font-variant-numeric: tabular-nums; }
-.value.up { color: var(--ok); }
-.value.down { color: var(--danger); }
-.round { color: var(--text-faint); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+.note { padding: var(--space-4) var(--space-1); color: var(--text-faint); font-size: var(--text-sm); text-align: center; }
+.group { padding: 0 var(--space-1); }
+h4 { margin: 0 0 var(--space-1); font-size: var(--text-md); font-weight: 600; }
+dl { margin: 0; display: flex; flex-direction: column; }
+/* Rows match StateItems so switching views keeps the same rhythm. */
+.item { display: flex; gap: var(--space-3); padding: var(--space-2) 0; align-items: baseline; }
+.item + .item { border-top: 1px solid var(--border); }
+dt { flex: 0 1 auto; max-width: 50%; color: var(--text-muted); font-size: var(--text-sm); overflow-wrap: anywhere; }
+dd { margin: 0; flex: 1; min-width: 0; text-align: right; font-size: var(--text-sm); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+dd.up { color: var(--ok); }
+dd.down { color: var(--danger); }
 </style>
