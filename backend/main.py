@@ -28,6 +28,7 @@ from backend.api.media import router as media_router
 from backend.api.errors import register_error_handlers
 from backend.config import Settings
 from backend.features import FEATURES
+from backend.llm.address_guard import parse_networks
 from backend.llm.client import ModelClient
 from backend.modules.accounts.throttle import LoginThrottle
 from backend.modules.media import MediaStorage
@@ -55,7 +56,8 @@ def create_app(
         app.state.state_recent_summaries = configuration.state_recent_summaries
         app.state.round_summary_recent_summaries = configuration.round_summary_recent_summaries
         client = ModelClient(transport=llm_transport, max_response_bytes=configuration.llm_max_response_bytes,
-                             recording_directory=configuration.llm_recording_directory)
+                             recording_directory=configuration.llm_recording_directory,
+                             also_allowed_networks=parse_networks(configuration.model_extra_networks))
         app.state.model_client = client
         app.state.media = MediaStorage(configuration.resolved_media_directory())
         app.state.hooks = AppHooks()

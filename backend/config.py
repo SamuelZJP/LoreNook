@@ -31,6 +31,9 @@ class Settings:
     cookie_secure: bool = field(default_factory=lambda: _flag("LORENOOK_COOKIE_SECURE", "1"))
     # /docs and /openapi.json; off in production.
     api_docs: bool = field(default_factory=lambda: _flag("LORENOOK_API_DOCS", "0"))
+    # Comma-separated networks a user's model address may resolve to besides public ones, e.g. 198.18.0.0/15
+    # when the server's DNS answers with a proxy's fake IPs.
+    model_extra_networks: str = field(default_factory=lambda: os.getenv("LORENOOK_MODEL_EXTRA_NETWORKS", ""))
     # ICP filing number shown in the home page footer.
     icp_number: str = field(default_factory=lambda: os.getenv("LORENOOK_ICP_NUMBER", ""))
 

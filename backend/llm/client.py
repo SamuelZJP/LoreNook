@@ -8,6 +8,7 @@ import json
 
 import httpx
 
+from backend.llm.address_guard import PublicAddressTransport, Resolver, resolve
 from backend.llm.google import GoogleGenerateContent
 from backend.llm.deepseek import DeepSeekChatCompletions
 from backend.llm.parameters import merge_parameters
@@ -25,12 +26,13 @@ def _invalid_constant(value):
 class ModelClient:
     def __init__(self, *, transport: httpx.BaseTransport | None = None,
                  max_response_bytes: int = 8 * 1024 * 1024,
-                 recording_directory=None):
+                 recording_directory=None, resolver: Resolver = resolve, also_allowed_networks=()):
         self.journal = CallJournal(recording_directory) if recording_directory else None
         self.adapters = {adapter.api_type: adapter for adapter in (GoogleGenerateContent(), DeepSeekChatCompletions())}
         self.max_response_bytes = max_response_bytes
         self.http = httpx.Client(
-            transport=transport, follow_redirects=False, trust_env=False,
+            transport=PublicAddressTransport(transport or httpx.HTTPTransport(), resolver, also_allowed_networks),
+            follow_redirects=False, trust_env=False,
         )
 
     def close(self) -> None:

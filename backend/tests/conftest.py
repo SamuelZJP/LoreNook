@@ -37,6 +37,13 @@ def migration_config(path: Path) -> Config:
     return config
 
 
+@pytest.fixture(autouse=True)
+def administrator_scope():
+    """Code under test runs as an administrator unless a test sets another scope (model calls may reach test hosts)."""
+    with scoped(user_scope("test-administrator", is_admin=True)):
+        yield
+
+
 @pytest.fixture
 def database(tmp_path):
     path = tmp_path / "test.db"
