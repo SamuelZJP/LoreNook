@@ -43,6 +43,9 @@ const flow = useRoundFlow(chatId, recall.step)
 
 const panelOpen = ref(isWide.value && localPanelPref())
 const panelTab = ref<PanelTab>('state')
+function openState() {
+  if (!panelOpen.value || panelTab.value !== 'state') togglePanel('state')
+}
 function localPanelPref() {
   try { return localStorage.getItem('lorenook.panel') !== 'closed' } catch { return true }
 }
@@ -210,7 +213,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
               </template>
               <template v-if="!raw.has(r.id)" #head>
                 <RoundIllustration :round="r" />
-                <RoundScene :round="r" />
+                <RoundScene :round="r" @open="openState" />
               </template>
               <OutputView :text="r.ai_output" :raw="raw.has(r.id)" />
               <template v-if="!raw.has(r.id)" #foot><RoundStatusBar :round="r" /></template>
@@ -308,6 +311,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 
     <ChatIllustrationOverlays />
 
+    <div v-if="panelOpen" class="sheet-scrim" @click="togglePanel()" />
     <ChatPanel
       v-if="panelOpen && chat.data.value" class="panel" :chat="chat.data.value" :flow="flow" :memory-timeline="recall.timeline.value"
       :tab="panelTab" :latest-complete="latestComplete" @update:tab="panelTab = $event" @close="togglePanel()"
@@ -342,14 +346,21 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 .tpl { margin-top: var(--space-1-5); font-size: var(--text-sm); }
 .spin { width: 16px; height: 16px; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+@keyframes sheet-in { from { transform: translateY(24px); opacity: 0; } }
 .panel { width: var(--panel-w); flex-shrink: 0; border-radius: var(--radius-xl); overflow: hidden; }
 .chat-view { position: relative; }
+.sheet-scrim { display: none; }
 @media (max-width: 1279px) and (min-width: 900px) {
   .panel { position: absolute; top: 0; right: 0; bottom: 0; z-index: 30; width: min(var(--panel-w), 70%); box-shadow: var(--shadow-pop); }
   .chat-view { gap: 0; }
 }
 @media (max-width: 899px) {
-  .panel { position: fixed; inset: 0; z-index: 60; width: auto; border-radius: 0; }
+  /* A bottom sheet on narrow screens. */
+  .panel {
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 60; width: auto; height: min(78dvh, 720px);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0; box-shadow: var(--shadow-pop); animation: sheet-in 0.22s ease;
+  }
+  .sheet-scrim { display: block; position: fixed; inset: 0; z-index: 59; background: rgb(20 14 8 / 45%); }
   .chat-view { gap: 0; }
   .conversation { border-radius: 0; }
 }

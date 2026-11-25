@@ -47,5 +47,10 @@ const tabs: { id: Tab; label: string }[] = [
 .head { display: flex; align-items: center; gap: var(--space-1); padding: env(safe-area-inset-top) var(--space-2) 0 var(--space-1); border-bottom: 1px solid var(--border); min-height: var(--topbar-h); }
 .head .tabs { border-bottom: 0; }
 .head .tabs button { padding: var(--space-3) 9px; }
+@media (max-width: 899px) {
+  /* Grabber of the bottom sheet */
+  .head { position: relative; padding-top: var(--space-2); }
+  .head::before { content: ''; position: absolute; top: var(--space-1-5); left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: var(--radius-pill); background: var(--border-strong); }
+}
 .content { flex: 1; overflow-y: auto; padding: var(--space-4) var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom)); }
 </style>
