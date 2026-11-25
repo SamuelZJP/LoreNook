@@ -22,9 +22,9 @@ function onError() {
 </script>
 
 <template>
-  <div class="cover" :style="{ '--cover-hue': String(hue(name ?? '')) }">
+  <div class="cover" :class="{ blank: !image && !name?.trim() }" :style="{ '--cover-hue': String(hue(name ?? '')) }">
     <img v-if="image" :src="image" alt="" referrerpolicy="no-referrer" @error="onError" />
-    <span v-else class="glyph" aria-hidden="true">{{ initials(name) }}</span>
+    <span v-else-if="name?.trim()" class="glyph" aria-hidden="true">{{ initials(name) }}</span>
     <div v-if="$slots.default" class="overlay"><slot /></div>
   </div>
 </template>
@@ -34,6 +34,8 @@ function onError() {
   position: relative; aspect-ratio: 3 / 4; overflow: hidden; border-radius: inherit;
   background: hsl(var(--cover-hue) 30% var(--avatar-bg-l));
 }
+/* Nothing to show yet: a plain ground instead of a tint picked from an empty name. */
+.cover.blank { background: var(--bg-sunken); }
 .cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .glyph {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;

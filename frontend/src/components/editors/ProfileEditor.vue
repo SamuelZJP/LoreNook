@@ -5,7 +5,7 @@ import { Save, Trash2, FileCode } from 'lucide-vue-next'
 import { api, definitionBase, type Character, type Identity, type SceneInput } from '@/api/endpoints'
 import CodeEditor from '../CodeEditor.vue'
 import ErrorBox from '../ErrorBox.vue'
-import ImageUpload from '../ImageUpload.vue'
+import AvatarUpload from '../AvatarUpload.vue'
 import PortraitUpload from '../PortraitUpload.vue'
 import PortraitEditor from '@/features/illustrations/components/PortraitEditor.vue'
 import StatusBarEditor from '@/features/status_bar/components/StatusBarEditor.vue'
@@ -205,17 +205,15 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
       </nav>
 
       <section v-show="tab === 'basic'" class="basic">
-        <PortraitUpload v-model="draft.portrait" :name="draft.name" :avatar="draft.avatar" class="portrait" />
-        <div class="grow stack">
-          <div class="field"><label>名称</label><input v-model="draft.name" class="input" /></div>
-          <div class="field">
-            <label>头像</label>
-            <div class="row avatar-row">
-              <ImageUpload :model-value="draft.avatar || null" label="上传头像" value="url" :size="72" @update:model-value="draft.avatar = $event ?? ''" />
-              <input v-model="draft.avatar" class="input grow" placeholder="或填写图片 URL" aria-label="头像 URL" />
-            </div>
-          </div>
-          <div class="field"><label>简介</label><textarea v-model="draft.description" class="textarea" rows="4" /></div>
+        <PortraitUpload v-model="draft.portrait" class="portrait">
+          <template #badge><AvatarUpload v-model="draft.avatar" :name="draft.name" /></template>
+        </PortraitUpload>
+        <div class="identity">
+          <input v-model="draft.name" class="name-input" :placeholder="isCharacter ? '角色名' : '你的名字'" aria-label="名称" />
+          <textarea
+            v-model="draft.description" class="desc-input" rows="3" aria-label="简介"
+            :placeholder="isCharacter ? '一句话介绍这个角色' : '一句话介绍你在故事里的样子'"
+          />
         </div>
       </section>
 
@@ -291,11 +289,23 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
 .tabs button.advanced { font-weight: 400; }
 .dot { display: inline-block; width: 6px; height: 6px; margin-left: var(--space-1); border-radius: 50%; background: var(--warn); vertical-align: middle; }
 .bad { color: var(--danger); }
-.avatar-row { align-items: flex-start; }
-/* The form drops below the portrait when the pane is too narrow for both. */
-.basic { display: flex; flex-wrap: wrap; gap: var(--space-5); align-items: flex-start; }
-.basic > .grow { min-width: 260px; }
-.portrait { width: 180px; flex-shrink: 0; }
+/* Portrait on the left, name and introduction beside it; they stack when the pane is narrow. */
+.basic { display: flex; flex-wrap: wrap; gap: var(--space-6); align-items: flex-start; padding-top: var(--space-2); }
+.portrait { width: 200px; flex-shrink: 0; }
+.identity { flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: var(--space-3); }
+.name-input, .desc-input {
+  width: 100%; border: 0; background: none; color: var(--text); padding: var(--space-1) 0; outline: none;
+}
+.name-input {
+  font-family: var(--font-reading); font-size: var(--text-3xl); font-weight: 600; letter-spacing: 0.02em;
+  border-bottom: 1px solid var(--border); transition: border-color 0.15s;
+}
+.name-input:focus { border-bottom-color: var(--accent); }
+.desc-input {
+  font-family: var(--font-reading); font-size: var(--text-lg); line-height: 1.8; color: var(--text-muted);
+  resize: none; field-sizing: content; min-height: calc(3 * 1.8em);
+}
+.name-input::placeholder, .desc-input::placeholder { color: var(--text-faint); }
 .tight-row { gap: var(--space-1); }
 .history { max-width: 160px; }
 .actions { position: sticky; bottom: 0; background: var(--bg-elev); padding: var(--space-2) 0; z-index: 1; }
