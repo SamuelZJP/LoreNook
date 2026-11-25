@@ -134,12 +134,20 @@ export function provideChatIllustrations(chatId: Ref<string>, rounds: Ref<RoundR
   onScopeDispose(() => { layout.scroller.value?.removeEventListener('scroll', onScroll); cancelAnimationFrame(frame) })
   /** Show a round's illustration in the panel, e.g. from its marker. */
   const show = (roundId: string) => { reading.value = roundId }
-  /** The illustration the docked panel shows: the reading round's, else the newest. */
+  /**
+   * The illustration the docked panel shows: the reading round's own unless hidden (a failed one
+   * too, so it can be retried there); otherwise the nearest earlier one that is ready and visible.
+   */
   const current = computed(() => {
-    const own = reading.value ? byRound.value.get(reading.value) : undefined
-    if (own) return own
-    const latest = rounds.value.filter((r) => byRound.value.has(r.id)).at(-1)
-    return latest ? byRound.value.get(latest.id)! : null
+    const list = rounds.value
+    const at = reading.value ? list.findIndex((r) => r.id === reading.value) : list.length - 1
+    const own = at >= 0 ? byRound.value.get(list[at].id) : undefined
+    if (own && !own.hidden) return own
+    for (let i = (at >= 0 ? at : list.length) - 1; i >= 0; i--) {
+      const item = byRound.value.get(list[i].id)
+      if (item && !item.hidden && item.status === 'ready') return item
+    }
+    return null
   })
 
   const state = {

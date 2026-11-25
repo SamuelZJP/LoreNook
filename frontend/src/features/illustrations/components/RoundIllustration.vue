@@ -17,7 +17,7 @@ const item = computed(() => c.byRound.value.get(props.round.id))
 const label = computed(() => {
   const it = item.value
   if (!it) return ''
-  if (it.hidden) return '插图已隐藏'
+  if (it.hidden) return '插图已隐藏 · 显示'
   if (it.status === 'failed') return '插图未能生成'
   if (it.status === 'ready') return '插图'
   return '插图绘制中'
@@ -26,7 +26,9 @@ const showing = computed(() => c.current.value?.round_id === props.round.id)
 function markRef(el: unknown) {
   c.mark(props.round.id, el instanceof HTMLElement ? el : null)
 }
+// A hidden plate's marker brings it back; any marker then shows the round's plate in the panel.
 function show() {
+  if (item.value?.hidden) c.setHidden(item.value, false)
   c.show(props.round.id)
   emit('show')
 }
@@ -36,7 +38,7 @@ function show() {
   <template v-if="item">
     <button
       v-if="c.docked.value" :ref="markRef" class="marker" :class="{ showing }" type="button"
-      :title="showing ? '右侧正在显示这一回合的插图' : '在右侧显示这一回合的插图'" @click="show"
+      :title="item.hidden ? '恢复显示这一回合的插图' : showing ? '右侧正在显示这一回合的插图' : '在右侧显示这一回合的插图'" @click="show"
     >
       <ImageIcon /><span>{{ label }}</span>
     </button>
