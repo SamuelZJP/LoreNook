@@ -7,6 +7,7 @@ import ProfilePicker from '@/components/ProfilePicker.vue'
 import Disclosure from '@/components/Disclosure.vue'
 import ChatParamsFields from '@/components/ChatParamsFields.vue'
 import ErrorBox from '@/components/ErrorBox.vue'
+import ScrollRow from '@/components/ScrollRow.vue'
 import { useChatStart } from '@/composables/chatStart'
 import { contentBody } from '@/lib/sections'
 
@@ -40,7 +41,7 @@ const openingOf = (text: string) => contentBody(text).replace(/\s+/g, ' ').trim(
           <p v-if="character.description" class="desc">{{ character.description }}</p>
 
           <h2 class="section">{{ scenes.length > 1 ? '选择开场' : '开场' }}</h2>
-          <div class="scenes">
+          <ScrollRow class="scenes">
             <button
               v-for="sc in scenes" :key="sc.id" type="button" class="scene" :class="{ active: form.scene_id === sc.id }"
               :aria-pressed="form.scene_id === sc.id" @click="form.scene_id = sc.id"
@@ -49,7 +50,7 @@ const openingOf = (text: string) => contentBody(text).replace(/\s+/g, ' ').trim(
               <span v-if="sc.description" class="scene-desc">{{ sc.description }}</span>
               <span v-if="openingOf(sc.first_message)" class="scene-text">{{ openingOf(sc.first_message) }}</span>
             </button>
-          </div>
+          </ScrollRow>
 
           <div class="start">
             <template v-if="identities.data.value?.length">
@@ -110,8 +111,9 @@ const openingOf = (text: string) => contentBody(text).replace(/\s+/g, ' ').trim(
 .display { font-family: var(--font-reading); font-size: var(--text-display); font-weight: 600; letter-spacing: 0.02em; line-height: 1.15; }
 .desc { font-family: var(--font-reading); font-size: var(--text-lg); line-height: 1.8; color: var(--text-muted); white-space: pre-wrap; }
 .section { margin-top: var(--space-3); font-size: var(--text-sm); font-weight: 600; color: var(--text-muted); letter-spacing: 0.08em; }
-.scenes { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-3); }
+/* One row of equal cards; more openings scroll sideways. */
 .scene {
+  flex: 0 0 260px; min-height: 120px;
   display: flex; flex-direction: column; gap: var(--space-1-5); padding: var(--space-4); text-align: left;
   border: 1px solid var(--border); border-radius: var(--radius-l); background: var(--bg-elev);
   font: inherit; color: inherit; cursor: pointer; transition: border-color 0.12s, background 0.12s;

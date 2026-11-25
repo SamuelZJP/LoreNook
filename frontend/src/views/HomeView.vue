@@ -100,7 +100,7 @@ const tagline = (text?: string | null) => text?.replace(/\s+/g, ' ').trim() ?? '
 .setup-icon { width: 22px; height: 22px; color: var(--accent); }
 .arrow { width: 16px; height: 16px; color: var(--text-muted); }
 
-.recent-card { flex: 0 0 160px; scroll-snap-align: start; border-radius: var(--radius-l); overflow: hidden; color: inherit; text-decoration: none; }
+.recent-card { flex: 0 0 160px; border-radius: var(--radius-l); overflow: hidden; color: inherit; text-decoration: none; }
 /* Captions keep a fixed shape, so titles line up whatever the text below them. */
 .caption-title { display: block; font-weight: 600; font-size: var(--text-sm); line-height: 1.4; }
 .caption-line {
