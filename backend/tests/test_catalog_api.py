@@ -1,3 +1,4 @@
+from backend.tests.conftest import sign_in
 from backend.tests.state_fixtures import WORLD, STATE_SCHEMA
 import asyncio
 
@@ -12,12 +13,13 @@ from backend.repository.queries import Repository
 
 
 def run_api(database, scenario, factory=python_initial_state, llm_transport=None):
-    app = create_app(Settings(database_url=database.engine.url.render_as_string(hide_password=False)), factory,
+    app = create_app(Settings(api_docs=True, database_url=database.engine.url.render_as_string(hide_password=False)), factory,
                      llm_transport=llm_transport)
 
     async def run():
         async with app.router.lifespan_context(app):
-            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="https://test") as client:
+                await sign_in(client)
                 await scenario(client)
     asyncio.run(run())
 

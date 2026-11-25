@@ -7,10 +7,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from backend.repository.models import Base, Identified, Timestamped
+from backend.repository.models import Base, Identified, Owned, Timestamped
 
 
-class ImageWorkflow(Identified, Timestamped, Base):
+class ImageWorkflow(Owned, Identified, Timestamped, Base):
     """A ComfyUI API-format workflow with {{placeholders}}."""
     __tablename__ = "image_workflows"
     chat_id: Mapped[str | None] = mapped_column(ForeignKey("chats.id", ondelete="CASCADE"), index=True)

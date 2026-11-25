@@ -21,9 +21,9 @@ from backend.shared.errors import CharacterCardError
 def export_card(database: Database, storage: MediaStorage, character_id: str | None = None,
                 chat_id: str | None = None) -> tuple[str, bytes]:
     """(character name, file). With `chat_id`, the chat's own character; otherwise a library one."""
-    media = MediaWriter(storage)
     with database.read() as session:
         repository = Repository(session)
+        media = MediaWriter(storage, repository.owns_media)
         if chat_id is not None:
             character_id = repository.owner_id(chat_id, Character)
         character = CharacterService(repository).read(character_id, chat_id)
@@ -32,7 +32,7 @@ def export_card(database: Database, storage: MediaStorage, character_id: str | N
             data = section.export(session, character.id, media)
             if data is not None:
                 features[name] = data
-    card = CardFile(character=card_from_character(character, media), features=features)
+        card = CardFile(character=card_from_character(character, media), features=features)
     return character.name, write_package(Package(card=dump_card(card), media=media.files))
 
 
@@ -68,5 +68,7 @@ def import_card(database: Database, storage: MediaStorage, initial_state_factory
                 section.import_(session, character.id, section_data, media)
             except ValidationError as error:
                 raise CharacterCardError(f"功能数据 {name} 格式不对：" + describe(error)) from error
+        for name in media.saved.values():
+            repository.own_media(name)
         session.flush()
         return service.read(character.id)

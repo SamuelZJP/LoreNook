@@ -7,11 +7,11 @@ from pydantic import Field, JsonValue
 from backend.illustrations.models import CastMember, ChatIllustrationSettings, IdentityAppearance, Illustration, ImageWorkflow
 from backend.illustrations.schemas import IllustrationMode, IllustrationStatus, ImageSize
 from backend.modules.admin.registry import register_table
-from backend.schemas.admin import IdentifiedRow, RecordId, TimestampedRow
+from backend.schemas.admin import IdentifiedRow, OwnedRow, RecordId, TimestampedRow
 from backend.schemas.common import Contract, Name, NonnegativeInt
 
 
-class ImageWorkflowRow(TimestampedRow):
+class ImageWorkflowRow(OwnedRow, TimestampedRow):
     chat_id: RecordId | None = None
     name: Name
     base_url: str

@@ -55,10 +55,11 @@ def writing_chat(database, chat):
 
 
 def database_contents(database):
+    """Every stored row except sign-ins, which an API test makes by signing in."""
     with database.read() as session:
         return {table.name: [dict(row) for row in session.execute(
             select(table).order_by(*table.primary_key.columns)
-        ).mappings()] for table in Base.metadata.tables.values()}
+        ).mappings()] for table in Base.metadata.tables.values() if table.name != "login_sessions"}
 
 
 def tool_response(text):

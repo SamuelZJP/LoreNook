@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from backend.config import Settings
+from backend.repository import ownership
 
 
 class Database:
@@ -38,6 +39,7 @@ class Database:
             connection.exec_driver_sql(f"BEGIN {mode}")
 
         self.sessions = sessionmaker(self.engine, expire_on_commit=False)
+        ownership.install(self.sessions)
 
     @contextmanager
     def read(self) -> Iterator[Session]:

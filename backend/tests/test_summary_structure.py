@@ -131,7 +131,9 @@ def test_bridge_is_reference_only_and_change_rejects_stale_generation(database, 
     run_api(database, scenario, llm_transport=httpx.MockTransport(handler))
 
 
-def test_upgrade_existing_episode_preserves_history_and_defaults_title(database, pending_episode, tmp_path):
+def test_upgrade_existing_episode_preserves_history_and_defaults_title(database, pending_episode, tmp_path, monkeypatch):
+    monkeypatch.setenv("LORENOOK_ADMIN_USERNAME", "admin")
+    monkeypatch.setenv("LORENOOK_ADMIN_PASSWORD", "admin-password")
     with database.transaction() as session:
         ArchiveRepository(session).save_episode(pending_episode["round_id"], " 原历史摘要\r\n", title="旧标题")
     database.dispose()

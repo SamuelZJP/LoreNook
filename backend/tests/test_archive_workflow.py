@@ -1,3 +1,4 @@
+import contextvars
 from backend.tests.state_fixtures import WORLD
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
@@ -319,7 +320,7 @@ def test_concurrent_confirmation_creates_one_round_even_if_it_finishes_before_du
             return "conflict"
     try:
         with ThreadPoolExecutor(max_workers=2) as pool:
-            results = list(pool.map(lambda _: confirm(), range(2)))
+            results = list(pool.map(lambda context: context.run(confirm), [contextvars.copy_context() for _ in range(2)]))
     finally:
         model_client.close()
     assert sorted(results) == ["complete", "conflict"]
@@ -473,7 +474,7 @@ def test_concurrent_retry_does_not_repeat_successful_later_steps(database, archi
             return "conflict"
     try:
         with ThreadPoolExecutor(max_workers=2) as pool:
-            results = list(pool.map(lambda _: retry(), range(2)))
+            results = list(pool.map(lambda context: context.run(retry), [contextvars.copy_context() for _ in range(2)]))
     finally:
         client.close()
     assert sorted(results) == ["complete", "conflict"]

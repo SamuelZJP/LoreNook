@@ -47,7 +47,42 @@ class Timestamped:
     )
 
 
-class Chat(Identified, Timestamped, Base):
+class Owned:
+    """A row that belongs to one user. The session fills and filters it by the current scope (repository/ownership.py).
+
+    No foreign key: SQLite cannot add one to existing tables in place, and users are disabled, never deleted.
+    """
+    owner_id: Mapped[str] = mapped_column(String(36), index=True)
+
+
+class User(Identified, Timestamped, Base):
+    __tablename__ = "users"
+    username: Mapped[str] = mapped_column(Text, unique=True)
+    password_hash: Mapped[str] = mapped_column(Text)
+    role: Mapped[str] = mapped_column(String(16), default="user", server_default="user")
+    disabled: Mapped[bool] = mapped_column(
+        Boolean(create_constraint=True, name="disabled_bool"), default=False, server_default="0"
+    )
+    __table_args__ = (CheckConstraint("role IN ('admin', 'user')", name="valid_role"),)
+
+
+class LoginSession(Identified, Timestamped, Base):
+    """A signed-in browser. Only the token's hash is stored."""
+    __tablename__ = "login_sessions"
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    expires_at: Mapped[datetime] = mapped_column(UTCDateTime())
+    last_seen_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=lambda: datetime.now(UTC))
+
+
+class MediaFile(Owned, Base):
+    """Who may read an uploaded image. Files are named by content, so one file can have several owners."""
+    __tablename__ = "media_files"
+    name: Mapped[str] = mapped_column(Text, primary_key=True)
+    owner_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+
+
+class Chat(Owned, Identified, Timestamped, Base):
     __tablename__ = "chats"
     title: Mapped[str] = mapped_column(Text)
     writing_preset_id: Mapped[str | None] = mapped_column(String(36))
@@ -62,7 +97,7 @@ class Chat(Identified, Timestamped, Base):
     )
 
 
-class Character(Identified, Timestamped, Base):
+class Character(Owned, Identified, Timestamped, Base):
     __tablename__ = "characters"
     chat_id: Mapped[str | None] = mapped_column(
         ForeignKey("chats.id", ondelete="CASCADE"), unique=True
@@ -95,7 +130,7 @@ class CharacterScene(Identified, Base):
     )
 
 
-class UserIdentity(Identified, Timestamped, Base):
+class UserIdentity(Owned, Identified, Timestamped, Base):
     __tablename__ = "user_identities"
     chat_id: Mapped[str | None] = mapped_column(
         ForeignKey("chats.id", ondelete="CASCADE"), unique=True
@@ -132,7 +167,7 @@ class Definition(Identified, Base):
     )
 
 
-class WritingPreset(Identified, Timestamped, Base):
+class WritingPreset(Owned, Identified, Timestamped, Base):
     __tablename__ = "writing_presets"
     chat_id: Mapped[str | None] = mapped_column(ForeignKey("chats.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(Text)
@@ -140,7 +175,7 @@ class WritingPreset(Identified, Timestamped, Base):
     __table_args__ = (UniqueConstraint("id", "chat_id"),)
 
 
-class ModelConfig(Identified, Base):
+class ModelConfig(Owned, Identified, Base):
     __tablename__ = "model_configs"
     chat_id: Mapped[str | None] = mapped_column(ForeignKey("chats.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(Text)
@@ -255,7 +290,7 @@ class Episode(Identified, Timestamped, Base):
     )
 
 
-class ChatTemplate(Identified, Timestamped, Base):
+class ChatTemplate(Owned, Identified, Timestamped, Base):
     """Starting values for the new-chat form. Library IDs inside are references only, never enforced."""
     __tablename__ = "chat_templates"
     name: Mapped[str] = mapped_column(Text)
@@ -265,5 +300,5 @@ class ChatTemplate(Identified, Timestamped, Base):
     settings: Mapped[dict[str, Any]] = mapped_column(JSON(none_as_null=True), default=dict, server_default="{}")
     __table_args__ = (
         CheckConstraint("json_valid(settings) AND json_type(settings) = 'object'", name="settings_object"),
-        Index("uq_chat_templates_one_default", "is_default", unique=True, sqlite_where=text("is_default = 1")),
+        Index("uq_chat_templates_one_default", "owner_id", "is_default", unique=True, sqlite_where=text("is_default = 1")),
     )

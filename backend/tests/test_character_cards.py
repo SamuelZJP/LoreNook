@@ -1,3 +1,4 @@
+from backend.tests.conftest import sign_in
 import asyncio
 import io
 import json
@@ -18,13 +19,14 @@ STATUS_BAR = "<div>状态栏</div>"
 
 
 def run(database, tmp_path, scenario):
-    settings = Settings(database_url=database.engine.url.render_as_string(hide_password=False),
+    settings = Settings(api_docs=True, database_url=database.engine.url.render_as_string(hide_password=False),
                         media_directory=str(tmp_path / "media"), image_directory=str(tmp_path / "images"))
     app = create_app(settings)
 
     async def main():
         async with app.router.lifespan_context(app):
-            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="https://test") as client:
+                await sign_in(client)
                 await scenario(client)
     asyncio.run(main())
 

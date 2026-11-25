@@ -54,7 +54,7 @@ class AdminService:
                 model["has_api_key"] = bool(model.pop("api_key"))
         return AdminSnapshot(revision=revision, tables=json.loads(_serialized(tables)))
 
-    def apply(self, batch: AdminBatch) -> AdminBatchResult:
+    def apply(self, batch: AdminBatch, acting_user_id: str | None = None) -> AdminBatchResult:
         if _revision(self.repository.rows()) != batch.expected_revision:
             raise ConflictError("数据库已变化，请重新读取数据后再提交修改")
         self.repository.defer_references()
@@ -67,7 +67,10 @@ class AdminService:
                 self.repository.delete(name, operation.key)
                 key = operation.key
             else:
-                existing = {} if isinstance(operation, AdminCreate) else self.repository.row(name, operation.key)
+                if isinstance(operation, AdminCreate):
+                    existing = {"owner_id": acting_user_id} if acting_user_id and "owner_id" in TABLES[name].c else {}
+                else:
+                    existing = self.repository.row(name, operation.key)
                 row = _validated(name, {**existing, **operation.values})
                 if name == "state_snapshots":
                     try:

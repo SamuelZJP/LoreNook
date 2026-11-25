@@ -35,14 +35,19 @@ class TimestampedRow(IdentifiedRow):
     created_at: Timestamp = Field(default_factory=lambda: datetime.now(UTC))
 
 
-class ChatRow(TimestampedRow):
+class OwnedRow(Contract):
+    """Creating a row without an owner gives it to the administrator making the change."""
+    owner_id: RecordId
+
+
+class ChatRow(OwnedRow, TimestampedRow):
     title: Name
     writing_preset_id: RecordId | None = None
     recent_rounds: NonnegativeInt = 5
     min_summaries: NonnegativeInt = 6
 
 
-class IdentityRow(TimestampedRow):
+class IdentityRow(OwnedRow, TimestampedRow):
     chat_id: RecordId | None = None
     name: Name
     avatar: str | None = None
@@ -76,13 +81,13 @@ class DefinitionRow(IdentifiedRow):
     content: str
 
 
-class PresetRow(TimestampedRow):
+class PresetRow(OwnedRow, TimestampedRow):
     chat_id: RecordId | None = None
     name: Name
     source: str
 
 
-class ModelRow(IdentifiedRow):
+class ModelRow(OwnedRow, IdentifiedRow):
     chat_id: RecordId | None = None
     name: Name
     api_type: str
@@ -129,7 +134,7 @@ class EpisodeRow(TimestampedRow):
     created_by_round_id: RecordId | None = None
 
 
-class ChatTemplateRow(TimestampedRow):
+class ChatTemplateRow(OwnedRow, TimestampedRow):
     name: Name
     is_default: bool = False
     settings: ChatTemplateSettings = Field(default_factory=ChatTemplateSettings)

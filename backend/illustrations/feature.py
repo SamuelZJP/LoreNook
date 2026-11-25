@@ -1,14 +1,16 @@
 """The feature's single connection to the application: routes, errors, tables, card section, hooks and lifecycle."""
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from backend.api.access import register_owned_parameter, require_admin
 from backend.illustrations.admin_tables import register_admin_tables
 from backend.illustrations.card import register_card_sections
 from backend.illustrations.api import router
 from backend.illustrations.comfyui import ComfyUIClient
 from backend.illustrations.errors import IllustrationError
 from backend.illustrations.jobs import IllustrationRunner, interrupt_unfinished
+from backend.illustrations.models import ImageWorkflow
 from backend.illustrations.progress import ProgressBoard
 from backend.illustrations.service import CastService
 from backend.illustrations.storage import ImageStorage
@@ -16,10 +18,12 @@ from backend.repository.queries import Repository
 
 register_admin_tables()
 register_card_sections()
+register_owned_parameter("workflow_id", ImageWorkflow)
 
 
 def install(app: FastAPI) -> None:
-    app.include_router(router)
+    # Renders go to the server's own ComfyUI, so only administrators may use them for now.
+    app.include_router(router, dependencies=[Depends(require_admin)])
 
     @app.exception_handler(IllustrationError)
     async def illustration_error(request: Request, error: IllustrationError):

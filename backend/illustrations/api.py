@@ -92,60 +92,60 @@ def _library_identity(repository: Repository, identity_id: str) -> str:
     return repository.get_owned(UserIdentity, identity_id, None).id
 
 
-@cast.get("/characters/{owner_id}/cast", response_model=list[CastMemberRead])
-def read_cast(owner_id: str, database: DatabaseDependency):
+@cast.get("/characters/{character_id}/cast", response_model=list[CastMemberRead])
+def read_cast(character_id: str, database: DatabaseDependency):
     with database.read() as session:
         repository = Repository(session)
-        return CastService(repository).members(_library_character(repository, owner_id))
+        return CastService(repository).members(_library_character(repository, character_id))
 
 
-@cast.put("/characters/{owner_id}/cast", response_model=list[CastMemberRead])
-def replace_cast(owner_id: str, payload: CastReplace, database: DatabaseDependency):
+@cast.put("/characters/{character_id}/cast", response_model=list[CastMemberRead])
+def replace_cast(character_id: str, payload: CastReplace, database: DatabaseDependency):
     with database.transaction() as session:
         repository = Repository(session)
-        return CastService(repository).replace(_library_character(repository, owner_id), payload.members)
+        return CastService(repository).replace(_library_character(repository, character_id), payload.members)
 
 
-@cast.get("/chats/{owner_id}/cast", response_model=list[CastMemberRead])
-def read_chat_cast(owner_id: str, database: DatabaseDependency):
+@cast.get("/chats/{chat_id}/cast", response_model=list[CastMemberRead])
+def read_chat_cast(chat_id: str, database: DatabaseDependency):
     with database.read() as session:
         repository = Repository(session)
-        return CastService(repository).members(_chat_character(repository, owner_id))
+        return CastService(repository).members(_chat_character(repository, chat_id))
 
 
-@cast.put("/chats/{owner_id}/cast", response_model=list[CastMemberRead])
-def replace_chat_cast(owner_id: str, payload: CastReplace, database: DatabaseDependency):
+@cast.put("/chats/{chat_id}/cast", response_model=list[CastMemberRead])
+def replace_chat_cast(chat_id: str, payload: CastReplace, database: DatabaseDependency):
     with database.transaction() as session:
         repository = Repository(session)
-        return CastService(repository).replace(_chat_character(repository, owner_id), payload.members)
+        return CastService(repository).replace(_chat_character(repository, chat_id), payload.members)
 
 
-@cast.get("/user-identities/{owner_id}/appearance", response_model=AppearanceInput)
-def read_appearance(owner_id: str, database: DatabaseDependency):
+@cast.get("/user-identities/{identity_id}/appearance", response_model=AppearanceInput)
+def read_appearance(identity_id: str, database: DatabaseDependency):
     with database.read() as session:
         repository = Repository(session)
-        return CastService(repository).appearance(_library_identity(repository, owner_id))
+        return CastService(repository).appearance(_library_identity(repository, identity_id))
 
 
-@cast.put("/user-identities/{owner_id}/appearance", response_model=AppearanceInput)
-def set_appearance(owner_id: str, payload: AppearanceInput, database: DatabaseDependency):
+@cast.put("/user-identities/{identity_id}/appearance", response_model=AppearanceInput)
+def set_appearance(identity_id: str, payload: AppearanceInput, database: DatabaseDependency):
     with database.transaction() as session:
         repository = Repository(session)
-        return CastService(repository).set_appearance(_library_identity(repository, owner_id), payload)
+        return CastService(repository).set_appearance(_library_identity(repository, identity_id), payload)
 
 
-@cast.get("/chats/{owner_id}/appearance", response_model=AppearanceInput)
-def read_chat_appearance(owner_id: str, database: DatabaseDependency):
+@cast.get("/chats/{chat_id}/appearance", response_model=AppearanceInput)
+def read_chat_appearance(chat_id: str, database: DatabaseDependency):
     with database.read() as session:
         repository = Repository(session)
-        return CastService(repository).appearance(_chat_identity(repository, owner_id))
+        return CastService(repository).appearance(_chat_identity(repository, chat_id))
 
 
-@cast.put("/chats/{owner_id}/appearance", response_model=AppearanceInput)
-def set_chat_appearance(owner_id: str, payload: AppearanceInput, database: DatabaseDependency):
+@cast.put("/chats/{chat_id}/appearance", response_model=AppearanceInput)
+def set_chat_appearance(chat_id: str, payload: AppearanceInput, database: DatabaseDependency):
     with database.transaction() as session:
         repository = Repository(session)
-        return CastService(repository).set_appearance(_chat_identity(repository, owner_id), payload)
+        return CastService(repository).set_appearance(_chat_identity(repository, chat_id), payload)
 
 
 chat = APIRouter(prefix="/api/chats/{chat_id}", tags=["illustrations"])

@@ -2,8 +2,12 @@
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 import httpx
+
+from backend.api.access import SessionMiddleware, guard, require_admin
+from backend.api.auth import router as auth_router
+from backend.api.public import router as public_router
 
 from backend.api.catalog import router as catalog_router
 from backend.api.character_cards import router as character_cards_router
@@ -25,6 +29,7 @@ from backend.api.errors import register_error_handlers
 from backend.config import Settings
 from backend.features import FEATURES
 from backend.llm.client import ModelClient
+from backend.modules.accounts.throttle import LoginThrottle
 from backend.modules.media import MediaStorage
 from backend.modules.state.initial import InitialStateFactory
 from backend.modules.state.schema import StateValidator, python_initial_state, validate_state
@@ -39,9 +44,10 @@ def create_app(
     state_validator: StateValidator = validate_state,
     **feature_options,
 ) -> FastAPI:
+    configuration = settings or Settings()
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        configuration = settings or Settings()
         database = Database(configuration)
         app.state.database = database
         app.state.initial_state_factory = initial_state_factory
@@ -53,6 +59,9 @@ def create_app(
         app.state.model_client = client
         app.state.media = MediaStorage(configuration.resolved_media_directory())
         app.state.hooks = AppHooks()
+        app.state.login_throttle = LoginThrottle()
+        app.state.cookie_secure = configuration.cookie_secure
+        app.state.icp_number = configuration.icp_number
         stops = [feature.start(app, configuration, database, client, **feature_options) for feature in FEATURES]
         try:
             yield
@@ -62,8 +71,12 @@ def create_app(
             client.close()
             database.dispose()
 
-    app = FastAPI(title="LoreNook", version="0.1.0", lifespan=lifespan)
+    docs = {} if configuration.api_docs else {"docs_url": None, "redoc_url": None, "openapi_url": None}
+    app = FastAPI(title="LoreNook", version="3.0.0", lifespan=lifespan, dependencies=[Depends(guard)], **docs)
+    app.add_middleware(SessionMiddleware)
     register_error_handlers(app)
+    app.include_router(auth_router)
+    app.include_router(public_router)
     app.include_router(catalog_router)
     app.include_router(character_cards_router)
     app.include_router(chats_router)
@@ -78,7 +91,7 @@ def create_app(
     app.include_router(episode_decision_router)
     app.include_router(episode_summary_router)
     app.include_router(archive_router)
-    app.include_router(admin_router)
+    app.include_router(admin_router, dependencies=[Depends(require_admin)])
     app.include_router(media_router)
     for feature in FEATURES:
         feature.install(app)

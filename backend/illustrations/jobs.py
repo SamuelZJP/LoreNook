@@ -1,6 +1,7 @@
 """Illustration jobs: prompt text and reference images → ComfyUI → file. Runs after archiving and never touches archive progress."""
 
 from concurrent.futures import Executor, ThreadPoolExecutor
+import contextvars
 import json
 import logging
 import secrets
@@ -188,7 +189,9 @@ class IllustrationRunner:
 
     def submit(self, job: IllustrationRead):
         self.board.set(job.id, job.chat_id, IllustrationProgress(status=job.status))
-        return self.executor.submit(run_illustration, self.database, self.comfy, self.storage, self.media, self.board, job.id)
+        # The job runs in the requesting user's data scope.
+        return self.executor.submit(contextvars.copy_context().run, run_illustration, self.database, self.comfy,
+                                    self.storage, self.media, self.board, job.id)
 
     def round_archived(self, chat_id: str, round_id: str) -> None:
         job = auto_illustration(self.database, chat_id, round_id)

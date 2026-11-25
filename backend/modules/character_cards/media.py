@@ -3,6 +3,8 @@
 Uploaded images become `media/<name>` in the package. Outside URLs in avatar fields are kept as they are.
 """
 
+from collections.abc import Callable
+
 from backend.modules.media import MediaStorage, media_url, name_from_url, sniff_image
 from backend.modules.character_cards.package import MEDIA_DIRECTORY
 from backend.shared.errors import CharacterCardError, NotFoundError
@@ -11,8 +13,10 @@ from backend.shared.errors import CharacterCardError, NotFoundError
 class MediaWriter:
     """Collects the images a card refers to while it is exported."""
 
-    def __init__(self, storage: MediaStorage):
+    def __init__(self, storage: MediaStorage, readable: Callable[[str], bool]):
+        """`readable` tells whether the exporting user may read a stored image; others are left out."""
         self.storage = storage
+        self.readable = readable
         self.files: dict[str, bytes] = {}
 
     def name(self, name: str | None) -> str | None:
@@ -21,6 +25,8 @@ class MediaWriter:
             return None
         path = MEDIA_DIRECTORY + name
         if path not in self.files:
+            if not self.readable(name):
+                return None
             try:
                 self.files[path] = self.storage.read(name)
             except NotFoundError:

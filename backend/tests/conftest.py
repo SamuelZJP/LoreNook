@@ -6,9 +6,29 @@ from alembic import command
 from alembic.config import Config
 
 from backend.config import PROJECT_ROOT, Settings
+from backend.modules.accounts.passwords import hash_password
 from backend.repository.database import Database
-from backend.repository.models import Character, CharacterScene, Chat, StateSnapshot, UserIdentity
+from backend.repository.models import Character, CharacterScene, Chat, StateSnapshot, User, UserIdentity
 from backend.repository.queries import Repository
+from backend.shared.scope import scoped, user_scope
+
+TEST_USERNAME, TEST_PASSWORD = "tester", "test-password"
+_TEST_HASH = hash_password(TEST_PASSWORD)
+
+
+def add_user(database: Database, username: str, role: str = "user", password_hash: str = _TEST_HASH) -> str:
+    with database.transaction() as session:
+        user = User(username=username, password_hash=password_hash, role=role)
+        session.add(user)
+        session.flush()
+        return user.id
+
+
+async def sign_in(client, username: str = TEST_USERNAME, password: str = TEST_PASSWORD):
+    """Clients must use an https base URL: the session cookie is Secure."""
+    response = await client.post("/api/auth/login", json={"username": username, "password": password})
+    assert response.status_code == 200, response.text
+    return response
 
 
 def migration_config(path: Path) -> Config:
@@ -22,7 +42,10 @@ def database(tmp_path):
     path = tmp_path / "test.db"
     command.upgrade(migration_config(path), "head")
     db = Database(Settings(database_url=f"sqlite:///{path.as_posix()}"))
-    yield db
+    # Tests act as one administrator unless they set another scope.
+    user_id = add_user(db, TEST_USERNAME, "admin")
+    with scoped(user_scope(user_id, is_admin=True)):
+        yield db
     db.dispose()
 
 

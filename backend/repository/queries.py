@@ -6,7 +6,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session, aliased
 
 from backend.repository.models import (
-    Base, Character, CharacterScene, Chat, ChatModelBinding, ChatTemplate, Definition, Episode, ModelConfig, Round,
+    Base, Character, CharacterScene, Chat, ChatModelBinding, ChatTemplate, Definition, Episode, MediaFile, ModelConfig, Round,
     StateSnapshot, UserIdentity, WritingPreset,
 )
 from backend.shared.errors import ConflictError, NotFoundError
@@ -39,6 +39,14 @@ class Repository:
         self.session.delete(record)
         self.session.flush()
 
+    def owns_media(self, name: str) -> bool:
+        return self.session.scalar(select(MediaFile.name).where(MediaFile.name == name)) is not None
+
+    def own_media(self, name: str) -> None:
+        """Let the current user read this stored image."""
+        if not self.owns_media(name):
+            self.add(MediaFile(name=name))
+
     def list_chats(self) -> list[Chat]:
         return list(self.session.scalars(select(Chat).order_by(Chat.created_at.desc(), Chat.id)))
 
@@ -54,7 +62,8 @@ class Repository:
                   .group_by(Round.chat_id).subquery())
         rounds = self.session.execute(
             select(Round.chat_id, Round.ai_output)
-            .join(newest, (Round.chat_id == newest.c.chat_id) & (Round.round_no == newest.c.round_no)))
+            .join(newest, (Round.chat_id == newest.c.chat_id) & (Round.round_no == newest.c.round_no))
+            .join(Chat, Chat.id == Round.chat_id))  # Only the current user's chats
         openings = self.session.execute(
             select(Character.chat_id, CharacterScene.first_message)
             .join(CharacterScene, CharacterScene.character_id == Character.id)

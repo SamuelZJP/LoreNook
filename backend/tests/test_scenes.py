@@ -50,7 +50,9 @@ def test_scenes_validate_through_schema_and_select_initial_state(database):
     run_api(database, scenario)
 
 
-def test_migration_moves_first_message_into_default_scene(tmp_path):
+def test_migration_moves_first_message_into_default_scene(tmp_path, monkeypatch):
+    monkeypatch.setenv("LORENOOK_ADMIN_USERNAME", "admin")
+    monkeypatch.setenv("LORENOOK_ADMIN_PASSWORD", "admin-password")
     path: Path = tmp_path / "legacy.db"
     config = migration_config(path)
     command.upgrade(config, "e36b9c7210af")

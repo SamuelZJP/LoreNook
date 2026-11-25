@@ -1,3 +1,4 @@
+from backend.tests.conftest import sign_in
 import asyncio
 from concurrent.futures import Future
 import json
@@ -77,7 +78,7 @@ def no_model_call(request):
 
 
 def run(database, tmp_path, scenario, *, comfy=None):
-    settings = Settings(database_url=database.engine.url.render_as_string(hide_password=False),
+    settings = Settings(api_docs=True, database_url=database.engine.url.render_as_string(hide_password=False),
                         image_directory=str(tmp_path / "images"), media_directory=str(tmp_path / "media"),
                         comfyui_poll_seconds=0)
     app = create_app(settings, llm_transport=httpx.MockTransport(no_model_call),
@@ -86,7 +87,8 @@ def run(database, tmp_path, scenario, *, comfy=None):
 
     async def main():
         async with app.router.lifespan_context(app):
-            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="https://test") as client:
+                await sign_in(client)
                 await scenario(client)
     asyncio.run(main())
 

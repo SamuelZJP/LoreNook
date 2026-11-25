@@ -1,3 +1,4 @@
+import contextvars
 from datetime import UTC, datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
@@ -186,7 +187,7 @@ def test_concurrent_archive_start_only_creates_one_round(database, chat):
             return "conflict"
 
     with ThreadPoolExecutor(max_workers=2) as pool:
-        results = list(pool.map(lambda _: attempt(), range(2)))
+        results = list(pool.map(lambda context: context.run(attempt), [contextvars.copy_context() for _ in range(2)]))
     assert sorted(results) == ["conflict", "created"]
     with database.read() as session:
         assert [r.round_no for r in Repository(session).rounds(chat[0])] == [1]

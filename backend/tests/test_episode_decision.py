@@ -1,3 +1,4 @@
+import contextvars
 from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
@@ -269,7 +270,7 @@ def test_concurrent_decisions_only_one_succeeds(database, chat):
         except ConflictError:
             return "conflict"
     with ThreadPoolExecutor(max_workers=2) as pool:
-        results = list(pool.map(lambda _: call(), range(2)))
+        results = list(pool.map(lambda context: context.run(call), [contextvars.copy_context() for _ in range(2)]))
     assert sorted(results) == ["conflict", "episode_summary"]
 
 
