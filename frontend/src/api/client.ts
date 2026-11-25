@@ -61,6 +61,17 @@ export function describeDetail(status: number, detail: unknown, transport = fals
   return `请求失败（HTTP ${status}）`
 }
 
+let onUnauthorized: (() => void) | null = null
+
+/** Called when a request answers 401 because the session ended; sign-in requests excepted. */
+export function setUnauthorizedHandler(handler: () => void) {
+  onUnauthorized = handler
+}
+
+function checkSession(path: string, status: number) {
+  if (status === 401 && !path.startsWith('/api/auth/')) onUnauthorized?.()
+}
+
 export interface RequestOptions {
   method?: string
   body?: unknown
@@ -100,6 +111,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     }
   }
   if (!response.ok) {
+    checkSession(path, response.status)
     const body = (data ?? {}) as { detail?: unknown; archive?: ArchiveProgress }
     // Without a JSON `detail` the answer came from a proxy or a crash, not a handled backend error:
     // the outcome of the request is unknown.
@@ -132,6 +144,7 @@ export async function download(path: string, fallback: string): Promise<void> {
     throw new ApiError(0, String(error), null, true)
   }
   if (!response.ok) {
+    checkSession(path, response.status)
     const text = await response.text()
     let detail: unknown = text
     try {

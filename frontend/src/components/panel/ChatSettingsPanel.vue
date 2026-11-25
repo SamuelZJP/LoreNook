@@ -22,6 +22,8 @@ const props = defineProps<{ chat: ChatDetail }>()
 const qc = useQueryClient()
 const router = useRouter()
 const tracker = provideSaveTracker()
+/** Features the current user may use. */
+const available = () => CHAT_SETTINGS.filter((c) => c.available?.() ?? true)
 const patch = useChatPatch(() => props.chat.id)
 
 // ---- Rows: the core ones, then whatever features add, by order ----
@@ -52,9 +54,9 @@ const rows = computed<Row[]>(() => {
     { id: 'memory', label: '记忆', icon: Brain, order: 20, summary: `原文 ${props.chat.recent_rounds} 回合`, Page: MemoryPage, core: 'memory' },
     { id: 'archive', label: '后台整理', icon: Archive, order: 30, summary: archiveSummary.value, Page: ArchivePage, core: 'archive' },
   ]
-  return [...core, ...CHAT_SETTINGS.flatMap((c) => c.rows ?? [])].sort((a, b) => a.order - b.order)
+  return [...core, ...available().flatMap((c) => c.rows ?? [])].sort((a, b) => a.order - b.order)
 })
-const blocks = (page?: CorePage) => CHAT_SETTINGS.flatMap((c) => c.blocks ?? []).filter((b) => b.page === page).sort((a, b) => a.order - b.order)
+const blocks = (page?: CorePage) => available().flatMap((c) => c.blocks ?? []).filter((b) => b.page === page).sort((a, b) => a.order - b.order)
 
 // ---- Navigation ----
 const openId = ref<string | null>(null)
@@ -80,7 +82,7 @@ async function removeChat() {
     await api.deleteChat(props.chat.id)
     qc.invalidateQueries({ queryKey: ['chats'] })
     toast('聊天已删除')
-    router.push('/')
+    router.push('/hall')
   } catch (e) {
     toast(e instanceof Error ? e.message : String(e), 'error')
   }

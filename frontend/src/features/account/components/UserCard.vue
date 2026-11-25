@@ -3,21 +3,21 @@ import { ref } from 'vue'
 import { ChevronRight } from 'lucide-vue-next'
 import AvatarBadge from '@/components/AvatarBadge.vue'
 import ProfileDialog from './ProfileDialog.vue'
-import { currentUser as user } from '../currentUser'
+import { account } from '../session'
 
 const open = ref(false)
 </script>
 
 <template>
-  <button class="user-card" type="button" :aria-label="`${user.name}的个人信息`" @click="open = true">
-    <AvatarBadge :name="user.name" :src="user.avatar" :size="36" />
+  <button v-if="account" class="user-card" type="button" :aria-label="`${account.username}的个人信息`" @click="open = true">
+    <AvatarBadge :name="account.username" :size="36" />
     <span class="grow text">
-      <span class="name ellipsis">{{ user.name }}</span>
-      <span class="handle faint ellipsis">@{{ user.handle }}</span>
+      <span class="name ellipsis">{{ account.username }}</span>
+      <span class="handle faint ellipsis">{{ account.role === 'admin' ? '管理员' : '炉友' }}</span>
     </span>
     <ChevronRight class="chevron" />
   </button>
-  <ProfileDialog v-if="open" @close="open = false" />
+  <ProfileDialog v-if="open && account" :account="account" @close="open = false" />
 </template>
 
 <style scoped>

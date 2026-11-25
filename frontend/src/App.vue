@@ -10,7 +10,8 @@ watch(() => route.fullPath, () => (sidebarOpen.value = false))
 </script>
 
 <template>
-  <div class="shell" :class="{ 'drawer-open': sidebarOpen }">
+  <RouterView v-if="route.meta.bare" />
+  <div v-else class="shell" :class="{ 'drawer-open': sidebarOpen }">
     <AppSidebar class="sidebar" />
     <div class="scrim" @click="sidebarOpen = false" />
     <main class="main">

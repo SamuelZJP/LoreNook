@@ -5,6 +5,7 @@ import { toast } from '@/composables/toast'
 import { illustrationApi, type Illustration, type IllustrationProgress } from './api'
 import { isActive, illustrationPrefs } from './lib'
 import { pickReadingRound } from './reading'
+import { illustrationsAvailable } from './access'
 
 /** Where the chat view is laid out: `docked` while the side panel sits beside the conversation. */
 export interface IllustrationLayout { docked: Ref<boolean>; scroller: Ref<HTMLElement | undefined> }
@@ -19,12 +20,14 @@ export function provideChatIllustrations(chatId: Ref<string>, rounds: Ref<RoundR
   const query = useQuery({
     queryKey: computed(() => ['illustrations', chatId.value]),
     queryFn: () => illustrationApi.illustrations(chatId.value),
+    enabled: illustrationsAvailable,
     // The progress stream drives updates; this only covers a stream that can't get through.
     refetchInterval: (q) => ((q.state.data ?? []).some(isActive) ? 15000 : false),
   })
   const settings = useQuery({
     queryKey: computed(() => ['illustration-settings', chatId.value]),
     queryFn: () => illustrationApi.settings(chatId.value),
+    enabled: illustrationsAvailable,
   })
   const refresh = () => qc.invalidateQueries({ queryKey: ['illustrations', chatId.value] })
 

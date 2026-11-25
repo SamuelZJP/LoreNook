@@ -8,6 +8,7 @@ import ErrorBox from '../ErrorBox.vue'
 import AvatarUpload from '../AvatarUpload.vue'
 import PortraitUpload from '../PortraitUpload.vue'
 import PortraitEditor from '@/features/illustrations/components/PortraitEditor.vue'
+import { illustrationsAvailable } from '@/features/illustrations/access'
 import StatusBarEditor from '@/features/status_bar/components/StatusBarEditor.vue'
 import ScopeNote from './ScopeNote.vue'
 import InfoTip from '../InfoTip.vue'
@@ -287,7 +288,7 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
       </section>
 
       <section v-if="tab === 'portrait'" class="stack">
-        <PortraitEditor v-if="original" :kind="kind" :owner-id="original.id" :chat-id="chatId" />
+        <PortraitEditor v-if="original && illustrationsAvailable" :kind="kind" :owner-id="original.id" :chat-id="chatId" />
       </section>
 
       <section v-if="tab === 'status-bar'" class="stack">

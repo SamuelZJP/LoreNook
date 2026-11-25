@@ -4,8 +4,8 @@ import { KINDS, type LibraryKind } from './kinds'
 
 /** The library's front page: large tiles for the story's people, small ones for how the AI works. */
 const props = defineProps<{ counts: Partial<Record<LibraryKind, number>> }>()
-const profiles = computed(() => KINDS.filter((k) => k.group === 'profiles'))
-const settings = computed(() => KINDS.filter((k) => k.group === 'settings'))
+const profiles = computed(() => KINDS.filter((k) => k.group === 'profiles' && (k.available?.() ?? true)))
+const settings = computed(() => KINDS.filter((k) => k.group === 'settings' && (k.available?.() ?? true)))
 const count = (id: LibraryKind) => props.counts[id]
 </script>
 

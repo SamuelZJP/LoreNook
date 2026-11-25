@@ -25,6 +25,8 @@ export interface SettingsBlock {
 }
 
 export interface ChatSettingsContribution {
+  /** Whether the current user may use the feature; absent means always. */
+  available?: () => boolean
   rows?: SettingsRow[]
   blocks?: SettingsBlock[]
 }

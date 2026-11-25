@@ -9,6 +9,8 @@ import OutputView from '@/components/chat/OutputView.vue'
 import { categoryDefaultMode, prefs, resetPrefs, REPLY_CAP_RANGE, type RenderCategory, type SectionMode } from '@/lib/prefs'
 import { EN_FONTS, ZH_FONTS } from '@/lib/fonts'
 import BackdropPreference from '@/features/illustrations/components/BackdropPreference.vue'
+import { illustrationsAvailable } from '@/features/illustrations/access'
+import { isAdmin } from '@/features/account/session'
 
 type Section = 'appearance' | 'reading' | 'input' | 'advanced'
 const SECTIONS: { id: Section; label: string }[] = [
@@ -136,7 +138,7 @@ const sample = `<think>她还不确定该不该提起那封信，也许先试探
               <p class="summary-sample">回合摘要：她在雨夜读完 The Little Prince，决定和你一起离开书店。</p>
             </div>
           </section>
-          <BackdropPreference />
+          <BackdropPreference v-if="illustrationsAvailable" />
         </template>
 
         <!-- Reading -->
@@ -225,7 +227,7 @@ const sample = `<think>她还不确定该不该提起那封信，也许先试探
             <div class="card card-pad page-surface"><OutputView :text="sample" /></div>
           </section>
 
-          <RouterLink to="/data" class="card link-row">
+          <RouterLink v-if="isAdmin" to="/data" class="card link-row">
             <Database class="link-icon" />
             <div class="grow">
               <div class="name">聊天数据</div>

@@ -1,5 +1,5 @@
 import { createApp } from 'vue'
-import { VueQueryPlugin, QueryClient } from '@tanstack/vue-query'
+import { VueQueryPlugin } from '@tanstack/vue-query'
 import App from './App.vue'
 import { router } from './router'
 import './styles/tokens.css'
@@ -7,13 +7,8 @@ import '@fontsource-variable/noto-serif-sc'
 import './styles/base.css'
 import './styles/reading.css'
 import './lib/prefs'
+import { queryClient } from './lib/queryClient'
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    // Mutations that call models are never retried automatically.
-    queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 10_000 },
-    mutations: { retry: false },
-  },
-})
-
-createApp(App).use(router).use(VueQueryPlugin, { queryClient }).mount('#app')
+const app = createApp(App).use(router).use(VueQueryPlugin, { queryClient })
+// Mount once the first route is settled, so nothing asks for data before sign-in is known.
+router.isReady().then(() => app.mount('#app'))

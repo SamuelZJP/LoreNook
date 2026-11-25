@@ -10,6 +10,7 @@ import RequestPanel from './RequestPanel.vue'
 import ChatSettingsPanel from './ChatSettingsPanel.vue'
 import ChatResourcesPanel from './ChatResourcesPanel.vue'
 import DockedIllustration from '@/features/illustrations/components/DockedIllustration.vue'
+import { illustrationsAvailable } from '@/features/illustrations/access'
 
 export type PanelTab = 'state' | 'memory' | 'definitions' | 'request' | 'settings' | 'resources'
 type Tab = PanelTab
@@ -101,7 +102,7 @@ function pick(id: Tab) {
       <ChatSettingsPanel v-else-if="tab === 'settings'" :chat="chat" />
       <ChatResourcesPanel v-else :chat="chat" />
     </div>
-    <DockedIllustration v-if="tab === 'state' && !stateRoomy" class="illustration" />
+    <DockedIllustration v-if="illustrationsAvailable && tab === 'state' && !stateRoomy" class="illustration" />
   </aside>
 </template>
 

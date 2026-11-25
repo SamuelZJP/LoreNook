@@ -1,0 +1,43 @@
+/* The public pages' own look: a cabin corner by the fire. Day and night follow the app theme. */
+@import '@fontsource/cormorant-garamond/300.css';
+@import '@fontsource/cormorant-garamond/400.css';
+@import '@fontsource/cormorant-garamond/400-italic.css';
+@import '@fontsource/cormorant-garamond/500.css';
+
+.hearth {
+  --h-serif: var(--font-reading);
+  --h-latin: 'Cormorant Garamond', var(--font-reading);
+  --h-sans: var(--font-sans);
+  position: relative; min-height: 100dvh; overflow-x: hidden;
+  background: var(--h-bg); color: var(--h-ink); font-family: var(--h-serif);
+  transition: background 0.8s ease, color 0.8s ease;
+}
+.hearth.night {
+  --h-bg: #100b07; --h-bg-2: #19110b; --h-ink: #efe3d3; --h-muted: #a8957f; --h-faint: rgb(255 170 100 / 7%);
+  --h-accent: #e8893a; --h-btn: #e2a15f; --h-btn-ink: #1a0f08; --h-line: rgb(239 227 211 / 16%);
+  color-scheme: dark;
+}
+.hearth.day {
+  --h-bg: #f3ece1; --h-bg-2: #ebe2d4; --h-ink: #2b1f16; --h-muted: #6b5948; --h-faint: rgb(43 31 22 / 10%);
+  --h-accent: #8a5a34; --h-btn: #3a2618; --h-btn-ink: #f3ece1; --h-line: rgb(43 31 22 / 16%);
+  color-scheme: light;
+}
+
+.hearth-btn {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 30px 0 34px;
+  border-radius: 2px; font-family: var(--h-serif); font-size: 15px; letter-spacing: 0.3em; text-decoration: none; cursor: pointer;
+  transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.hearth-btn:hover { transform: translateY(-1px); }
+.hearth-btn:disabled { opacity: 0.6; cursor: default; transform: none; }
+.hearth-btn.primary { background: var(--h-btn); color: var(--h-btn-ink); border: 1px solid var(--h-btn); }
+.hearth.night .hearth-btn.primary:hover { box-shadow: 0 0 32px rgb(232 137 58 / 35%); }
+.hearth-btn.ghost { background: transparent; color: var(--h-ink); border: 1px solid var(--h-line); }
+.hearth-btn.ghost:hover { border-color: var(--h-ink); }
+.hearth :focus-visible { outline: 2px solid var(--h-accent); outline-offset: 3px; }
+
+.hearth-note {
+  position: fixed; top: 88px; left: 50%; transform: translateX(-50%); z-index: 20;
+  padding: 12px 22px; border: 1px solid var(--h-line); background: var(--h-bg-2); color: var(--h-ink);
+  font-family: var(--h-sans); font-size: 13px; letter-spacing: 0.2em; white-space: nowrap;
+}

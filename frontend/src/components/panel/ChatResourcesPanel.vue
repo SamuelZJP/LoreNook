@@ -9,6 +9,7 @@ import ProfileEditor from '../editors/ProfileEditor.vue'
 import PresetEditor from '../editors/PresetEditor.vue'
 import ModelEditor from '../editors/ModelEditor.vue'
 import ChatWorkflowList from '@/features/illustrations/components/ChatWorkflowList.vue'
+import { illustrationsAvailable } from '@/features/illustrations/access'
 
 defineProps<{ chat: ChatDetail }>()
 
@@ -53,7 +54,7 @@ const titles = { character: '编辑本聊天角色', identity: '编辑本聊天�
       <Pencil class="ic" />
     </button>
 
-    <ChatWorkflowList :chat-id="chat.id" />
+    <ChatWorkflowList v-if="illustrationsAvailable" :chat-id="chat.id" />
 
     <ModalDialog v-if="editing" :title="titles[editing.kind]" width="860px" @close="editing = null">
       <ProfileEditor v-if="editing.kind === 'character' || editing.kind === 'identity'" :kind="editing.kind" :id="null" :chat-id="chat.id" />

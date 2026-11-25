@@ -21,6 +21,9 @@ Markers in the user input control the mock models (they reach every prompt that 
 
 Illustrations go to a mock ComfyUI that draws a gradient after a few seconds; images are kept in
 data/mock-images and uploads in data/mock-media.
+
+Sign in as demo / demo-password (administrator, owns the seeded data) or guest / guest-password
+(a plain user with nothing yet). Cookies are not Secure here, so the mock also works over LAN http.
 """
 
 import argparse
@@ -237,45 +240,71 @@ MOCK_WORKFLOW = {
 }
 
 
+DEMO = ("demo", "demo-password")
+GUEST = ("guest", "guest-password")
+
+
+def ensure_guest(app) -> None:
+    from backend.modules.accounts.service import AccountService
+    from backend.repository.accounts import AccountRepository
+
+    with app.state.database.transaction() as session:
+        service = AccountService(AccountRepository(session))
+        if AccountRepository(session).user_by_name(GUEST[0]) is None:
+            service.create_user(*GUEST)
+
+
 def seed(app) -> None:
     from fastapi.testclient import TestClient
 
+    from backend.repository.accounts import AccountRepository
+    from backend.shared.scope import scoped, user_scope
+
+    with TestClient(app, base_url="https://testserver") as client:
+        ensure_guest(app)
+        client.post("/api/auth/login", json=dict(zip(("username", "password"), DEMO))).raise_for_status()
+        with app.state.database.read() as session:
+            demo_id = AccountRepository(session).user_by_name(DEMO[0]).id
+        with scoped(user_scope(demo_id, is_admin=True)):
+            seed_as_demo(client, app)
+
+
+def seed_as_demo(client, app) -> None:
     schema = (ROOT / "backend/modules/state/examples/basic.py").read_text(encoding="utf-8")
     preset = (ROOT / "backend/modules/presets/examples/google_tool.js").read_text(encoding="utf-8")
-    with TestClient(app) as client:
-        if not client.get("/api/image-workflows").json():
-            client.post("/api/image-workflows", json={
-                "name": "模拟 SDXL", "base_url": "http://127.0.0.1:8188", "workflow": MOCK_WORKFLOW,
-            }).raise_for_status()
-            client.post("/api/image-workflows", json={
-                "name": "模拟 参考图", "base_url": "http://127.0.0.1:8188", "width": 832, "height": 1216,
-                "workflow": {**MOCK_WORKFLOW, "10": {"class_type": "LLMAPIProNode", "inputs": {"prompt": "{{prompt}}", "images": "{{images}}"}}},
-            }).raise_for_status()
-            print("Seeded mock image workflow.")
-        if not client.get("/api/characters").json():
-            client.post("/api/characters", json={
-                "name": "示例角色", "description": "用于前端开发的示例角色",
-                "scenes": [
-                    {"name": "图书馆", "description": "早晨，图书馆刚开门",
-                     "first_message": "<content>“你来了。”她从书页上抬起头。</content>"},
-                    {"order": 1, "name": "闭馆后", "description": "夜晚，只剩你们两人",
-                     "first_message": "<content>灯一盏盏熄灭，她合上了最后一本书。</content>",
-                     "initial_state": {"世界": {"时间": "21:30", "地点": "图书馆"}, "角色": {"好感度": 30, "关系": "熟人"}}},
-                ],
-                "state_schema": schema,
-                "definitions": [{"content": "她是一名图书管理员。"},
-                                {"content": "当前时间：{{ state[\"世界\"][\"时间\"] }}", "has_template": True}],
-            }).raise_for_status()
-            client.post("/api/user-identities", json={"name": "旅人", "description": "示例身份"}).raise_for_status()
-            client.post("/api/writing-presets", json={"name": "Google 工具示例", "source": preset}).raise_for_status()
-            client.post("/api/model-configs", json={
-                "name": "模拟 Google", "api_type": "google_generate_content",
-                "base_url": "https://mock.invalid/v1beta", "model": "mock-model", "api_key": "mock-key",
-            }).raise_for_status()
-            print("Seeded example character, identity, preset and mock model configuration.")
-        added = seed_stories(client, app.state.database, MOCK_IMAGES, png)
-        if added:
-            print("Seeded mock stories: " + "、".join(added))
+    if not client.get("/api/image-workflows").json():
+        client.post("/api/image-workflows", json={
+            "name": "模拟 SDXL", "base_url": "http://127.0.0.1:8188", "workflow": MOCK_WORKFLOW,
+        }).raise_for_status()
+        client.post("/api/image-workflows", json={
+            "name": "模拟 参考图", "base_url": "http://127.0.0.1:8188", "width": 832, "height": 1216,
+            "workflow": {**MOCK_WORKFLOW, "10": {"class_type": "LLMAPIProNode", "inputs": {"prompt": "{{prompt}}", "images": "{{images}}"}}},
+        }).raise_for_status()
+        print("Seeded mock image workflow.")
+    if not client.get("/api/characters").json():
+        client.post("/api/characters", json={
+            "name": "示例角色", "description": "用于前端开发的示例角色",
+            "scenes": [
+                {"name": "图书馆", "description": "早晨，图书馆刚开门",
+                 "first_message": "<content>“你来了。”她从书页上抬起头。</content>"},
+                {"order": 1, "name": "闭馆后", "description": "夜晚，只剩你们两人",
+                 "first_message": "<content>灯一盏盏熄灭，她合上了最后一本书。</content>",
+                 "initial_state": {"世界": {"时间": "21:30", "地点": "图书馆"}, "角色": {"好感度": 30, "关系": "熟人"}}},
+            ],
+            "state_schema": schema,
+            "definitions": [{"content": "她是一名图书管理员。"},
+                            {"content": "当前时间：{{ state[\"世界\"][\"时间\"] }}", "has_template": True}],
+        }).raise_for_status()
+        client.post("/api/user-identities", json={"name": "旅人", "description": "示例身份"}).raise_for_status()
+        client.post("/api/writing-presets", json={"name": "Google 工具示例", "source": preset}).raise_for_status()
+        client.post("/api/model-configs", json={
+            "name": "模拟 Google", "api_type": "google_generate_content",
+            "base_url": "https://mock.invalid/v1beta", "model": "mock-model", "api_key": "mock-key",
+        }).raise_for_status()
+        print("Seeded example character, identity, preset and mock model configuration.")
+    added = seed_stories(client, app.state.database, MOCK_IMAGES, png)
+    if added:
+        print("Seeded mock stories: " + "、".join(added))
 
 
 def main() -> None:
@@ -292,18 +321,25 @@ def main() -> None:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     url = f"sqlite:///{db_path.as_posix()}"
     os.environ["LORENOOK_DATABASE_URL"] = url
+    # The migration creates the demo administrator and gives it any data already in the mock database.
     subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"], cwd=ROOT, check=True,
-                   env={**os.environ, "LORENOOK_DATABASE_URL": url})
+                   env={**os.environ, "LORENOOK_DATABASE_URL": url, "LORENOOK_ADMIN_USERNAME": DEMO[0],
+                        "LORENOOK_ADMIN_PASSWORD": DEMO[1], "LORENOOK_MEDIA_DIRECTORY": str(ROOT / "data" / "mock-media")})
 
     import uvicorn
     from backend.config import Settings
     from backend.main import create_app
 
     images, media = str(MOCK_IMAGES), str(ROOT / "data" / "mock-media")
-    app = create_app(Settings(database_url=url, image_directory=images, media_directory=media, comfyui_poll_seconds=0.5),
+    app = create_app(Settings(database_url=url, image_directory=images, media_directory=media, comfyui_poll_seconds=0.5,
+                              cookie_secure=False, api_docs=True),
                      llm_transport=httpx.MockTransport(handler), comfyui_transport=httpx.MockTransport(comfy_handler),
                      comfyui_connect=MockComfySocket)
-    if not args.no_seed:
+    if args.no_seed:
+        from fastapi.testclient import TestClient
+        with TestClient(app):
+            ensure_guest(app)
+    else:
         seed(app)
     print(f"Mock backend on http://127.0.0.1:{args.port} using {db_path}")
     uvicorn.run(app, host="127.0.0.1", port=args.port)

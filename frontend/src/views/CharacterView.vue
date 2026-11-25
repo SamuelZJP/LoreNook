@@ -26,7 +26,7 @@ const openingOf = (text: string) => contentBody(text).replace(/\s+/g, ' ').trim(
 <template>
   <div class="character-view">
     <TopBar>
-      <RouterLink to="/" class="btn ghost small"><ArrowLeft /> 角色</RouterLink>
+      <RouterLink to="/hall" class="btn ghost small"><ArrowLeft /> 角色</RouterLink>
       <span class="grow" />
       <RouterLink v-if="character" :to="`/library/characters/${id}`" class="btn ghost small"><Pencil /> 编辑</RouterLink>
     </TopBar>

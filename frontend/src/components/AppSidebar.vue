@@ -21,7 +21,7 @@ function cycleTheme() {
           <Moon v-if="prefs.theme === 'dark'" /><Sun v-else-if="prefs.theme === 'light'" /><Monitor v-else />
         </button>
       </div>
-      <RouterLink to="/" class="btn primary new"><Plus /> 新建聊天</RouterLink>
+      <RouterLink to="/hall" class="btn primary new"><Plus /> 新建聊天</RouterLink>
       <ChatList class="list" />
       <nav class="bottom stack tight">
         <RouterLink to="/library" class="list-item" active-class="active"><Library /> 资源库</RouterLink>

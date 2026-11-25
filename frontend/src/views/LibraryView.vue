@@ -12,6 +12,7 @@ import ModelEditor from '@/components/editors/ModelEditor.vue'
 import ChatTemplateEditor from '@/components/editors/ChatTemplateEditor.vue'
 import WorkflowEditor from '@/features/illustrations/components/WorkflowEditor.vue'
 import { illustrationApi } from '@/features/illustrations/api'
+import { illustrationsAvailable } from '@/features/illustrations/access'
 import LibraryHub from '@/components/library/LibraryHub.vue'
 import LibraryCards, { type CardItem } from '@/components/library/LibraryCards.vue'
 import CardImport from '@/components/library/CardImport.vue'
@@ -29,7 +30,7 @@ const characters = useQuery({ queryKey: ['characters'], queryFn: api.characters 
 const identities = useQuery({ queryKey: ['identities'], queryFn: api.identities })
 const presets = useQuery({ queryKey: ['presets', null], queryFn: () => api.presets({ chatId: null }) })
 const models = useQuery({ queryKey: ['models', null], queryFn: () => api.models({ chatId: null }) })
-const workflows = useQuery({ queryKey: ['workflows', null], queryFn: () => illustrationApi.workflows({ chatId: null }) })
+const workflows = useQuery({ queryKey: ['workflows', null], queryFn: () => illustrationApi.workflows({ chatId: null }), enabled: illustrationsAvailable })
 const templates = useQuery({ queryKey: ['chat-templates'], queryFn: api.chatTemplates })
 const queries = { characters, identities, presets, models, workflows, templates }
 

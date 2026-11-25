@@ -4,6 +4,7 @@ import { MODEL_PURPOSES, type ChatTemplateSettings, type ModelConfig, type Model
 import { PURPOSE_LABELS } from '@/lib/archive'
 import InfoTip from './InfoTip.vue'
 import NewChatIllustrationSection from '@/features/illustrations/components/NewChatIllustrationSection.vue'
+import { illustrationsAvailable } from '@/features/illustrations/access'
 import NewChatRecallSection from '@/features/recall/components/NewChatRecallSection.vue'
 
 /**
@@ -136,7 +137,7 @@ defineExpose({ snapshot, applyFeatures })
     </details>
 
     <NewChatRecallSection ref="recallSection" :models="models" />
-    <NewChatIllustrationSection ref="illustrationSection" />
+    <NewChatIllustrationSection v-if="illustrationsAvailable" ref="illustrationSection" />
 
     <div class="row">
       <h3>记忆</h3>
