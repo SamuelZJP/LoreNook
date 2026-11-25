@@ -36,13 +36,15 @@ function cycleTheme() {
 /* Two islands: navigation, then the signed-in user. */
 .app-sidebar { display: flex; flex-direction: column; gap: var(--island-gap); height: 100%; }
 .panel, .account { background: var(--bg-elev); border-radius: var(--radius-xl); box-shadow: var(--shadow-island); overflow: hidden; }
-.panel { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3); }
+.panel { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4) var(--space-3) var(--space-3); }
 .account { flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom); }
-.brand { padding: var(--space-1) var(--space-1) var(--space-1-5); font-size: var(--text-xl); font-family: var(--font-reading); letter-spacing: 0.02em; }
-.logo { width: 28px; height: 28px; border-radius: var(--radius-s); background: var(--accent); color: var(--accent-text); display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-reading); font-weight: 600; font-size: var(--text-lg); }
-.new { width: 100%; }
+.brand { padding: 0 var(--space-1) 0 var(--space-1-5); font-size: var(--text-xl); font-family: var(--font-reading); letter-spacing: 0.01em; }
+.brand strong { font-weight: 700; }
+.logo { width: 30px; height: 30px; border-radius: 9px; background: var(--accent); color: var(--accent-text); display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-reading); font-weight: 600; font-size: var(--text-lg); }
+.new { width: 100%; min-height: 42px; font-weight: 600; }
 .list { flex: 1; overflow-y: auto; min-height: 0; }
 .bottom { border-top: 1px solid var(--border); padding-top: var(--space-2); }
+.bottom .list-item { padding: var(--space-2) var(--space-3); font-weight: 500; }
 .bottom svg { width: 18px; height: 18px; color: var(--text-muted); }
 @media (max-width: 899px) {
   /* In the drawer the outer shape is the drawer's; a ground-coloured band separates the islands. */
