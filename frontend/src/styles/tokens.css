@@ -101,8 +101,6 @@
   --page-weight: 400;
   --quote: #7a410c;
   --quote-rule: #d9a56c;
-  --avatar-bg-l: 88%;
-  --avatar-text-l: 32%;
 }
 
 /* Dark: walnut and candlelight */
@@ -153,7 +151,5 @@
   --page-weight: 380;
   --quote: #f2c48a;
   --quote-rule: #8a5a24;
-  --avatar-bg-l: 24%;
-  --avatar-text-l: 80%;
   color-scheme: dark;
 }

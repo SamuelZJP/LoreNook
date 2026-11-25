@@ -4,7 +4,7 @@ import { hue, initials } from '@/lib/format'
 
 /**
  * A 3:4 cover for a character or identity: the portrait, else the avatar
- * filling the frame, else a tinted card with the name's first character.
+ * filling the frame, else the avatar's gradient with the name's first character.
  * The default slot overlays the bottom, for names and taglines.
  */
 const props = defineProps<{ name?: string | null; portrait?: string | null; avatar?: string | null }>()
@@ -32,7 +32,10 @@ function onError() {
 <style scoped>
 .cover {
   position: relative; aspect-ratio: 3 / 4; overflow: hidden; border-radius: inherit;
-  background: hsl(var(--cover-hue) 30% var(--avatar-bg-l));
+  /* Same gradient as AvatarBadge, with a soft light from the top left. */
+  background:
+    radial-gradient(90% 60% at 20% 10%, rgb(255 255 255 / 22%), transparent 70%),
+    linear-gradient(150deg, hsl(var(--cover-hue) 50% 66%), hsl(calc(var(--cover-hue) + 24) 42% 40%));
 }
 /* Nothing to show yet: a plain ground instead of a tint picked from an empty name. */
 .cover.blank { background: var(--bg-sunken); }
@@ -40,7 +43,7 @@ function onError() {
 .glyph {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   font-family: var(--font-reading); font-size: 7em; line-height: 1; user-select: none;
-  color: hsl(var(--cover-hue) 30% var(--avatar-text-l) / 35%);
+  color: rgb(255 255 255 / 30%);
 }
 .overlay {
   position: absolute; left: 0; right: 0; bottom: 0; padding: var(--space-8) var(--space-3) var(--space-3);
