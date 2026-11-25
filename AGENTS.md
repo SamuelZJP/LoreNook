@@ -29,3 +29,4 @@ Backend dependencies point one way: `api → workflows → modules → repositor
 | `backend/status_bar/` | Status bar feature: per-character HTML, rendered in a sandboxed frame by `frontend/src/features/status_bar/` |
 | `frontend/src/composables/roundFlow.ts` | Round lifecycle in the browser; `WriteStep` is the seam for a step before writing |
 | `frontend/src/features/` | Frontend of optional features; core views only place their components |
+| `frontend/src/components/panel/settings/contract.ts` | How a feature adds rows or blocks to a chat's settings; `features/chatSettings.ts` lists them |
