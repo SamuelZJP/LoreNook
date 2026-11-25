@@ -135,6 +135,7 @@ export const api = {
 
   // Latest-result editing
   state: (chatId: string) => request<StateRead>(`/api/chats/${chatId}/state`),
+  stateSchema: (chatId: string) => request<Schemas['StateDisplaySchema']>(`/api/chats/${chatId}/state/schema`),
   putState: (chatId: string, content: Record<string, unknown>) =>
     request<StateRead>(`/api/chats/${chatId}/state`, json('PUT', { content })),
   putSummary: (chatId: string, roundId: string, summary: string) =>

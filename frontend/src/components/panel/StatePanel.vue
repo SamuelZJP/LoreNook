@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
-import { Pencil, Save, Undo2 } from 'lucide-vue-next'
+import { Code2, Pencil, Save, Undo2 } from 'lucide-vue-next'
 import { api } from '@/api/endpoints'
 import CodeEditor from '../CodeEditor.vue'
 import ErrorBox from '../ErrorBox.vue'
 import { jsonProblem } from '../editors/JsonField.vue'
 import { toast } from '@/composables/toast'
 import { formatTime, pretty } from '@/lib/format'
+import { planStateDisplay } from '@/lib/stateDisplay'
+import StateItems from './StateItems.vue'
 
 const props = defineProps<{ chatId: string; editable: boolean }>()
 const qc = useQueryClient()
 const state = useQuery({ queryKey: computed(() => ['state', props.chatId]), queryFn: () => api.state(props.chatId) })
+const schema = useQuery({ queryKey: computed(() => ['state-schema', props.chatId]), queryFn: () => api.stateSchema(props.chatId) })
+const display = computed(() => planStateDisplay(state.data.value?.content, (schema.data.value?.json_schema ?? null) as Record<string, any> | null))
 
 const WEEKDAYS = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日']
 const editing = ref(false)
@@ -102,32 +106,43 @@ async function save() {
     <p v-if="!editable" class="hint">归档未完成时不能手动编辑状态。</p>
     <ErrorBox v-if="state.error.value" :error="state.error.value" />
 
-    <div v-if="world" class="world card card-pad">
-      <template v-if="editing && parsed">
-        <div class="grid-2">
-          <div class="field"><label>日期</label><input class="input" :value="world['日期']" placeholder="YYYY-MM-DD" @input="setWorld('日期', ($event.target as HTMLInputElement).value)" /></div>
-          <div class="field">
-            <label>星期</label>
-            <select class="select" :value="world['星期']" @change="setWorld('星期', ($event.target as HTMLSelectElement).value)">
-              <option v-for="d in WEEKDAYS" :key="d" :value="d">{{ d }}</option>
-            </select>
-          </div>
-          <div class="field"><label>时间</label><input class="input" :value="world['时间']" placeholder="HH:mm" @input="setWorld('时间', ($event.target as HTMLInputElement).value)" /></div>
-          <div class="field"><label>地点</label><input class="input" :value="world['地点']" @input="setWorld('地点', ($event.target as HTMLInputElement).value)" /></div>
+    <div v-if="editing && world" class="world card card-pad">
+      <div v-if="parsed" class="grid-2">
+        <div class="field"><label>日期</label><input class="input" :value="world['日期']" placeholder="YYYY-MM-DD" @input="setWorld('日期', ($event.target as HTMLInputElement).value)" /></div>
+        <div class="field">
+          <label>星期</label>
+          <select class="select" :value="world['星期']" @change="setWorld('星期', ($event.target as HTMLSelectElement).value)">
+            <option v-for="d in WEEKDAYS" :key="d" :value="d">{{ d }}</option>
+          </select>
         </div>
-      </template>
-      <div v-else class="row wrap chips">
-        <span class="badge accent">{{ world['日期'] }} {{ world['星期'] }}</span>
-        <span class="badge accent">{{ world['时间'] }}</span>
-        <span class="badge">{{ world['地点'] || '（未设定地点）' }}</span>
+        <div class="field"><label>时间</label><input class="input" :value="world['时间']" placeholder="HH:mm" @input="setWorld('时间', ($event.target as HTMLInputElement).value)" /></div>
+        <div class="field"><label>地点</label><input class="input" :value="world['地点']" @input="setWorld('地点', ($event.target as HTMLInputElement).value)" /></div>
       </div>
     </div>
+
+    <template v-if="!editing && state.data.value">
+      <section v-if="display.scene" class="scene">
+        <div class="when">
+          <span class="time">{{ display.scene.time }}</span>
+          <span class="date">{{ display.scene.date }} {{ display.scene.weekday }}</span>
+        </div>
+        <div class="place">{{ display.scene.place || '未设定地点' }}</div>
+        <StateItems v-if="display.world.length" class="world-extra" :items="display.world" />
+      </section>
+      <section v-for="card in display.cards" :key="card.key" class="person card">
+        <h4 :title="card.hint">{{ card.title }}</h4>
+        <StateItems :items="card.items" />
+      </section>
+      <details class="raw">
+        <summary><Code2 /> 原始数据</summary>
+        <CodeEditor :model-value="draft" language="json" readonly min-height="160px" />
+      </details>
+    </template>
     <ul v-if="editing && worldProblems.length" class="problems">
       <li v-for="p in worldProblems" :key="p">{{ p }}</li>
     </ul>
 
     <CodeEditor v-if="editing" v-model="draft" language="json" min-height="260px" />
-    <CodeEditor v-else-if="state.data.value" :model-value="draft" language="json" readonly min-height="200px" />
     <span v-if="editing && jsonProblem(draft)" class="bad">JSON 无效：{{ jsonProblem(draft) }}</span>
     <p v-if="editing" class="hint">保存后会经过角色 Schema 校验与修正，并立即用于下一次生成；不会重新计算摘要或情节。键名需保持原样（例如 <code>世界</code>）。</p>
     <ErrorBox v-if="error" :error="error" title="保存失败，编辑内容已保留" />
@@ -135,7 +150,24 @@ async function save() {
 </template>
 
 <style scoped>
-.chips { gap: var(--space-1-5); }
+.scene {
+  padding: var(--space-4); border-radius: var(--radius-l);
+  background: var(--accent-soft); color: var(--text);
+}
+.when { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
+.time { font-family: var(--font-reading); font-size: var(--text-2xl); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.date { color: var(--text-muted); font-size: var(--text-sm); }
+.place { margin-top: var(--space-1); font-family: var(--font-reading); font-size: var(--text-lg); }
+.world-extra { margin-top: var(--space-2); }
+.person { padding: var(--space-3) var(--space-4); }
+.person h4 { margin: 0 0 var(--space-1); font-family: var(--font-reading); font-size: var(--text-lg); font-weight: 600; }
+.raw summary {
+  display: flex; align-items: center; gap: var(--space-1-5); cursor: pointer; list-style: none;
+  color: var(--text-muted); font-size: var(--text-sm); padding: var(--space-1) 0;
+}
+.raw summary::-webkit-details-marker { display: none; }
+.raw summary svg { width: 15px; height: 15px; }
+.raw[open] summary { margin-bottom: var(--space-2); }
 .problems { margin: 0; padding-left: var(--space-5); color: var(--warn); font-size: var(--text-xs); }
 .bad { font-size: var(--text-xs); color: var(--danger); }
 </style>

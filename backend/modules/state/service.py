@@ -2,7 +2,9 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from backend.repository.models import Character, StateSnapshot
 from backend.repository.queries import Repository
+from backend.modules.state.schema import display_schema
 from backend.schemas.chats import StateRead
+from backend.schemas.state import StateDisplaySchema
 from backend.shared.errors import ConflictError
 
 
@@ -16,6 +18,10 @@ class StateService:
         if state is None:
             raise ConflictError("Chat has no state snapshot")
         return StateRead.model_validate(state)
+
+    def display_schema(self, chat_id: str) -> StateDisplaySchema:
+        character = self.repository.get(Character, self.repository.owner_id(chat_id, Character))
+        return StateDisplaySchema(json_schema=display_schema(character.state_schema))
 
     def editable(self, chat_id: str) -> tuple[StateRead, str]:
         state = self.latest(chat_id)

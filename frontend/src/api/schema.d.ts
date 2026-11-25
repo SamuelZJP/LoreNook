@@ -776,6 +776,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chats/{chat_id}/state/schema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Schema */
+        get: operations["read_schema_api_chats__chat_id__state_schema_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chats/{chat_id}/rounds/{round_id}/state-update": {
         parameters: {
             query?: never;
@@ -2743,6 +2760,13 @@ export interface components {
             id: string;
             /** Character Id */
             character_id: string;
+        };
+        /** StateDisplaySchema */
+        StateDisplaySchema: {
+            /** Json Schema */
+            json_schema: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
         };
         /** StateRead */
         StateRead: {
@@ -5469,6 +5493,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StateRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_schema_api_chats__chat_id__state_schema_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StateDisplaySchema"];
                 };
             };
             /** @description Validation Error */

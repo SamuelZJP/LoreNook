@@ -9,6 +9,11 @@ class StateReplace(Contract):
     content: dict[str, JsonValue]
 
 
+class StateDisplaySchema(Contract):
+    # JSON Schema of the chat's state Schema; display hints sit in each field's `display`.
+    json_schema: dict[str, JsonValue] | None
+
+
 class StateUpdateResult(Contract):
     chat_id: str
     round_id: str

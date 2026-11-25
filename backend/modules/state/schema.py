@@ -58,6 +58,18 @@ def validate_state(source: str, content: dict[str, JsonValue]) -> dict[str, Json
         raise StateSchemaError("状态 Schema 执行失败：" + str(error)[:1900]) from error
 
 
+def display_schema(source: str) -> dict[str, JsonValue] | None:
+    """The Schema as JSON Schema, for drawing the state panel. None without a usable Schema."""
+    if not source.strip():
+        return None
+    try:
+        with schema_model(source) as model:
+            return json_state(model.model_json_schema(mode="serialization"))
+    except Exception:
+        # Display only: the panel falls back to the value types.
+        return None
+
+
 def python_initial_state(source: str, overrides: dict[str, JsonValue] | None = None) -> dict[str, JsonValue]:
     try:
         return validate_state(source, overrides or {})

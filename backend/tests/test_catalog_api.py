@@ -126,3 +126,28 @@ def test_incomplete_admin_data_returns_conflict(database):
         response = await client.get(f"/api/chats/{chat_id}")
         assert response.status_code == 409
     run_api(database, scenario)
+
+
+def test_state_display_schema_carries_hints_and_tolerates_missing_schema(database):
+    hinted = STATE_SCHEMA + '''
+class Person(BaseModel):
+    好感度: int = Field(50, json_schema_extra={"display": "bar", "max": 100})
+class Schema(Schema):
+    林: Person = Field(default_factory=Person)
+'''
+
+    async def scenario(client):
+        identity = (await client.post("/api/user-identities", json={"name": "身份"})).json()
+
+        async def chat_with(source):
+            character = (await client.post("/api/characters", json={"name": "角色", "state_schema": source,
+                                        "scenes": [{"name": "开场", "first_message": "开场", "initial_state": {"世界": WORLD}}]})).json()
+            chat = (await client.post("/api/chats", json={"title": "聊天", "character_id": character["id"],
+                                                          "user_identity_id": identity["id"]})).json()
+            return (await client.get(f"/api/chats/{chat['id']}/state/schema")).json()["json_schema"]
+
+        schema = await chat_with(hinted)
+        person = schema["$defs"]["Person"]["properties"]["好感度"]
+        assert person["display"] == "bar" and person["max"] == 100
+        assert await chat_with("") is None
+    run_api(database, scenario, factory=python_initial_state)
