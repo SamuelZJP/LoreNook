@@ -1,6 +1,8 @@
 """Definition routes share operations while retaining explicit owner scopes."""
 
-from fastapi import APIRouter, Response
+from typing import Annotated
+
+from fastapi import APIRouter, Path, Response
 
 from backend.api.dependencies import DatabaseDependency
 from backend.modules.definitions.service import DefinitionService
@@ -13,8 +15,10 @@ from backend.workflows.resolve_definitions import resolve_chat_definitions
 router = APIRouter(prefix="/api", tags=["definitions"])
 
 
-def owner_routes(prefix: str, model: type[Character | UserIdentity], chat_local: bool) -> APIRouter:
-    scoped = APIRouter(prefix=prefix)
+def owner_routes(parameter: str, prefix: str, model: type[Character | UserIdentity], chat_local: bool) -> APIRouter:
+    """`parameter` names the owner in the path, so `guard` checks it like any owned row."""
+    scoped = APIRouter(prefix=prefix.format(f"{{{parameter}}}"))
+    OwnerId = Annotated[str, Path(alias=parameter)]
 
     def service(repository, owner_id):
         chat_id = owner_id if chat_local else None
@@ -23,32 +27,32 @@ def owner_routes(prefix: str, model: type[Character | UserIdentity], chat_local:
         return DefinitionService(repository, chat_id=chat_id, **owner)
 
     @scoped.get("", response_model=list[DefinitionRead])
-    def list_definitions(owner_id: str, database: DatabaseDependency):
+    def list_definitions(owner_id: OwnerId, database: DatabaseDependency):
         with database.read() as session:
             return service(Repository(session), owner_id).list()
 
     @scoped.post("", response_model=DefinitionRead, status_code=201)
-    def create_definition(owner_id: str, payload: DefinitionInput, database: DatabaseDependency):
+    def create_definition(owner_id: OwnerId, payload: DefinitionInput, database: DatabaseDependency):
         with database.transaction() as session:
             return service(Repository(session), owner_id).create(payload)
 
     @scoped.put("/reorder", response_model=list[DefinitionRead])
-    def reorder_definitions(owner_id: str, payload: DefinitionReorder, database: DatabaseDependency):
+    def reorder_definitions(owner_id: OwnerId, payload: DefinitionReorder, database: DatabaseDependency):
         with database.transaction() as session:
             return service(Repository(session), owner_id).reorder(payload)
 
     @scoped.get("/{definition_id}", response_model=DefinitionRead)
-    def read_definition(owner_id: str, definition_id: str, database: DatabaseDependency):
+    def read_definition(owner_id: OwnerId, definition_id: str, database: DatabaseDependency):
         with database.read() as session:
             return service(Repository(session), owner_id).read(definition_id)
 
     @scoped.patch("/{definition_id}", response_model=DefinitionRead)
-    def update_definition(owner_id: str, definition_id: str, payload: DefinitionPatch, database: DatabaseDependency):
+    def update_definition(owner_id: OwnerId, definition_id: str, payload: DefinitionPatch, database: DatabaseDependency):
         with database.transaction() as session:
             return service(Repository(session), owner_id).update(definition_id, payload)
 
     @scoped.delete("/{definition_id}", status_code=204)
-    def delete_definition(owner_id: str, definition_id: str, database: DatabaseDependency):
+    def delete_definition(owner_id: OwnerId, definition_id: str, database: DatabaseDependency):
         with database.transaction() as session:
             service(Repository(session), owner_id).delete(definition_id)
         return Response(status_code=204)
@@ -56,10 +60,10 @@ def owner_routes(prefix: str, model: type[Character | UserIdentity], chat_local:
     return scoped
 
 
-router.include_router(owner_routes("/characters/{owner_id}/definitions", Character, False))
-router.include_router(owner_routes("/user-identities/{owner_id}/definitions", UserIdentity, False))
-router.include_router(owner_routes("/chats/{owner_id}/character/definitions", Character, True))
-router.include_router(owner_routes("/chats/{owner_id}/user-identity/definitions", UserIdentity, True))
+router.include_router(owner_routes("character_id", "/characters/{}/definitions", Character, False))
+router.include_router(owner_routes("identity_id", "/user-identities/{}/definitions", UserIdentity, False))
+router.include_router(owner_routes("chat_id", "/chats/{}/character/definitions", Character, True))
+router.include_router(owner_routes("chat_id", "/chats/{}/user-identity/definitions", UserIdentity, True))
 
 
 @router.post("/chats/{chat_id}/definitions/resolve", response_model=ChatResolvedDefinitions)

@@ -32,8 +32,8 @@ OWNED_PARAMETERS: dict[str, type] = {
 }
 # Path parameters naming a row inside a chat; every route with one also has `chat_id`, and queries use both.
 CHAT_CHILD_PARAMETERS = {"round_id", "episode_id", "illustration_id"}
-# Checked by the route itself.
-SELF_CHECKED_PARAMETERS = {"name"}
+# Checked by the route itself; a definition must belong to the owner named beside it.
+SELF_CHECKED_PARAMETERS = {"name", "definition_id"}
 
 
 # (request, account), after sign-in is confirmed; features raise HTTPException to refuse a request.

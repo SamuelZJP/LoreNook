@@ -1,10 +1,10 @@
 from backend.tests.state_fixtures import STATE_SCHEMA
 import asyncio
+import re
 from datetime import UTC, datetime, timedelta
 
 import httpx
 import pytest
-from fastapi.routing import APIRoute
 
 from backend.api.access import CHAT_CHILD_PARAMETERS, OWNED_PARAMETERS, SELF_CHECKED_PARAMETERS
 from backend.cli import run as run_cli
@@ -234,13 +234,14 @@ def test_owned_rows_need_a_scope(database):
 def test_every_path_parameter_is_checked(database):
     app = create_app(Settings(database_url=database.engine.url.render_as_string(hide_password=False)))
     known = set(OWNED_PARAMETERS) | CHAT_CHILD_PARAMETERS | SELF_CHECKED_PARAMETERS
-    for route in app.routes:
-        if not isinstance(route, APIRoute):
-            continue
-        names = set(route.param_convertors)
-        assert names <= known, (route.path, names - known)
+    # `app.routes` holds included routers, not their routes; the schema lists every full path.
+    paths = app.openapi()["paths"]
+    assert len(paths) > 50
+    for path in paths:
+        names = set(re.findall(r"{(\w+)", path))
+        assert names <= known, (path, names - known)
         if names & CHAT_CHILD_PARAMETERS:
-            assert "chat_id" in names, route.path
+            assert "chat_id" in names, path
 
 
 def test_presence_follows_the_day_and_stays_steady():
