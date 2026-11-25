@@ -22,6 +22,8 @@ const c = useChatIllustrations()
 
 <style scoped>
 .docked { padding: var(--space-3) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom)); }
+/* At most a third of the panel's height on short screens; the frame stays 4:3 and narrows. */
+.docked :deep(.plate.fixed) { max-width: calc((100dvh - 2 * var(--island-gap)) / 3 * 4 / 3); margin-inline: auto; }
 /* Hidden and failed plates are single lines; keep them off the panel's bottom edge. */
 .docked :deep(.hidden-strip), .docked :deep(.failed) { margin: 0; }
 .swap-enter-active, .swap-leave-active { transition: opacity 0.25s ease; }

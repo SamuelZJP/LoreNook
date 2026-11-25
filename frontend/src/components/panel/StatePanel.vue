@@ -15,7 +15,8 @@ import StateChanges from './StateChanges.vue'
 import { planLatestChanges } from '@/lib/stateChanges'
 
 const props = defineProps<{ chatId: string; editable: boolean }>()
-const emit = defineEmits<{ editing: [boolean] }>()
+/** `roomy` while the editor or the raw data needs the panel's full height. */
+const emit = defineEmits<{ roomy: [boolean] }>()
 const qc = useQueryClient()
 const state = useQuery({ queryKey: computed(() => ['state', props.chatId]), queryFn: () => api.state(props.chatId) })
 const schema = useQuery({ queryKey: computed(() => ['state-schema', props.chatId]), queryFn: () => api.stateSchema(props.chatId) })
@@ -37,8 +38,9 @@ const latestChanges = computed(() => (history.data.value ? planLatestChanges(his
 const WEEKDAYS = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日']
 const editing = ref(false)
 const showRaw = ref(false)
-watch(editing, (on) => emit('editing', on))
-onBeforeUnmount(() => { if (editing.value) emit('editing', false) })
+const roomy = computed(() => editing.value || showRaw.value)
+watch(roomy, (on) => emit('roomy', on))
+onBeforeUnmount(() => { if (roomy.value) emit('roomy', false) })
 
 /** `2026-10-19` reads as `2026 年 10 月 19 日`; anything else is shown as written. */
 function longDate(date: string) {

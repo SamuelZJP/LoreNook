@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { BookOpen, ChevronDown, Compass, FileJson, Package, ScrollText, Settings2, X } from 'lucide-vue-next'
 import type { ChatDetail, ChatMemory } from '@/api/endpoints'
 import type { RoundFlow } from '@/composables/roundFlow'
@@ -28,8 +28,31 @@ const behind = [
   { id: 'resources' as const, label: '本聊天资源', icon: Package },
 ]
 const behindActive = computed(() => behind.find((b) => b.id === props.tab) ?? null)
-// The state editor takes the panel's full height, so the docked illustration steps aside.
-const editingState = ref(false)
+// The state editor and raw data take the panel's full height, so the docked illustration steps aside.
+const stateRoomy = ref(false)
+
+// A fade at the bottom edge while more content waits below.
+const content = ref<HTMLElement>()
+const more = ref(false)
+function measure() {
+  const el = content.value
+  more.value = !!el && el.scrollHeight - el.scrollTop - el.clientHeight > 4
+}
+const sizeObserver = new ResizeObserver(measure)
+watch(content, (el, old) => {
+  if (old) { sizeObserver.unobserve(old); if (old.firstElementChild) sizeObserver.unobserve(old.firstElementChild) }
+  if (el) { sizeObserver.observe(el); if (el.firstElementChild) sizeObserver.observe(el.firstElementChild) }
+})
+// The tab's own root changes with the tab.
+watch(() => props.tab, () => nextTick(() => {
+  const el = content.value
+  if (!el) return
+  sizeObserver.disconnect()
+  sizeObserver.observe(el)
+  if (el.firstElementChild) sizeObserver.observe(el.firstElementChild)
+  measure()
+}))
+onBeforeUnmount(() => sizeObserver.disconnect())
 
 const menuOpen = ref(false)
 const menu = ref<HTMLElement>()
@@ -67,10 +90,10 @@ function pick(id: Tab) {
       </nav>
       <button class="btn ghost icon" type="button" aria-label="关闭面板" @click="emit('close')"><X /></button>
     </div>
-    <div class="content">
+    <div ref="content" class="content" :class="{ more }" @scroll.passive="measure">
       <StatePanel
         v-if="tab === 'state'" :chat-id="chat.id" :editable="latestComplete && flow.phase.value !== 'archiving'"
-        @editing="editingState = $event"
+        @roomy="stateRoomy = $event"
       />
       <MemoryPanel v-else-if="tab === 'memory'" :chat="chat" :timeline="memoryTimeline" :preparing="flow.phase.value === 'preparing' ? flow.prepareLabel : ''" />
       <DefinitionsPanel v-else-if="tab === 'definitions'" :chat="chat" />
@@ -78,7 +101,7 @@ function pick(id: Tab) {
       <ChatSettingsPanel v-else-if="tab === 'settings'" :chat="chat" />
       <ChatResourcesPanel v-else :chat="chat" />
     </div>
-    <DockedIllustration v-if="tab === 'state' && !editingState" class="illustration" />
+    <DockedIllustration v-if="tab === 'state' && !stateRoomy" class="illustration" />
   </aside>
 </template>
 
@@ -112,5 +135,6 @@ function pick(id: Tab) {
   .head { position: relative; padding-top: var(--space-5); }
   .head::before { content: ''; position: absolute; top: var(--space-1-5); left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: var(--radius-pill); background: var(--border-strong); }
 }
+.content.more { mask-image: linear-gradient(to bottom, #000 calc(100% - 48px), transparent); }
 .content { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-5) var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom)); }
 </style>
