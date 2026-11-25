@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
-import { Code2, Lock, Pencil, Save, Undo2 } from 'lucide-vue-next'
+import { Code2, Lock, MapPin, Pencil, Save, Undo2 } from 'lucide-vue-next'
 import { api } from '@/api/endpoints'
 import CodeEditor from '../CodeEditor.vue'
 import ErrorBox from '../ErrorBox.vue'
@@ -20,6 +20,13 @@ const display = computed(() => planStateDisplay(state.data.value?.content, (sche
 
 const WEEKDAYS = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日']
 const editing = ref(false)
+const showRaw = ref(false)
+
+/** `2026-10-19` reads as `2026 年 10 月 19 日`; anything else is shown as written. */
+function longDate(date: string) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date)
+  return m ? `${m[1]} 年 ${Number(m[2])} 月 ${Number(m[3])} 日` : date
+}
 const draft = ref('')
 const saving = ref(false)
 const error = ref<unknown>(null)
@@ -98,6 +105,10 @@ async function save() {
       </span>
       <span class="grow" />
       <template v-if="!editing">
+        <button
+          class="btn ghost icon small" type="button" :class="{ on: showRaw }" :disabled="!state.data.value"
+          title="原始数据" aria-label="原始数据" :aria-pressed="showRaw" @click="showRaw = !showRaw"
+        ><Code2 /></button>
         <button v-if="editable" class="btn small" type="button" :disabled="!state.data.value" @click="start"><Pencil /> 编辑</button>
         <span v-else class="locked faint" title="这一回合整理完成后才能编辑"><Lock /></span>
       </template>
@@ -125,21 +136,16 @@ async function save() {
 
     <template v-if="!editing && state.data.value">
       <section v-if="display.scene" class="scene">
-        <div class="when">
-          <span class="time">{{ display.scene.time }}</span>
-          <span class="date">{{ display.scene.date }} {{ display.scene.weekday }}</span>
-        </div>
-        <div class="place">{{ display.scene.place || '未设定地点' }}</div>
+        <div class="time">{{ display.scene.time }}</div>
+        <div class="date">{{ [longDate(display.scene.date), display.scene.weekday].filter(Boolean).join(' · ') }}</div>
+        <div class="place"><MapPin /><span>{{ display.scene.place || '未设定地点' }}</span></div>
         <StateItems v-if="display.world.length" class="world-extra" :items="display.world" />
       </section>
-      <section v-for="card in display.cards" :key="card.key" class="person card">
+      <section v-for="card in display.cards" :key="card.key" class="person">
         <h4 :title="card.hint">{{ card.title }}</h4>
         <StateItems :items="card.items" />
       </section>
-      <details class="raw">
-        <summary><Code2 /> 原始数据</summary>
-        <CodeEditor :model-value="draft" language="json" readonly min-height="160px" />
-      </details>
+      <CodeEditor v-if="showRaw" :model-value="draft" language="json" readonly min-height="160px" />
     </template>
     <ul v-if="editing && worldProblems.length" class="problems">
       <li v-for="p in worldProblems" :key="p">{{ p }}</li>
@@ -153,26 +159,18 @@ async function save() {
 
 <style scoped>
 .stamp { font-size: var(--text-xs); }
+.btn.on { color: var(--accent); }
 .locked { display: inline-flex; padding: var(--space-1); }
 .locked svg { width: 15px; height: 15px; }
-.scene {
-  padding: var(--space-4); border-radius: var(--radius-l);
-  background: var(--accent-soft); color: var(--text);
-}
-.when { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
-.time { font-family: var(--font-reading); font-size: var(--text-2xl); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2; }
-.date { color: var(--text-muted); font-size: var(--text-sm); }
-.place { margin-top: var(--space-1); font-family: var(--font-reading); font-size: var(--text-lg); }
+/* The scene: a large clock, the date, then the place under a hairline. */
+.scene { padding: var(--space-4) var(--space-5); border-radius: 18px; background: var(--bg-sunken); color: var(--text); }
+.time { font-family: var(--font-reading); font-size: 42px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; letter-spacing: 0.01em; }
+.date { margin-top: var(--space-1-5); color: var(--text-muted); font-size: var(--text-sm); }
+.place { display: flex; align-items: center; gap: var(--space-1-5); margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border); font-weight: 500; }
+.place svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--accent); }
 .world-extra { margin-top: var(--space-2); }
-.person { padding: var(--space-3) var(--space-4); }
-.person h4 { margin: 0 0 var(--space-1); font-family: var(--font-reading); font-size: var(--text-lg); font-weight: 600; }
-.raw summary {
-  display: flex; align-items: center; gap: var(--space-1-5); cursor: pointer; list-style: none;
-  color: var(--text-muted); font-size: var(--text-sm); padding: var(--space-1) 0;
-}
-.raw summary::-webkit-details-marker { display: none; }
-.raw summary svg { width: 15px; height: 15px; }
-.raw[open] summary { margin-bottom: var(--space-2); }
+.person { padding: 0 var(--space-1); }
+.person h4 { margin: 0 0 var(--space-1); font-size: var(--text-md); font-weight: 600; }
 .problems { margin: 0; padding-left: var(--space-5); color: var(--warn); font-size: var(--text-xs); }
 .bad { font-size: var(--text-xs); color: var(--danger); }
 </style>

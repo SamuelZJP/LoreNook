@@ -77,20 +77,23 @@ function pick(id: Tab) {
 
 <style scoped>
 .chat-panel { display: flex; flex-direction: column; height: 100%; background: var(--bg-elev); }
-.head { display: flex; align-items: center; gap: var(--space-1); padding: env(safe-area-inset-top) var(--space-2) 0 var(--space-1); border-bottom: 1px solid var(--border); min-height: var(--topbar-h); }
-.icon-tabs { display: flex; align-items: center; gap: var(--space-0-5); min-width: 0; }
+.head { display: flex; align-items: center; gap: var(--space-1); padding: calc(env(safe-area-inset-top) + var(--space-3)) var(--space-2) 0 var(--space-3); }
+/* A segmented control: the reader's tabs, then the behind-the-scenes menu. */
+.icon-tabs { display: flex; align-items: center; gap: var(--space-0-5); min-width: 0; padding: var(--space-1); border-radius: var(--radius-m); background: var(--bg-sunken); }
 .icon-tabs button, .menu button {
   display: inline-flex; align-items: center; gap: var(--space-1); border: 0; background: none; font: inherit; cursor: pointer;
   color: var(--text-muted); font-weight: 500; font-size: var(--text-sm); white-space: nowrap;
 }
-.icon-tabs > button, .behind > button { padding: var(--space-1-5) var(--space-2); border-radius: var(--radius-pill); }
-.icon-tabs > button:hover, .behind > button:hover { color: var(--text); background: var(--bg-hover); }
-.icon-tabs button.active { color: var(--text); background: var(--bg-active); }
-.icon-tabs svg, .menu svg { width: 16px; height: 16px; flex-shrink: 0; }
+.icon-tabs > button, .behind > button { justify-content: center; min-height: 32px; padding: 0 var(--space-2); border-radius: var(--radius-s); }
+.icon-tabs > button { flex: 1; }
+.behind { position: relative; flex: 1; display: flex; }
+.behind > button { flex: 1; }
+.icon-tabs > button:hover, .behind > button:hover { color: var(--text); }
+.icon-tabs button.active { color: var(--text); background: var(--bg-elev); box-shadow: 0 1px 3px rgb(0 0 0 / 8%); }
+.icon-tabs svg, .menu svg { width: 15px; height: 15px; flex-shrink: 0; }
 .icon-tabs .caret { width: 13px; height: 13px; }
-.behind { position: relative; margin-left: auto; }
 .menu {
-  position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; min-width: 160px; padding: var(--space-1);
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 20; min-width: 160px; padding: var(--space-1);
   display: flex; flex-direction: column; border-radius: var(--radius-m); background: var(--bg-elev);
   border: 1px solid var(--border); box-shadow: var(--shadow-pop);
 }
@@ -99,8 +102,8 @@ function pick(id: Tab) {
 .menu button.active { background: var(--bg-active); }
 @media (max-width: 899px) {
   /* Grabber of the bottom sheet */
-  .head { position: relative; padding-top: var(--space-2); }
+  .head { position: relative; padding-top: var(--space-5); }
   .head::before { content: ''; position: absolute; top: var(--space-1-5); left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: var(--radius-pill); background: var(--border-strong); }
 }
-.content { flex: 1; overflow-y: auto; padding: var(--space-4) var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom)); }
+.content { flex: 1; overflow-y: auto; padding: var(--space-5) var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom)); }
 </style>

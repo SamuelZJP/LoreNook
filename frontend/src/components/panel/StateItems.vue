@@ -28,7 +28,7 @@ defineProps<{ items: Item[] }>()
 
 <style scoped>
 .items { margin: 0; display: flex; flex-direction: column; }
-.item { display: flex; gap: var(--space-3); padding: var(--space-1-5) 0; align-items: baseline; }
+.item { display: flex; gap: var(--space-3); padding: var(--space-2) 0; align-items: baseline; }
 .item + .item, .group + .item, .item + .group, .group + .group { border-top: 1px solid var(--border); }
 dt { flex: 0 0 auto; max-width: 40%; color: var(--text-muted); font-size: var(--text-sm); }
 dd { margin: 0; flex: 1; min-width: 0; text-align: right; font-size: var(--text-sm); overflow-wrap: anywhere; }
@@ -36,10 +36,10 @@ dd { margin: 0; flex: 1; min-width: 0; text-align: right; font-size: var(--text-
 .bar-cell { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-1); }
 .num { font-variant-numeric: tabular-nums; font-weight: 500; }
 .max { color: var(--text-faint); font-weight: 400; }
-.track { width: 100%; height: 4px; border-radius: var(--radius-pill); background: var(--bg-hover); overflow: hidden; }
+.track { width: 100%; height: 6px; border-radius: var(--radius-pill); background: var(--bg-hover); overflow: hidden; }
 .fill { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
 .tags { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-1); }
-.tag { padding: 0 var(--space-2); border-radius: var(--radius-pill); background: var(--bg-sunken); border: 1px solid var(--border); font-size: var(--text-xs); line-height: 1.7; }
+.tag { padding: 0 var(--space-2); border-radius: var(--radius-pill); background: var(--bg-hover); font-size: var(--text-xs); line-height: 1.7; }
 .dot { display: inline-block; width: 7px; height: 7px; margin-right: var(--space-1-5); border-radius: 50%; background: var(--border-strong); vertical-align: middle; }
 .dot.on { background: var(--accent); }
 .group summary {
