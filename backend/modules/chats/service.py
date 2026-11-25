@@ -11,11 +11,12 @@ class ChatService:
         self.repository = repository
 
     def list(self) -> list[ChatListItem]:
-        avatars = self.repository.chat_character_avatars()
-        return [
-            ChatListItem(**ChatRead.model_validate(record).model_dump(), avatar=avatars.get(record.id))
-            for record in self.repository.list_chats()
-        ]
+        images = self.repository.chat_character_images()
+        items = []
+        for record in self.repository.list_chats():
+            avatar, portrait = images.get(record.id, (None, None))
+            items.append(ChatListItem(**ChatRead.model_validate(record).model_dump(), avatar=avatar, portrait=portrait))
+        return items
 
     def detail(self, chat_id: str) -> ChatDetail:
         chat = self.repository.get(Chat, chat_id)

@@ -28,6 +28,7 @@ pre { margin: 0; white-space: pre-wrap; word-break: break-word; }
   font: inherit; font-weight: 500; cursor: pointer; white-space: nowrap;
   transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
+a.btn { text-decoration: none; }
 .btn:hover:not(:disabled) { background: var(--bg-hover); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn:active:not(:disabled) { transform: scale(0.98); }

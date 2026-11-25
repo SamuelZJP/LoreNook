@@ -74,8 +74,9 @@ def test_chat_endpoints_default_state_and_copy_scoping(database):
         assert (await client.delete(f"/api/user-identities/{data['user_identity']['id']}")).status_code == 404
         assert (await client.patch(f"{url}/character", json={"name": "副本", "scenes": [{"name": "开场", "first_message": "副本开场"}]})).status_code == 200
         assert (await client.patch(f"{url}/user-identity", json={"name": "副本身份"})).status_code == 200
-        await client.patch(f"{url}/character", json={"avatar": "copy.png"})
-        assert [chat["avatar"] for chat in (await client.get("/api/chats")).json()] == ["copy.png"]
+        await client.patch(f"{url}/character", json={"avatar": "copy.png", "portrait": "cover.png"})
+        assert [(chat["avatar"], chat["portrait"]) for chat in (await client.get("/api/chats")).json()] == [
+            ("copy.png", "cover.png")]
         assert (await client.get(f"/api/characters/{character['id']}")).json()["scenes"][0]["first_message"] == "第0楼"
         updated = (await client.patch(url, json={"title": "新标题", "recent_rounds": 0, "min_summaries": 0})).json()
         assert updated["title"] == "新标题" and updated["recent_rounds"] == 0

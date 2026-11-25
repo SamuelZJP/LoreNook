@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Plus, Library, Database, Settings, Moon, Sun, Monitor } from 'lucide-vue-next'
 import ChatList from './ChatList.vue'
-import { showNewChat } from '@/composables/layout'
 import { prefs } from '@/lib/prefs'
 
 const themes = ['system', 'light', 'dark'] as const
@@ -20,7 +19,7 @@ function cycleTheme() {
         <Moon v-if="prefs.theme === 'dark'" /><Sun v-else-if="prefs.theme === 'light'" /><Monitor v-else />
       </button>
     </div>
-    <button class="btn primary new" type="button" @click="showNewChat = true"><Plus /> 新建聊天</button>
+    <RouterLink to="/" class="btn primary new"><Plus /> 新建聊天</RouterLink>
     <ChatList class="list" />
     <nav class="bottom stack tight">
       <RouterLink to="/library" class="list-item" active-class="active"><Library /> 资源库</RouterLink>

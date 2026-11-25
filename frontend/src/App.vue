@@ -3,8 +3,7 @@ import { watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
 import ToastHost from './components/ToastHost.vue'
-import NewChatDialog from './components/NewChatDialog.vue'
-import { sidebarOpen, showNewChat } from './composables/layout'
+import { sidebarOpen } from './composables/layout'
 
 const route = useRoute()
 watch(() => route.fullPath, () => (sidebarOpen.value = false))
@@ -21,7 +20,6 @@ watch(() => route.fullPath, () => (sidebarOpen.value = false))
       </RouterView>
     </main>
   </div>
-  <NewChatDialog v-if="showNewChat" @close="showNewChat = false" />
   <ToastHost />
 </template>
 

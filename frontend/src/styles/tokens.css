@@ -17,6 +17,9 @@
   --text-lg: 16px;
   --text-xl: 18px;
   --text-2xl: 22px;
+  /* Large serif titles on gallery and profile pages */
+  --text-3xl: 30px;
+  --text-display: 44px;
 
   /* Spacing, on a 4px grid with one half step */
   --space-0-5: 2px;

@@ -1854,6 +1854,8 @@ export interface components {
             created_at: string;
             /** Avatar */
             avatar?: string | null;
+            /** Portrait */
+            portrait?: string | null;
         };
         /** ChatMemory */
         ChatMemory: {

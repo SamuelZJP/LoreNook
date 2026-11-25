@@ -42,9 +42,11 @@ class Repository:
     def list_chats(self) -> list[Chat]:
         return list(self.session.scalars(select(Chat).order_by(Chat.created_at.desc(), Chat.id)))
 
-    def chat_character_avatars(self) -> dict[str, str | None]:
-        rows = self.session.execute(select(Character.chat_id, Character.avatar).where(Character.chat_id.is_not(None)))
-        return {chat_id: avatar for chat_id, avatar in rows}
+    def chat_character_images(self) -> dict[str, tuple[str | None, str | None]]:
+        """Avatar and portrait of each chat's own character."""
+        rows = self.session.execute(
+            select(Character.chat_id, Character.avatar, Character.portrait).where(Character.chat_id.is_not(None)))
+        return {chat_id: (avatar, portrait) for chat_id, avatar, portrait in rows}
 
     def chat_templates(self) -> list[ChatTemplate]:
         return list(self.session.scalars(select(ChatTemplate).order_by(ChatTemplate.created_at, ChatTemplate.id)))

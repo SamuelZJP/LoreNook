@@ -44,8 +44,9 @@ class ChatRead(Contract):
 
 
 class ChatListItem(ChatRead):
-    # The chat's own character avatar.
+    # The chat's own character avatar and portrait.
     avatar: str | None = None
+    portrait: str | None = None
 
 
 class StateRead(Contract):
