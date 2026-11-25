@@ -1,11 +1,5 @@
-/* Reading surface for AI output: a quiet page with a fine double rule and paper grain. */
-.page-surface {
-  background-color: var(--page-bg);
-  background-image: var(--page-grain), var(--page-glow);
-  color: var(--page-text);
-  border: 1px solid var(--page-border);
-  box-shadow: inset 0 0 0 4px var(--page-bg), inset 0 0 0 5px var(--page-rule), var(--shadow-island);
-}
+/* Reading surface for AI output: the text sits directly on its island, in the page ink. */
+.page-surface { color: var(--page-text); }
 
 /* Main prose */
 .reading-prose {

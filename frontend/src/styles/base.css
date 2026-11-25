@@ -77,7 +77,8 @@ input.switch:checked::after { transform: translateX(16px); }
 input.switch:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Surfaces */
-.card { background: var(--bg-elev); border: 1px solid var(--border); border-radius: var(--radius-l); }
+/* A group on an island: a quiet tint instead of a frame */
+.card { background: var(--bg-sunken); border-radius: var(--radius-l); }
 /* A floating panel on the app ground */
 .island { background: var(--bg-elev); border-radius: var(--radius-xl); box-shadow: var(--shadow-island); }
 .card-pad { padding: var(--space-4); }
@@ -102,14 +103,15 @@ input.switch:disabled { opacity: 0.5; cursor: not-allowed; }
 .badge.warn { background: var(--warn-soft); color: var(--warn); }
 .badge.danger { background: var(--danger-soft); color: var(--danger); }
 
-/* Tabs */
-.tabs { display: flex; gap: var(--space-0-5); border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
+/* Tabs: a segmented control */
+.tabs { display: flex; gap: var(--space-0-5); padding: var(--space-1); border-radius: var(--radius-m); background: var(--bg-sunken); overflow-x: auto; scrollbar-width: none; }
 .tabs button {
-  border: 0; background: none; color: var(--text-muted); font: inherit; font-weight: 500;
-  padding: var(--space-3) var(--space-3); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap;
+  flex: 1; border: 0; background: none; color: var(--text-muted); font: inherit; font-size: var(--text-sm); font-weight: 500;
+  min-height: 32px; padding: 0 var(--space-3); border-radius: var(--radius-s); cursor: pointer; white-space: nowrap;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1-5);
 }
 .tabs button:hover { color: var(--text); }
-.tabs button.active { color: var(--text); border-bottom-color: var(--accent); }
+.tabs button.active { color: var(--text); background: var(--bg-elev); box-shadow: 0 1px 3px rgb(0 0 0 / 8%); }
 
 /* Page layout used by the library, data and settings views */
 .page { height: 100%; overflow-y: auto; }
