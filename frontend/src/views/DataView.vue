@@ -245,6 +245,7 @@ function opLabel(p: PendingOp) {
 <template>
   <div class="data-view">
     <TopBar>
+      <RouterLink to="/settings/advanced" class="btn ghost icon small" aria-label="返回设置"><ArrowLeft /></RouterLink>
       <h1 class="grow">聊天数据</h1>
       <button class="btn ghost icon" type="button" title="重新读取" :disabled="loading" @click="pending.length ? reloadKeeping() : load()"><RefreshCw /></button>
     </TopBar>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Plus, Library, Database, Settings, Moon, Sun, Monitor } from 'lucide-vue-next'
+import { Plus, Library, Settings, Moon, Sun, Monitor } from 'lucide-vue-next'
 import ChatList from './ChatList.vue'
 import { prefs } from '@/lib/prefs'
 
@@ -23,8 +23,7 @@ function cycleTheme() {
     <ChatList class="list" />
     <nav class="bottom stack tight">
       <RouterLink to="/library" class="list-item" active-class="active"><Library /> 资源库</RouterLink>
-      <RouterLink to="/data" class="list-item" active-class="active"><Database /> 聊天数据</RouterLink>
-      <RouterLink to="/settings" class="list-item" active-class="active"><Settings /> 设置</RouterLink>
+      <RouterLink to="/settings" class="list-item" active-class="active" :class="{ active: $route.path.startsWith('/data') }"><Settings /> 设置</RouterLink>
     </nav>
   </aside>
 </template>
