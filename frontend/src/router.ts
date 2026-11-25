@@ -17,6 +17,7 @@ export const router = createRouter({
   routes: [
     { path: '/', name: 'landing', component: () => import('./views/LandingView.vue'), meta: { public: true, bare: true } },
     { path: '/login', name: 'login', component: () => import('./views/LoginView.vue'), meta: { public: true, bare: true } },
+    { path: '/register', name: 'register', component: () => import('./views/RegisterView.vue'), meta: { public: true, bare: true } },
     { path: '/hall', name: 'home', component: () => import('./views/HomeView.vue') },
     { path: '/characters/:id', name: 'character', component: () => import('./views/CharacterView.vue'), props: true },
     { path: '/chats/:id', name: 'chat', component: () => import('./views/ChatView.vue'), props: true },
@@ -39,7 +40,7 @@ export function afterSignIn(redirect: unknown): string {
 router.beforeEach(async (to) => {
   await loadAccount()
   if (to.meta.public) {
-    return to.name === 'login' && account.value ? afterSignIn(to.query.redirect) : true
+    return (to.name === 'login' || to.name === 'register') && account.value ? afterSignIn(to.query.redirect) : true
   }
   if (!account.value) return { name: 'login', query: { redirect: to.fullPath } }
   if (to.meta.admin && !isAdmin.value) return { name: 'home' }

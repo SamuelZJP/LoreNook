@@ -6,12 +6,10 @@ import HearthBackdrop from '@/features/home/components/HearthBackdrop.vue'
 import HearthTopBar from '@/features/home/components/HearthTopBar.vue'
 import WordMark from '@/features/home/components/WordMark.vue'
 import { useHomeInfo } from '@/features/home/usePresence'
-import { REGISTRATION_CLOSED, useNote } from '@/features/home/useNote'
 import '@/features/home/hearth.css'
 
 const night = computed(() => resolvedTheme.value === 'dark')
 const { online, icp } = useHomeInfo()
-const { note, show } = useNote()
 const enter = computed(() => (account.value ? { to: '/hall', label: '回到炉边' } : { to: '/login', label: '进入炉边' }))
 
 const features = [
@@ -34,7 +32,7 @@ const features = [
         <p class="sub">在木屋的一角，与你笔下的人物促膝长谈，直到柴尽灯残</p>
         <div class="actions">
           <RouterLink class="hearth-btn primary" :to="enter.to">{{ enter.label }}</RouterLink>
-          <button v-if="!account" class="hearth-btn ghost" type="button" @click="show(REGISTRATION_CLOSED)">注册</button>
+          <RouterLink v-if="!account" class="hearth-btn ghost" to="/register">注册</RouterLink>
         </div>
       </div>
       <div class="bottom">
@@ -74,7 +72,6 @@ const features = [
       <a v-if="icp" href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">{{ icp }}</a>
     </footer>
 
-    <div v-if="note" class="hearth-note" role="status">{{ note }}</div>
   </div>
 </template>
 

@@ -1,0 +1,23 @@
+/* The sign-in and sign-up pages: one narrow form under the word mark. */
+.hearth-form-page { height: 100dvh; overflow-y: auto; }
+.hearth-form-body {
+  position: relative; min-height: 100dvh; box-sizing: border-box; padding: 120px 24px 80px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 56px;
+}
+.hearth-form { width: min(340px, 100%); display: flex; flex-direction: column; gap: 22px; }
+.hearth-form .field { display: flex; flex-direction: column; gap: 8px; }
+.hearth-form .field > span { font-family: var(--h-sans); font-size: 12px; letter-spacing: 0.3em; color: var(--h-muted); }
+.hearth-form .field input {
+  width: 100%; box-sizing: border-box; padding: 10px 2px; border: 0; border-bottom: 1px solid var(--h-line); border-radius: 0;
+  background: transparent; color: var(--h-ink); font-family: var(--h-serif); font-size: 17px; letter-spacing: 0.06em;
+  transition: border-color 0.3s ease;
+}
+.hearth-form .field input:focus { outline: none; border-bottom-color: var(--h-accent); }
+.hearth-form .hint { margin: 0; font-family: var(--h-sans); font-size: 12px; letter-spacing: 0.06em; line-height: 1.6; color: var(--h-muted); }
+.hearth-form .error { min-height: 1.6em; margin: -6px 0 0; font-family: var(--h-sans); font-size: 13px; letter-spacing: 0.06em; color: var(--h-accent); }
+.hearth-form .submit { width: 100%; }
+.hearth-form .aside { margin: 0; text-align: center; font-family: var(--h-sans); font-size: 13px; letter-spacing: 0.14em; color: var(--h-muted); }
+.hearth-form .link {
+  padding: 4px 2px; color: var(--h-ink); text-decoration: underline; text-decoration-color: var(--h-line); text-underline-offset: 4px;
+}
+.hearth-form .link:hover { text-decoration-color: var(--h-ink); }
