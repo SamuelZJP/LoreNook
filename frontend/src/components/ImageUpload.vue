@@ -46,11 +46,11 @@ async function choose(e: Event) {
 </template>
 
 <style scoped>
-.upload { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+.upload { display: flex; flex-direction: column; gap: var(--space-1); flex-shrink: 0; }
 .tile { display: block; width: 100%; padding: 0; overflow: hidden; border: 1px dashed var(--border-strong); border-radius: var(--radius-m); background: var(--bg-sunken); color: var(--text-muted); cursor: pointer; font: inherit; }
 .tile:hover:not(:disabled) { border-color: var(--accent); }
 .tile img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.empty-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 100%; font-size: 12px; }
+.empty-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-1); height: 100%; font-size: var(--text-xs); }
 .empty-tile svg { width: 20px; height: 20px; }
 .clear { width: 100%; }
 </style>

@@ -107,23 +107,23 @@ function go(id: string | null) {
 
 <style scoped>
 .library { display: flex; flex-direction: column; height: 100%; }
-.lib-tabs { padding: 0 12px; background: var(--bg-elev); flex-shrink: 0; }
+.lib-tabs { padding: 0 var(--space-3); background: var(--bg-elev); flex-shrink: 0; }
 .split { flex: 1; min-height: 0; display: flex; }
-.master { width: 320px; flex-shrink: 0; border-right: 1px solid var(--border); overflow-y: auto; padding: 12px 10px; }
-.master-head { margin-bottom: 8px; padding: 0 4px; }
+.master { width: 320px; flex-shrink: 0; border-right: 1px solid var(--border); overflow-y: auto; padding: var(--space-3) var(--space-3); }
+.master-head { margin-bottom: var(--space-2); padding: 0 var(--space-1); }
 .list-item { width: 100%; border: 0; background: none; text-align: left; font: inherit; color: inherit; }
 .name { font-weight: 500; }
-.sub { font-size: 12px; }
+.sub { font-size: var(--text-xs); }
 .key { width: 14px; height: 14px; color: var(--ok); }
 .detail-pane { flex: 1; min-width: 0; overflow-y: auto; }
-.detail-inner { max-width: 900px; margin: 0 auto; padding: 16px 16px 48px; }
-.back { display: none; margin-bottom: 8px; }
+.detail-inner { max-width: 900px; margin: 0 auto; padding: var(--space-4) var(--space-4) var(--space-12); }
+.back { display: none; margin-bottom: var(--space-2); }
 @media (max-width: 899px) {
   .master { width: 100%; border-right: 0; }
   .detail-pane { display: none; }
   .split.detail .master { display: none; }
   .split.detail .detail-pane { display: block; }
   .back { display: inline-flex; }
-  .detail-inner { padding: 12px 10px 48px; }
+  .detail-inner { padding: var(--space-3) var(--space-3) var(--space-12); }
 }
 </style>

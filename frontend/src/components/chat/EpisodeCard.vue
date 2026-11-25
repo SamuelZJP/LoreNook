@@ -66,8 +66,8 @@ async function save() {
 
 <style scoped>
 .episode { border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border)); border-radius: var(--radius-m); background: var(--accent-soft); overflow: hidden; }
-.head { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; text-align: left; }
+.head { display: flex; align-items: center; gap: var(--space-2); width: 100%; padding: var(--space-2) var(--space-3); border: 0; background: none; color: inherit; font: inherit; cursor: pointer; text-align: left; }
 .head svg { width: 16px; height: 16px; color: var(--accent); flex-shrink: 0; }
-.body { display: flex; flex-direction: column; gap: 8px; padding: 0 12px 10px; }
-.text { white-space: pre-wrap; font-size: 13px; line-height: 1.7; }
+.body { display: flex; flex-direction: column; gap: var(--space-2); padding: 0 var(--space-3) var(--space-3); }
+.text { white-space: pre-wrap; font-size: var(--text-sm); line-height: 1.7; }
 </style>

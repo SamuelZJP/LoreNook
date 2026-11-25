@@ -32,15 +32,13 @@
 .reading-prose .q { color: var(--quote); }
 .reading-prose .q-slip {
   display: block;
-  margin: 0.5em 0 0.5em 1.1em;
-  padding: 0.3em 0.95em;
-  border-radius: 10px;
-  background: var(--slip-bg);
-  border: 1px solid var(--slip-border);
-  color: var(--slip-text);
+  margin: 0.6em 0;
+  padding: 0.1em 0 0.1em 1em;
+  border-left: 2px solid var(--quote-rule);
+  color: var(--quote);
   text-align: start;
 }
-.reading-prose .q-slip.q-bracket { background: transparent; border-style: dashed; border-color: var(--slip-dash); }
+.reading-prose .q-slip.q-bracket { border-left-style: dashed; color: var(--page-em); }
 .reading-prose.plain .q-slip { white-space: pre-wrap; }
 
 /* Chain of thought: a folded margin note */
@@ -54,7 +52,7 @@
 
 /* Other content: compact appendix lines */
 .reading-other {
-  font-size: 13px;
+  font-size: var(--text-sm);
   line-height: 1.65;
   color: var(--page-muted);
   font-variant-numeric: tabular-nums;
@@ -63,5 +61,4 @@
 
 @media (max-width: 640px) {
   .reading-prose { text-align: start; }
-  .reading-prose .q-slip { margin-left: 0.4em; }
 }

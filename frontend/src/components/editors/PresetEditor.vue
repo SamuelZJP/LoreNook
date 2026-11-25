@@ -227,8 +227,8 @@ async function runParse() {
 </template>
 
 <style scoped>
-.trials summary { cursor: pointer; margin-bottom: 8px; }
+.trials summary { cursor: pointer; margin-bottom: var(--space-2); }
 .trials summary h3 { display: inline; }
 .model-pick { width: auto; max-width: 100%; }
-.raw { padding: 8px; background: var(--bg-sunken); border-radius: var(--radius-s); font-size: 12px; }
+.raw { padding: var(--space-2); background: var(--bg-sunken); border-radius: var(--radius-s); font-size: var(--text-xs); }
 </style>

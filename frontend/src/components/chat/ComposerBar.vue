@@ -150,14 +150,14 @@ const placeholder = computed(() => {
 
 <style scoped>
 .composer {
-  position: relative; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px;
+  position: relative; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-3);
   background: var(--bg-elev); border: 1px solid var(--border); border-radius: var(--radius-l); box-shadow: var(--shadow);
 }
-.row-main { display: flex; gap: 8px; align-items: flex-end; }
-.row-instruction { display: flex; gap: 8px; align-items: flex-start; }
+.row-main { display: flex; gap: var(--space-2); align-items: flex-end; }
+.row-instruction { display: flex; gap: var(--space-2); align-items: flex-start; }
 .instruction {
   flex: 1; min-width: 0; border: 1px dashed var(--border); border-radius: var(--radius-s); background: transparent; color: var(--text);
-  resize: vertical; font: inherit; font-size: 13px; line-height: 1.5; max-height: 25vh; padding: 6px 8px; outline: none;
+  resize: vertical; font: inherit; font-size: var(--text-sm); line-height: 1.5; max-height: 25vh; padding: var(--space-1-5) var(--space-2); outline: none;
 }
 .instruction:focus { border-color: var(--accent); }
 .instruction:disabled { opacity: 0.6; }
@@ -168,7 +168,7 @@ const placeholder = computed(() => {
 .dot { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
 .area {
   flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text); resize: none; font: inherit;
-  font-size: var(--reading-size); line-height: 1.6; max-height: 50vh; padding: 4px 2px; outline: none;
+  font-size: var(--reading-size); line-height: 1.6; max-height: 50vh; padding: var(--space-1) var(--space-0-5); outline: none;
 }
 .handle {
   position: absolute; top: 0; left: 50%; transform: translateX(-50%);
@@ -176,7 +176,7 @@ const placeholder = computed(() => {
 }
 .handle::after {
   content: ''; position: absolute; top: 4px; left: 16px; right: 16px; height: 4px;
-  border-radius: 2px; background: var(--border);
+  border-radius: var(--radius-xs); background: var(--border);
 }
 .handle:hover::after { background: var(--text-muted); }
 .area:disabled { opacity: 0.6; }

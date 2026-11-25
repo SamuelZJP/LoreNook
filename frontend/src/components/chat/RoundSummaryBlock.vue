@@ -56,7 +56,7 @@ async function save() {
 </template>
 
 <style scoped>
-.summary { display: flex; flex-direction: column; gap: 6px; padding: 8px 12px; border-radius: var(--radius-m); background: var(--bg-sunken); font-size: 13px; }
+.summary { display: flex; flex-direction: column; gap: var(--space-1-5); padding: var(--space-2) var(--space-3); border-radius: var(--radius-m); background: var(--bg-sunken); font-size: var(--text-sm); }
 .head { min-height: 28px; }
 .text { white-space: pre-wrap; color: var(--text-muted); line-height: 1.65; font-family: var(--font-reading); }
 </style>

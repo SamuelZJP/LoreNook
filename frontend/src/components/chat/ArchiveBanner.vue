@@ -62,15 +62,15 @@ const visible = computed(() => phase.value === 'archiving' || phase.value === 'i
 </template>
 
 <style scoped>
-.banner { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: var(--radius-m); background: var(--info-soft); border: 1px solid var(--border); }
+.banner { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-3); border-radius: var(--radius-m); background: var(--info-soft); border: 1px solid var(--border); }
 .banner.failed { background: var(--warn-soft); }
-.steps { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
-.steps li { display: inline-flex; align-items: center; gap: 4px; color: var(--text-faint); }
+.steps { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: 0; padding: 0; list-style: none; font-size: var(--text-sm); }
+.steps li { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--text-faint); }
 .steps li.done { color: var(--ok); }
 .steps li.current { color: var(--warn); font-weight: 600; }
 .steps svg { width: 14px; height: 14px; }
-.saved-error { font-size: 13px; white-space: pre-wrap; word-break: break-word; }
-.note { margin-top: 6px; font-size: 13px; }
+.saved-error { font-size: var(--text-sm); white-space: pre-wrap; word-break: break-word; }
+.note { margin-top: var(--space-1-5); font-size: var(--text-sm); }
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>

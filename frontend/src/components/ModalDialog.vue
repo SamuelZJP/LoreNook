@@ -33,15 +33,15 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 <style scoped>
 .backdrop {
   position: fixed; inset: 0; z-index: 100; background: rgb(0 0 0 / 45%);
-  display: flex; align-items: center; justify-content: center; padding: 16px;
+  display: flex; align-items: center; justify-content: center; padding: var(--space-4);
 }
 .dialog {
   width: 100%; max-height: calc(100dvh - 32px); display: flex; flex-direction: column;
   background: var(--bg-elev); border-radius: var(--radius-l); box-shadow: var(--shadow-pop); border: 1px solid var(--border);
 }
-header { display: flex; align-items: center; gap: 8px; padding: 14px 16px 10px; }
-.body { padding: 4px 16px 16px; overflow-y: auto; }
-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+header { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-4) var(--space-4) var(--space-3); }
+.body { padding: var(--space-1) var(--space-4) var(--space-4); overflow-y: auto; }
+footer { display: flex; justify-content: flex-end; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-top: 1px solid var(--border); flex-wrap: wrap; }
 @media (max-width: 640px) {
   .backdrop { padding: 0; align-items: flex-end; }
   .dialog { max-width: none !important; max-height: 92dvh; border-radius: var(--radius-l) var(--radius-l) 0 0; padding-bottom: env(safe-area-inset-bottom); }

@@ -121,18 +121,18 @@ onBeforeUnmount(() => (open.value = false))
 </template>
 
 <style scoped>
-.picker { display: flex; align-items: center; gap: 8px; padding: 5px 8px; text-align: left; cursor: pointer; min-height: 44px; }
+.picker { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-2); text-align: left; cursor: pointer; min-height: 44px; }
 .text { display: flex; flex-direction: column; min-width: 0; flex: 1; line-height: 1.3; }
-.name { font-size: 14px; }
-.sub { font-size: 12px; color: var(--text-faint); }
+.name { font-size: var(--text-md); }
+.sub { font-size: var(--text-xs); color: var(--text-faint); }
 .placeholder { color: var(--text-faint); }
 .caret { width: 16px; height: 16px; flex-shrink: 0; color: var(--text-muted); }
 
 .picker-list {
-  position: fixed; z-index: 110; margin: 0; padding: 4px; list-style: none; overflow-y: auto;
+  position: fixed; z-index: 110; margin: 0; padding: var(--space-1); list-style: none; overflow-y: auto;
   background: var(--bg-elev); border: 1px solid var(--border); border-radius: var(--radius-m); box-shadow: var(--shadow-pop);
 }
-.picker-list li { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--radius-s); cursor: pointer; }
+.picker-list li { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1-5) var(--space-2); border-radius: var(--radius-s); cursor: pointer; }
 .picker-list li.active { background: var(--bg-hover); }
 .picker-list li.selected { background: var(--bg-active); }
 </style>

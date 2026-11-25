@@ -154,8 +154,8 @@ defineExpose({ snapshot, applyFeatures })
 </template>
 
 <style scoped>
-h3 { margin-top: 4px; }
-.checks { padding: 8px 0; gap: 14px; }
+h3 { margin-top: var(--space-1); }
+.checks { padding: var(--space-2) 0; gap: var(--space-4); }
 summary { cursor: pointer; }
 .warn { color: var(--warn); }
 </style>

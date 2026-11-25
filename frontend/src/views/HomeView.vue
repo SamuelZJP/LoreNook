@@ -53,10 +53,10 @@ const steps = computed(() => [
 .home { display: flex; flex-direction: column; height: 100%; }
 .home .page { flex: 1; }
 .narrow { max-width: 680px; }
-.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.steps li { display: flex; align-items: center; gap: 8px; }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.steps li { display: flex; align-items: center; gap: var(--space-2); }
 .steps svg { width: 18px; height: 18px; }
 .ok { color: var(--ok); }
 .offline { background: var(--danger-soft); }
-.mb { margin-bottom: 8px; }
+.mb { margin-bottom: var(--space-2); }
 </style>

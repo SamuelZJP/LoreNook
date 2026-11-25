@@ -64,5 +64,5 @@ const titles = { character: '编辑本聊天角色', identity: '编辑本聊天�
 .list-item.card { width: 100%; text-align: left; font: inherit; color: inherit; border: 1px solid var(--border); background: var(--bg-elev); }
 .ic { width: 16px; height: 16px; color: var(--text-faint); flex-shrink: 0; }
 .ic.ok { color: var(--ok); }
-.small { font-size: 12px; }
+.small { font-size: var(--text-xs); }
 </style>

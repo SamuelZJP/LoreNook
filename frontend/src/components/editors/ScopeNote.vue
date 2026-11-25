@@ -10,7 +10,7 @@ defineProps<{ chatId: string | null; what: string }>()
 </template>
 
 <style scoped>
-.scope { font-size: 12px; padding: 6px 10px; border-radius: var(--radius-s); }
+.scope { font-size: var(--text-xs); padding: var(--space-1-5) var(--space-3); border-radius: var(--radius-s); }
 .scope.chat { background: var(--accent-soft); }
 .scope.source { background: var(--bg-sunken); color: var(--text-muted); }
 </style>

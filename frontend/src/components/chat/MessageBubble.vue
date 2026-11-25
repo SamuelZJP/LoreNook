@@ -65,37 +65,37 @@ onBeforeUnmount(() => observer?.disconnect())
 </template>
 
 <style scoped>
-.msg { display: flex; gap: 10px; align-items: flex-start; max-width: 100%; }
+.msg { display: flex; gap: var(--space-3); align-items: flex-start; max-width: 100%; }
 .msg.user { flex-direction: row-reverse; }
-.col { display: flex; flex-direction: column; gap: 4px; min-width: 0; max-width: min(760px, 86%); }
+.col { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; max-width: min(760px, 86%); }
 .user .col { align-items: flex-end; }
 .wide .col { width: min(760px, 86%); }
-.meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-faint); flex-wrap: wrap; }
+.meta { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-xs); color: var(--text-faint); flex-wrap: wrap; }
 .user .meta { flex-direction: row-reverse; }
 .name { font-weight: 600; color: var(--text-muted); }
 .bubble {
-  padding: 10px 14px; border-radius: var(--radius-l); background: var(--bubble-ai);
+  padding: var(--space-3) var(--space-4); border-radius: var(--radius-l); background: var(--bubble-ai);
   border: 1px solid var(--border); box-shadow: var(--shadow); min-width: 0; max-width: 100%;
 }
-.ai .bubble { border-top-left-radius: 4px; }
-.bubble.page-surface { padding: 16px 20px 14px; --pad-y: 30px; }
-.user .bubble { background: var(--bubble-user); color: var(--bubble-user-text); border-color: transparent; border-top-right-radius: 4px; }
+.ai .bubble { border-top-left-radius: var(--radius-xs); }
+.bubble.page-surface { padding: var(--space-4) var(--space-5) var(--space-4); --pad-y: calc(var(--space-4) * 2); }
+.user .bubble { background: var(--bubble-user); color: var(--bubble-user-text); border-color: transparent; border-top-right-radius: var(--radius-xs); }
 .pending .bubble { border-style: dashed; border-color: var(--accent); }
 .user.pending .bubble { border: 1px dashed var(--bubble-user-text); }
 /* The body never shrinks below a few lines, so a tall illustration can push the bubble past the cap. */
 .capped .body {
-  max-height: max(calc(var(--reply-cap, 100vh) - var(--fixed-h) - var(--pad-y, 20px)), calc(var(--reading-size, 16px) * 8));
+  max-height: max(calc(var(--reply-cap, 100vh) - var(--fixed-h) - var(--pad-y, calc(var(--space-3) * 2))), calc(var(--reading-size, 16px) * 8));
   overflow-y: auto; scrollbar-width: thin;
-  margin-right: -10px; padding-right: 10px;
+  margin-right: calc(-1 * var(--space-3)); padding-right: var(--space-3);
 }
 .capped .body.more { mask-image: linear-gradient(to bottom, #000 calc(100% - 2.5em), transparent); }
-.actions { display: flex; gap: 4px; flex-wrap: wrap; }
+.actions { display: flex; gap: var(--space-1); flex-wrap: wrap; }
 .user .actions { justify-content: flex-end; }
 @media (max-width: 640px) {
   .av { display: none; }
   .col { max-width: 94%; }
   .wide .col { width: 94%; }
-  .bubble.page-surface { padding: 14px 14px 12px; --pad-y: 26px; }
-  .capped .body { margin-right: -8px; padding-right: 8px; }
+  .bubble.page-surface { padding: var(--space-4) var(--space-4) var(--space-3); --pad-y: calc(var(--space-4) + var(--space-3)); }
+  .capped .body { margin-right: calc(-1 * var(--space-2)); padding-right: var(--space-2); }
 }
 </style>

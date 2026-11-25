@@ -35,6 +35,6 @@ const undescribed = computed(() => {
 </template>
 
 <style scoped>
-.warn { color: var(--warn); display: flex; align-items: center; gap: 4px; }
+.warn { color: var(--warn); display: flex; align-items: center; gap: var(--space-1); }
 .warn svg { width: 14px; height: 14px; flex-shrink: 0; }
 </style>

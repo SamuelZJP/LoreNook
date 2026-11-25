@@ -37,12 +37,12 @@ const raw = computed(() => {
 
 <style scoped>
 .error-box {
-  display: flex; gap: 10px; padding: 10px 12px; border-radius: var(--radius-m);
+  display: flex; gap: var(--space-3); padding: var(--space-3) var(--space-3); border-radius: var(--radius-m);
   background: var(--danger-soft); color: var(--text); border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
 }
-.icon { width: 18px; height: 18px; color: var(--danger); flex-shrink: 0; margin-top: 2px; }
-.title { font-weight: 600; display: flex; gap: 8px; align-items: baseline; }
-.message { font-family: inherit; font-size: 13px; margin-top: 2px; }
-.raw { margin-top: 6px; padding: 8px; background: var(--bg-elev); border-radius: var(--radius-s); max-height: 240px; overflow: auto; }
-.link { border: 0; background: none; color: var(--accent); padding: 0; margin-top: 4px; cursor: pointer; font: inherit; font-size: 12px; }
+.icon { width: 18px; height: 18px; color: var(--danger); flex-shrink: 0; margin-top: var(--space-0-5); }
+.title { font-weight: 600; display: flex; gap: var(--space-2); align-items: baseline; }
+.message { font-family: inherit; font-size: var(--text-sm); margin-top: var(--space-0-5); }
+.raw { margin-top: var(--space-1-5); padding: var(--space-2); background: var(--bg-elev); border-radius: var(--radius-s); max-height: 240px; overflow: auto; }
+.link { border: 0; background: none; color: var(--accent); padding: 0; margin-top: var(--space-1); cursor: pointer; font: inherit; font-size: var(--text-xs); }
 </style>

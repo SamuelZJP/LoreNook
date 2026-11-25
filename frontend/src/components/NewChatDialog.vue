@@ -161,10 +161,10 @@ const saveTemplate = useMutation({
 </template>
 
 <style scoped>
-h3 { margin-top: 4px; }
-.notice { padding: 10px 12px; border-radius: var(--radius-m); background: var(--warn-soft); }
+h3 { margin-top: var(--space-1); }
+.notice { padding: var(--space-3) var(--space-3); border-radius: var(--radius-m); background: var(--warn-soft); }
 summary { cursor: pointer; }
-.params-body { padding-top: 10px; }
-.save-as { border-top: 1px solid var(--border); padding-top: 12px; }
-.save-as .row { gap: 10px; align-items: center; }
+.params-body { padding-top: var(--space-3); }
+.save-as { border-top: 1px solid var(--border); padding-top: var(--space-3); }
+.save-as .row { gap: var(--space-3); align-items: center; }
 </style>

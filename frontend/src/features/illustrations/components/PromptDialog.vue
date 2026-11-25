@@ -20,5 +20,5 @@ const emit = defineEmits<{ close: [] }>()
 </template>
 
 <style scoped>
-.value { padding: 8px 10px; background: var(--bg-sunken); border-radius: var(--radius-s); font-size: 13px; line-height: 1.6; user-select: text; }
+.value { padding: var(--space-2) var(--space-3); background: var(--bg-sunken); border-radius: var(--radius-s); font-size: var(--text-sm); line-height: 1.6; user-select: text; }
 </style>

@@ -12,7 +12,7 @@ import { sidebarOpen } from '@/composables/layout'
 
 <style scoped>
 .topbar {
-  display: flex; align-items: center; gap: 8px; height: var(--topbar-h); padding: 0 12px;
+  display: flex; align-items: center; gap: var(--space-2); height: var(--topbar-h); padding: 0 var(--space-3);
   padding-top: env(safe-area-inset-top); border-bottom: 1px solid var(--border); background: var(--bg-elev); flex-shrink: 0;
 }
 .menu { display: none; }

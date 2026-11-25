@@ -1,4 +1,4 @@
-import { reactive, watch } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { EN_FONTS, ZH_FONTS, readingFonts, type EnFont, type ZhFont } from './fonts'
 
 /**
@@ -134,10 +134,14 @@ export function sectionRule(name: string): SectionRule {
   return prefs.sections[name] ?? prefs.unknownSection
 }
 
+const systemDark = matchMedia('(prefers-color-scheme: dark)')
+/** The theme in effect, always `light` or `dark`; also set as `data-theme` on the root. */
+export const resolvedTheme = ref<'light' | 'dark'>('light')
+
 function apply() {
   const root = document.documentElement
-  if (prefs.theme === 'system') delete root.dataset.theme
-  else root.dataset.theme = prefs.theme
+  resolvedTheme.value = prefs.theme === 'system' ? (systemDark.matches ? 'dark' : 'light') : prefs.theme
+  root.dataset.theme = resolvedTheme.value
   root.style.setProperty('--reading-size', `${prefs.fontSize}px`)
   const fonts = readingFonts(prefs.zhFont, prefs.enFont)
   root.style.setProperty('--font-reading', fonts.reading)
@@ -157,3 +161,4 @@ watch(
   { deep: true },
 )
 apply()
+systemDark.addEventListener('change', apply)

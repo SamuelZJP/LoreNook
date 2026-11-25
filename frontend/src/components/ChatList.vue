@@ -42,9 +42,9 @@ const chats = computed(() => {
 </template>
 
 <style scoped>
-.search { position: relative; display: block; margin-bottom: 8px; }
+.search { position: relative; display: block; margin-bottom: var(--space-2); }
 .search svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--text-faint); }
-.search .input { padding-left: 32px; background: var(--bg-sunken); border-color: transparent; }
+.search .input { padding-left: var(--space-8); background: var(--bg-sunken); border-color: transparent; }
 .title { font-weight: 500; }
-.small { font-size: 12px; }
+.small { font-size: var(--text-xs); }
 </style>

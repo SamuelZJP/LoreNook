@@ -18,5 +18,5 @@ import { illustrationPrefs } from '../lib'
 </template>
 
 <style scoped>
-.seg { gap: 14px; }
+.seg { gap: var(--space-4); }
 </style>

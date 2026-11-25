@@ -89,34 +89,34 @@ function charCount(body: string): number {
 </template>
 
 <style scoped>
-.output { display: flex; flex-direction: column; gap: 12px; }
-summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; user-select: none; min-width: 0; }
+.output { display: flex; flex-direction: column; gap: var(--space-3); }
+summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: var(--space-2); user-select: none; min-width: 0; }
 summary::-webkit-details-marker { display: none; }
 details[open] > summary .chev { transform: rotate(90deg); }
 .chev { width: 14px; height: 14px; flex-shrink: 0; transition: transform 0.15s; }
 .chip {
-  font-family: var(--font-mono); font-size: 12px; line-height: 1.6; padding: 0 6px; flex-shrink: 0;
-  border: 1px solid var(--page-border); border-radius: 6px; color: var(--page-muted); align-self: flex-start;
+  font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.6; padding: 0 var(--space-1-5); flex-shrink: 0;
+  border: 1px solid var(--page-border); border-radius: var(--radius-s); color: var(--page-muted); align-self: flex-start;
 }
-.count { font-size: 12px; color: var(--page-muted); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.count { font-size: var(--text-xs); color: var(--page-muted); flex-shrink: 0; font-variant-numeric: tabular-nums; }
 
-.thought { border: 1px dashed var(--page-border); border-radius: 10px; padding: 6px 12px; color: var(--page-muted); font-size: 13px; }
+.thought { border: 1px dashed var(--page-border); border-radius: var(--radius-m); padding: var(--space-1-5) var(--space-3); color: var(--page-muted); font-size: var(--text-sm); }
 .thought .peek {
   flex: 1; min-width: 0; font-family: var(--font-reading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .thought[open] .peek { visibility: hidden; }
-.thought-body { margin: 8px 2px 4px; }
+.thought-body { margin: var(--space-2) var(--space-0-5) var(--space-1); }
 
-.folded { color: var(--page-muted); font-size: 13px; }
-.fold-body { margin-top: 8px; }
+.folded { color: var(--page-muted); font-size: var(--text-sm); }
+.fold-body { margin-top: var(--space-2); }
 .folded.prose > .fold-body { color: var(--page-text); }
-.section.other, .folded.other { border-top: 1px solid var(--page-rule); padding-top: 8px; }
-.section.other { display: flex; gap: 10px; align-items: flex-start; }
+.section.other, .folded.other { border-top: 1px solid var(--page-rule); padding-top: var(--space-2); }
+.section.other { display: flex; gap: var(--space-3); align-items: flex-start; }
 .section.other > :not(.chip) { flex: 1; min-width: 0; }
 
 .unclosed { border-color: var(--warn); }
-.section.unclosed, .folded.unclosed { border-left: 2px solid var(--warn); padding-left: 10px; }
-.warn-note { font-size: 12px; color: var(--warn); margin-top: 4px; }
-.note { font-size: 13px; }
-.raw { font-size: 13px; }
+.section.unclosed, .folded.unclosed { border-left: 2px solid var(--warn); padding-left: var(--space-3); }
+.warn-note { font-size: var(--text-xs); color: var(--warn); margin-top: var(--space-1); }
+.note { font-size: var(--text-sm); }
+.raw { font-size: var(--text-sm); }
 </style>

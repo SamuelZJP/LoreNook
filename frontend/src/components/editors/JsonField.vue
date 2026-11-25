@@ -31,5 +31,5 @@ export function jsonProblem(text: string, requireObject = true): string | null {
 </template>
 
 <style scoped>
-.bad { font-size: 12px; color: var(--danger); }
+.bad { font-size: var(--text-xs); color: var(--danger); }
 </style>

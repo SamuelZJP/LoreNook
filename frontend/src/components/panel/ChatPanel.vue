@@ -44,8 +44,8 @@ const tabs: { id: Tab; label: string }[] = [
 
 <style scoped>
 .chat-panel { display: flex; flex-direction: column; height: 100%; background: var(--bg-elev); }
-.head { display: flex; align-items: center; gap: 4px; padding: env(safe-area-inset-top) 8px 0 4px; border-bottom: 1px solid var(--border); min-height: var(--topbar-h); }
+.head { display: flex; align-items: center; gap: var(--space-1); padding: env(safe-area-inset-top) var(--space-2) 0 var(--space-1); border-bottom: 1px solid var(--border); min-height: var(--topbar-h); }
 .head .tabs { border-bottom: 0; }
-.head .tabs button { padding: 10px 9px; }
-.content { flex: 1; overflow-y: auto; padding: 14px 14px calc(24px + env(safe-area-inset-bottom)); }
+.head .tabs button { padding: var(--space-3) 9px; }
+.content { flex: 1; overflow-y: auto; padding: var(--space-4) var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom)); }
 </style>

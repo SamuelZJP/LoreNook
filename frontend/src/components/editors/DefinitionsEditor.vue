@@ -209,24 +209,24 @@ async function preview() {
 </template>
 
 <style scoped>
-.def { padding: 4px 6px; display: flex; flex-direction: column; gap: 8px; }
-.def.open { padding-bottom: 10px; }
+.def { padding: var(--space-1) var(--space-1-5); display: flex; flex-direction: column; gap: var(--space-2); }
+.def.open { padding-bottom: var(--space-3); }
 .def.disabled .preview { opacity: 0.6; }
 .def.err { border-color: var(--danger); }
-.head { display: flex; align-items: center; gap: 2px; }
+.head { display: flex; align-items: center; gap: var(--space-0-5); }
 .toggle {
-  display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; height: 32px; padding: 0 4px;
-  border: 0; border-radius: var(--radius-s); background: none; color: inherit; font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+  display: flex; align-items: center; gap: var(--space-1-5); flex: 1; min-width: 0; height: 32px; padding: 0 var(--space-1);
+  border: 0; border-radius: var(--radius-s); background: none; color: inherit; font: inherit; font-size: var(--text-sm); text-align: left; cursor: pointer;
 }
 .toggle:hover { background: var(--bg-hover); }
 .toggle .badge { flex: none; }
 .chevron { width: 14px; height: 14px; flex: none; color: var(--text-muted); transition: transform 0.15s; }
 .open .chevron { transform: rotate(90deg); }
 .preview { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); }
-.body { display: flex; flex-direction: column; gap: 8px; padding: 0 4px; }
-.opts { gap: 12px; }
-.tpl-error { padding: 8px 12px; border-radius: var(--radius-m); background: var(--danger-soft); font-size: 13px; }
+.body { display: flex; flex-direction: column; gap: var(--space-2); padding: 0 var(--space-1); }
+.opts { gap: var(--space-3); }
+.tpl-error { padding: var(--space-2) var(--space-3); border-radius: var(--radius-m); background: var(--danger-soft); font-size: var(--text-sm); }
 .ok { color: var(--ok); }
-.rendered { padding: 8px; background: var(--ok-soft); border-radius: var(--radius-s); }
-.rendered pre { font-size: 12px; max-height: 200px; overflow: auto; }
+.rendered { padding: var(--space-2); background: var(--ok-soft); border-radius: var(--radius-s); }
+.rendered pre { font-size: var(--text-xs); max-height: 200px; overflow: auto; }
 </style>

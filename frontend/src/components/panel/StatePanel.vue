@@ -135,7 +135,7 @@ async function save() {
 </template>
 
 <style scoped>
-.chips { gap: 6px; }
-.problems { margin: 0; padding-left: 18px; color: var(--warn); font-size: 12px; }
-.bad { font-size: 12px; color: var(--danger); }
+.chips { gap: var(--space-1-5); }
+.problems { margin: 0; padding-left: var(--space-5); color: var(--warn); font-size: var(--text-xs); }
+.bad { font-size: var(--text-xs); color: var(--danger); }
 </style>

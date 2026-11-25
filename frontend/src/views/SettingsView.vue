@@ -215,21 +215,21 @@ const sample = `<think>她还不确定该不该提起那封信，也许先试探
 .settings { display: flex; flex-direction: column; height: 100%; }
 .settings .page { flex: 1; }
 .narrow { max-width: 720px; }
-.seg { gap: 16px; }
-.tag-table { display: flex; flex-direction: column; gap: 6px; }
-.tag-row { display: flex; align-items: center; gap: 8px; }
+.seg { gap: var(--space-4); }
+.tag-table { display: flex; flex-direction: column; gap: var(--space-1-5); }
+.tag-row { display: flex; align-items: center; gap: var(--space-2); }
 .mode { width: 96px; flex-shrink: 0; }
 .cat { width: 110px; flex-shrink: 0; }
-.head { font-size: 12px; }
+.head { font-size: var(--text-xs); }
 .add-row .input { min-width: 180px; }
 .add-row .cat { width: auto; }
 .warn-text { color: var(--warn); }
 .btn-spacer { width: 28px; flex-shrink: 0; }
 input[type='range'] { accent-color: var(--accent); }
-.font-row { gap: 12px; align-items: flex-start; }
+.font-row { gap: var(--space-3); align-items: flex-start; }
 .font-row .field { min-width: 160px; }
 .font-preview .reading-prose { margin: 0; }
-.summary-sample { margin: 10px 0 0; font-family: var(--font-reading); font-size: 13px; line-height: 1.65; color: var(--page-muted); }
-.limit-row { gap: 8px; }
+.summary-sample { margin: var(--space-3) 0 0; font-family: var(--font-reading); font-size: var(--text-sm); line-height: 1.65; color: var(--page-muted); }
+.limit-row { gap: var(--space-2); }
 .limit { width: 96px; }
 </style>

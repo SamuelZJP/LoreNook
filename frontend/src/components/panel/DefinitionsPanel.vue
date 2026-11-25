@@ -60,13 +60,13 @@ const firstLine = (content: string) => content.trim().split('\n', 1)[0] || 'ï¼ˆç
 </template>
 
 <style scoped>
-.items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
 .items li { border-radius: var(--radius-s); background: var(--bg-sunken); border-left: 3px solid var(--border-strong); }
 .items li.character { border-left-color: var(--accent); }
 .items li.user { border-left-color: var(--ok); }
 .head {
-  display: flex; align-items: center; gap: 6px; width: 100%; height: 34px; padding: 0 8px;
-  border: 0; background: none; color: inherit; font: inherit; font-size: 12px; text-align: left; cursor: pointer;
+  display: flex; align-items: center; gap: var(--space-1-5); width: 100%; height: 34px; padding: 0 var(--space-2);
+  border: 0; background: none; color: inherit; font: inherit; font-size: var(--text-xs); text-align: left; cursor: pointer;
 }
 .head:hover { background: var(--bg-hover); }
 .chevron { width: 14px; height: 14px; flex: none; color: var(--text-muted); transition: transform 0.15s; }
@@ -74,5 +74,5 @@ const firstLine = (content: string) => content.trim().split('\n', 1)[0] || 'ï¼ˆç
 .kind { flex: none; font-weight: 600; }
 .preview { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); }
 .open .preview { visibility: hidden; }
-.body { margin: 0; padding: 0 10px 10px 28px; font-size: 12px; white-space: pre-wrap; word-break: break-word; }
+.body { margin: 0; padding: 0 var(--space-3) var(--space-3) 28px; font-size: var(--text-xs); white-space: pre-wrap; word-break: break-word; }
 </style>

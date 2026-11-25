@@ -115,7 +115,7 @@ async function save() {
 </template>
 
 <style scoped>
-.member { display: flex; gap: 12px; align-items: flex-start; }
+.member { display: flex; gap: var(--space-3); align-items: flex-start; }
 .bad { color: var(--danger); }
 @media (max-width: 640px) { .member { flex-direction: column; } .member > .grow { width: 100%; } }
 </style>

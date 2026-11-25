@@ -38,5 +38,5 @@ const data = computed(() => state.value && {
 </template>
 
 <style scoped>
-.status-bar { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--page-border); }
+.status-bar { margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--page-border); }
 </style>

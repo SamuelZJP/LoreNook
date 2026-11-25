@@ -1,5 +1,5 @@
-import { onScopeDispose, ref, watch } from 'vue'
-import { prefs } from '@/lib/prefs'
+import { ref, watch } from 'vue'
+import { prefs, resolvedTheme } from '@/lib/prefs'
 
 /** What the status bar code receives through `lorenook.onData`. */
 export interface StatusBarData {
@@ -26,7 +26,7 @@ const THEME_VARS = [
 function readTheme(): Theme {
   const root = document.documentElement
   const style = getComputedStyle(root)
-  const dark = root.dataset.theme === 'dark' || (!root.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches)
+  const dark = root.dataset.theme === 'dark'
   return { dark, vars: Object.fromEntries(THEME_VARS.map((name) => [name, style.getPropertyValue(name).trim()])) }
 }
 
@@ -35,10 +35,7 @@ export function useTheme() {
   const theme = ref(readTheme())
   const refresh = () => { theme.value = readTheme() }
   // `prefs` is applied to the root by its own watcher; read after it.
-  watch(() => [prefs.theme, prefs.fontSize, prefs.zhFont, prefs.enFont], refresh, { flush: 'post' })
-  const media = matchMedia('(prefers-color-scheme: dark)')
-  media.addEventListener('change', refresh)
-  onScopeDispose(() => media.removeEventListener('change', refresh))
+  watch(() => [resolvedTheme.value, prefs.fontSize, prefs.zhFont, prefs.enFont], refresh, { flush: 'post' })
   return theme
 }
 

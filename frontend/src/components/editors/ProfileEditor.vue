@@ -283,8 +283,8 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
 </template>
 
 <style scoped>
-.dot { display: inline-block; width: 6px; height: 6px; margin-left: 5px; border-radius: 50%; background: var(--warn); vertical-align: middle; }
+.dot { display: inline-block; width: 6px; height: 6px; margin-left: var(--space-1); border-radius: 50%; background: var(--warn); vertical-align: middle; }
 .bad { color: var(--danger); }
 .avatar-row { align-items: flex-start; }
-.actions { position: sticky; bottom: 0; background: var(--bg-elev); padding: 8px 0; z-index: 1; }
+.actions { position: sticky; bottom: 0; background: var(--bg-elev); padding: var(--space-2) 0; z-index: 1; }
 </style>

@@ -106,5 +106,5 @@ const previewData = computed(() => sample.value && {
 </template>
 
 <style scoped>
-.preview { padding: 12px 16px; border: 1px solid var(--page-border); border-radius: var(--radius-l); }
+.preview { padding: var(--space-3) var(--space-4); border: 1px solid var(--page-border); border-radius: var(--radius-l); }
 </style>

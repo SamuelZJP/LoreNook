@@ -100,16 +100,16 @@ const steps = computed(() => {
 </template>
 
 <style scoped>
-.plate { margin: 2px 0 12px; }
-.frame { position: relative; padding: 5px; border: 1px solid var(--page-border); border-radius: 4px; background: var(--page-bg); box-shadow: 0 1px 3px rgb(60 40 20 / 10%); }
+.plate { margin: var(--space-0-5) 0 var(--space-3); }
+.frame { position: relative; padding: var(--space-1); border: 1px solid var(--page-border); border-radius: var(--radius-xs); background: var(--page-bg); box-shadow: 0 1px 3px rgb(60 40 20 / 10%); }
 /* The width follows the height limit, so a portrait image keeps its ratio instead of being cropped to the column. */
-.image { --plate-max: min(62vh, 560px); position: relative; overflow: hidden; border-radius: 2px; background: var(--page-rule); max-height: var(--plate-max); width: min(100%, calc(var(--plate-max) * var(--plate-ratio))); margin-inline: auto; }
+.image { --plate-max: min(62vh, 560px); position: relative; overflow: hidden; border-radius: var(--radius-xs); background: var(--page-rule); max-height: var(--plate-max); width: min(100%, calc(var(--plate-max) * var(--plate-ratio))); margin-inline: auto; }
 .open { display: block; width: 100%; height: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; }
 img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 35%; opacity: 0; transition: opacity 0.6s ease; }
 img.loaded { opacity: 1; }
 .vignette { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 80px rgb(43 30 15 / 32%), inset 0 0 0 1px rgb(43 38 33 / 16%); }
 
-.actions { position: absolute; top: 14px; right: 14px; display: flex; gap: 6px; opacity: 0; transition: opacity 0.15s; }
+.actions { position: absolute; top: 14px; right: 14px; display: flex; gap: var(--space-1-5); opacity: 0; transition: opacity 0.15s; }
 .frame:hover .actions, .frame:focus-within .actions { opacity: 1; }
 .actions .toggle { display: none; }
 @media (hover: none) {
@@ -126,18 +126,18 @@ img.loaded { opacity: 1; }
 .actions svg { width: 16px; height: 16px; }
 
 .working {
-  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-3);
   background-color: var(--page-rule);
   background-image: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--page-bg) 75%, transparent) 50%, transparent 70%);
   background-size: 60% 100%; background-repeat: no-repeat; animation: shimmer 2.4s ease-in-out infinite;
   box-shadow: inset 0 0 60px rgb(133 122 106 / 18%); color: var(--page-muted);
 }
 .working svg { width: 26px; height: 26px; }
-.working-title { font-family: var(--font-reading); font-size: 15px; letter-spacing: 0.2em; }
-.steps { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; font-size: 12px; opacity: 0.8; padding: 0 12px; }
+.working-title { font-family: var(--font-reading); font-size: var(--text-lg); letter-spacing: 0.2em; }
+.steps { display: flex; gap: var(--space-4); flex-wrap: wrap; justify-content: center; font-size: var(--text-xs); opacity: 0.8; padding: 0 var(--space-3); }
 .steps .active { color: var(--page-em); font-weight: 600; opacity: 1; }
 .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--page-muted), transparent); background-size: 40% 100%; background-repeat: no-repeat; animation: shimmer 1.8s linear infinite; opacity: 0.5; }
-.detail { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--page-em); padding: 0 12px; text-align: center; }
+.detail { font-size: var(--text-xs); font-variant-numeric: tabular-nums; color: var(--page-em); padding: 0 var(--space-3); text-align: center; }
 .meter { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: color-mix(in srgb, var(--page-muted) 20%, transparent); }
 .meter span { display: block; height: 100%; background: var(--page-em); transition: width 0.3s ease; }
 .pulse { animation: pulse 1.8s ease-in-out infinite; }
@@ -148,8 +148,8 @@ img.loaded { opacity: 1; }
 .rule { flex: 1; min-width: 16px; height: 0; border-top: 1px dashed var(--page-border); }
 
 .failed {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; padding: 6px 8px 6px 10px;
-  border: 1px solid var(--page-border); border-radius: 8px; background: var(--page-rule); font-size: 13px; color: var(--page-em);
+  display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin: 0 0 var(--space-4); padding: var(--space-1-5) var(--space-2) var(--space-1-5) var(--space-3);
+  border: 1px solid var(--page-border); border-radius: var(--radius-s); background: var(--page-rule); font-size: var(--text-sm); color: var(--page-em);
 }
 .failed .grow { min-width: 0; overflow-wrap: anywhere; }
 .muted-ink { color: var(--page-muted); }
@@ -157,16 +157,16 @@ img.loaded { opacity: 1; }
 .btn.paper { background: var(--page-bg); border-color: var(--page-border); color: var(--page-text); }
 .btn.paper-ghost { color: var(--page-muted); }
 .hidden-strip {
-  display: flex; align-items: center; gap: 12px; width: 100%; margin: 0 0 10px; padding: 6px 0; border: 0; background: none;
-  font-family: var(--font-reading); font-size: 12.5px; letter-spacing: 0.12em; color: var(--page-muted); cursor: pointer;
+  display: flex; align-items: center; gap: var(--space-3); width: 100%; margin: 0 0 var(--space-3); padding: var(--space-1-5) 0; border: 0; background: none;
+  font-family: var(--font-reading); font-size: var(--text-xs); letter-spacing: 0.12em; color: var(--page-muted); cursor: pointer;
 }
 .hidden-strip svg { width: 14px; height: 14px; }
 .hidden-strip:hover { color: var(--page-em); }
 
 @media (max-width: 640px) {
   /* Full-bleed inside the page bubble on phones. */
-  .plate { margin: -14px -14px 12px; }
+  .plate { margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) var(--space-3); }
   .frame { padding: 0; border: 0; border-radius: 0; box-shadow: none; }
-  .image { --plate-max: 70vh; border-radius: 4px 16px 0 0; }
+  .image { --plate-max: 70vh; border-radius: var(--radius-xs) var(--radius-l) 0 0; }
 }
 </style>

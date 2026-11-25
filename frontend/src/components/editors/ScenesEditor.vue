@@ -105,17 +105,17 @@ export function newScene(name = '默认'): SceneDraft {
 </template>
 
 <style scoped>
-.scene { padding: 4px 6px; display: flex; flex-direction: column; gap: 8px; }
-.scene.open { padding-bottom: 10px; }
-.head { display: flex; align-items: center; gap: 2px; }
+.scene { padding: var(--space-1) var(--space-1-5); display: flex; flex-direction: column; gap: var(--space-2); }
+.scene.open { padding-bottom: var(--space-3); }
+.head { display: flex; align-items: center; gap: var(--space-0-5); }
 .toggle {
-  display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; height: 32px; padding: 0 4px;
-  border: 0; border-radius: var(--radius-s); background: none; color: inherit; font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+  display: flex; align-items: center; gap: var(--space-1-5); flex: 1; min-width: 0; height: 32px; padding: 0 var(--space-1);
+  border: 0; border-radius: var(--radius-s); background: none; color: inherit; font: inherit; font-size: var(--text-sm); text-align: left; cursor: pointer;
 }
 .toggle:hover { background: var(--bg-hover); }
 .toggle .badge, .name { flex: none; }
 .chevron { width: 14px; height: 14px; flex: none; color: var(--text-muted); transition: transform 0.15s; }
 .open .chevron { transform: rotate(90deg); }
 .preview { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); }
-.body { display: flex; flex-direction: column; gap: 8px; padding: 0 4px; }
+.body { display: flex; flex-direction: column; gap: var(--space-2); padding: 0 var(--space-1); }
 </style>

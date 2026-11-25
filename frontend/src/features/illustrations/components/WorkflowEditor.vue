@@ -138,7 +138,7 @@ async function remove() {
 </template>
 
 <style scoped>
-.unknown { margin-left: 6px; }
-.bad { font-size: 12px; color: var(--danger); }
-.warn-note { font-size: 12px; color: var(--warn); }
+.unknown { margin-left: var(--space-1-5); }
+.bad { font-size: var(--text-xs); color: var(--danger); }
+.warn-note { font-size: var(--text-xs); color: var(--warn); }
 </style>

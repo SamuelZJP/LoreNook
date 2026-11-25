@@ -226,10 +226,10 @@ async function test() {
 </template>
 
 <style scoped>
-.key-modes { gap: 14px; margin-bottom: 4px; }
+.key-modes { gap: var(--space-4); margin-bottom: var(--space-1); }
 .key-modes svg { width: 12px; height: 12px; }
 .warn { color: var(--warn); }
 summary { cursor: pointer; }
 summary h3 { display: inline; }
-.raw { padding: 8px; background: var(--bg-sunken); border-radius: var(--radius-s); font-size: 12px; max-height: 360px; overflow: auto; }
+.raw { padding: var(--space-2); background: var(--bg-sunken); border-radius: var(--radius-s); font-size: var(--text-xs); max-height: 360px; overflow: auto; }
 </style>

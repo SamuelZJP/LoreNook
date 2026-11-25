@@ -32,13 +32,13 @@ function cycleTheme() {
 
 <style scoped>
 .app-sidebar {
-  display: flex; flex-direction: column; gap: 10px; height: 100%;
-  padding: 12px 10px calc(10px + env(safe-area-inset-bottom)); background: var(--bg-elev); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: var(--space-3); height: 100%;
+  padding: var(--space-3) var(--space-3) calc(var(--space-3) + env(safe-area-inset-bottom)); background: var(--bg-elev); border-right: 1px solid var(--border);
 }
-.brand { padding: 2px 4px; font-size: 16px; }
-.logo { width: 28px; height: 28px; border-radius: 8px; background: var(--accent); color: var(--accent-text); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+.brand { padding: var(--space-0-5) var(--space-1); font-size: var(--text-lg); }
+.logo { width: 28px; height: 28px; border-radius: var(--radius-s); background: var(--accent); color: var(--accent-text); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
 .new { width: 100%; }
 .list { flex: 1; overflow-y: auto; min-height: 0; }
-.bottom { border-top: 1px solid var(--border); padding-top: 8px; }
+.bottom { border-top: 1px solid var(--border); padding-top: var(--space-2); }
 .bottom svg { width: 18px; height: 18px; color: var(--text-muted); }
 </style>
