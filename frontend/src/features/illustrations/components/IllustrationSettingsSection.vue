@@ -64,12 +64,12 @@ async function save() {
     </div>
     <template v-if="form.mode !== 'off'">
       <div class="field">
-        <label>图像工作流</label>
+        <label>绘图工作流</label>
         <select v-model="form.image_workflow_id" class="select">
           <option value="">（未选择）</option>
           <option v-for="w in workflows.data.value" :key="w.id" :value="w.id">{{ w.name }} · {{ w.width }}×{{ w.height }}</option>
         </select>
-        <span v-if="!workflows.data.value?.length" class="hint">本聊天还没有图像工作流，可以在“资源”标签中从资源库导入。</span>
+        <span v-if="!workflows.data.value?.length" class="hint">本聊天还没有绘图工作流，可以在“资源”标签中从资源库导入。</span>
       </div>
       <div class="field">
         <label>主要人物</label>

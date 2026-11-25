@@ -40,7 +40,7 @@ watch(() => [props.id, props.chatId], async () => {
   if (!props.id) return reset(null)
   try {
     const w = (await illustrationApi.workflows(scope.value)).find((x) => x.id === props.id)
-    if (!w) throw new Error('图像工作流不存在或不属于当前范围')
+    if (!w) throw new Error('绘图工作流不存在或不属于当前范围')
     reset(w)
   } catch (e) {
     loadError.value = e
@@ -73,7 +73,7 @@ async function save() {
     reset(saved)
     qc.invalidateQueries({ queryKey: ['workflows', props.chatId] })
     if (props.chatId) qc.invalidateQueries({ queryKey: ['chat', props.chatId] })
-    toast('图像工作流已保存')
+    toast('绘图工作流已保存')
     emit('saved', saved.id)
   } catch (e) {
     saveError.value = e
@@ -83,7 +83,7 @@ async function save() {
 }
 
 async function remove() {
-  if (!original.value || !confirm('删除这个图像工作流？已生成的插图会保留。')) return
+  if (!original.value || !confirm('删除这个绘图工作流？已生成的插图会保留。')) return
   try {
     await illustrationApi.deleteWorkflow(scope.value, original.value.id)
     qc.invalidateQueries({ queryKey: ['workflows', props.chatId] })
@@ -98,7 +98,7 @@ async function remove() {
 
 <template>
   <div class="stack">
-    <ScopeNote :chat-id="chatId" what="图像工作流" />
+    <ScopeNote :chat-id="chatId" what="绘图工作流" />
     <ErrorBox v-if="loadError" :error="loadError" title="读取失败" />
     <template v-else>
       <div class="grid-2">

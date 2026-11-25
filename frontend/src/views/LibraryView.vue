@@ -2,10 +2,9 @@
 import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useRoute, useRouter } from 'vue-router'
-import { Plus, ArrowLeft, KeyRound } from 'lucide-vue-next'
+import { ArrowLeft, Eye } from 'lucide-vue-next'
 import { api } from '@/api/endpoints'
 import TopBar from '@/components/TopBar.vue'
-import AvatarBadge from '@/components/AvatarBadge.vue'
 import ErrorBox from '@/components/ErrorBox.vue'
 import ProfileEditor from '@/components/editors/ProfileEditor.vue'
 import PresetEditor from '@/components/editors/PresetEditor.vue'
@@ -13,22 +12,17 @@ import ModelEditor from '@/components/editors/ModelEditor.vue'
 import ChatTemplateEditor from '@/components/editors/ChatTemplateEditor.vue'
 import WorkflowEditor from '@/features/illustrations/components/WorkflowEditor.vue'
 import { illustrationApi } from '@/features/illustrations/api'
+import LibraryHub from '@/components/library/LibraryHub.vue'
+import LibraryCards, { type CardItem } from '@/components/library/LibraryCards.vue'
+import { kindInfo, type LibraryKind } from '@/components/library/kinds'
 
-type Tab = 'characters' | 'identities' | 'presets' | 'models' | 'workflows' | 'templates'
+/** Three levels: the hub, one kind's cards, one record's editor. */
 const route = useRoute()
 const router = useRouter()
-const tab = computed<Tab>(() => (route.params.tab as Tab) || 'characters')
+const kind = computed(() => (route.params.tab as LibraryKind) || null)
 const selected = computed(() => (route.params.id as string) || null)
 const editId = computed(() => (selected.value === 'new' ? null : selected.value))
-
-const tabs: { id: Tab; label: string; noun: string }[] = [
-  { id: 'characters', label: '角色', noun: '角色' },
-  { id: 'identities', label: '用户身份', noun: '身份' },
-  { id: 'presets', label: '写作预设', noun: '预设' },
-  { id: 'models', label: '模型配置', noun: '模型' },
-  { id: 'workflows', label: '图像工作流', noun: '工作流' },
-  { id: 'templates', label: '聊天配置', noun: '配置' },
-]
+const info = computed(() => (kind.value ? kindInfo(kind.value) : null))
 
 const characters = useQuery({ queryKey: ['characters'], queryFn: api.characters })
 const identities = useQuery({ queryKey: ['identities'], queryFn: api.identities })
@@ -36,94 +30,99 @@ const presets = useQuery({ queryKey: ['presets', null], queryFn: () => api.prese
 const models = useQuery({ queryKey: ['models', null], queryFn: () => api.models({ chatId: null }) })
 const workflows = useQuery({ queryKey: ['workflows', null], queryFn: () => illustrationApi.workflows({ chatId: null }) })
 const templates = useQuery({ queryKey: ['chat-templates'], queryFn: api.chatTemplates })
+const queries = { characters, identities, presets, models, workflows, templates }
 
-const current = computed(() => ({ characters, identities, presets, models, workflows, templates })[tab.value])
-const items = computed(() => {
-  switch (tab.value) {
-    case 'characters': return (characters.data.value ?? []).map((c) => ({ id: c.id, name: c.name, avatar: c.avatar, sub: c.description }))
-    case 'identities': return (identities.data.value ?? []).map((c) => ({ id: c.id, name: c.name, avatar: c.avatar, sub: c.description }))
-    case 'presets': return (presets.data.value ?? []).map((p) => ({ id: p.id, name: p.name, avatar: undefined, sub: `${p.source.length} 字符` }))
-    case 'templates': return (templates.data.value ?? []).map((t) => ({ id: t.id, name: t.name, avatar: undefined, sub: t.is_default ? '默认' : '' }))
-    case 'workflows': return (workflows.data.value ?? []).map((w) => ({ id: w.id, name: w.name, avatar: undefined, sub: `${w.width}×${w.height}` }))
-    default: return (models.data.value ?? []).map((m) => ({ id: m.id, name: m.name, avatar: undefined, sub: `${m.api_type} · ${m.model}`, key: m.has_api_key }))
+const counts = computed(() => Object.fromEntries(
+  Object.entries(queries).map(([k, q]) => [k, q.data.value?.length]),
+) as Partial<Record<LibraryKind, number>>)
+
+const items = computed<CardItem[]>(() => {
+  switch (kind.value) {
+    case 'characters': return (characters.data.value ?? []).map((c) => ({ id: c.id, name: c.name, avatar: c.avatar, portrait: c.portrait, sub: c.description }))
+    case 'identities': return (identities.data.value ?? []).map((c) => ({ id: c.id, name: c.name, avatar: c.avatar, portrait: c.portrait, sub: c.description }))
+    case 'presets': return (presets.data.value ?? []).map((p) => ({ id: p.id, name: p.name }))
+    case 'templates': return (templates.data.value ?? []).map((t) => ({ id: t.id, name: t.name, badge: t.is_default ? '默认' : undefined }))
+    case 'workflows': return (workflows.data.value ?? []).map((w) => ({ id: w.id, name: w.name, sub: `${w.width}×${w.height}` }))
+    case 'models': return (models.data.value ?? []).map((m) => ({ id: m.id, name: m.name, sub: m.model, hasKey: m.has_api_key }))
+    default: return []
   }
+})
+const current = computed(() => (kind.value ? queries[kind.value] : null))
+const editorTitle = computed(() => {
+  if (!info.value) return ''
+  if (!editId.value) return `新建${info.value.noun}`
+  return items.value.find((i) => i.id === editId.value)?.name ?? info.value.noun
 })
 
 function go(id: string | null) {
-  router.push(id ? `/library/${tab.value}/${id}` : `/library/${tab.value}`)
+  router.replace(id ? `/library/${kind.value}/${id}` : `/library/${kind.value}`)
 }
+const onSaved = (id: string) => { if (selected.value === 'new') go(id) }
+const onDeleted = () => go(null)
 </script>
 
 <template>
   <div class="library">
-    <TopBar><h1 class="grow">资源库</h1></TopBar>
-    <nav class="tabs lib-tabs">
-      <RouterLink v-for="t in tabs" :key="t.id" v-slot="{ navigate }" :to="`/library/${t.id}`" custom>
-        <button type="button" :class="{ active: tab === t.id }" @click="navigate">{{ t.label }}</button>
-      </RouterLink>
-    </nav>
-    <div class="split" :class="{ detail: !!selected }">
-      <div class="master">
-        <div class="row master-head">
-          <span class="faint grow">{{ items.length }} 项</span>
-          <button class="btn small primary" type="button" @click="go('new')"><Plus /> 新建{{ tabs.find((t) => t.id === tab)!.noun }}</button>
-        </div>
-        <ErrorBox v-if="current.error.value" :error="current.error.value" />
-        <div v-else-if="!items.length && !current.isLoading.value" class="empty">还没有内容</div>
-        <div class="stack tight">
-          <button
-            v-for="it in items" :key="it.id" type="button" class="list-item" :class="{ active: selected === it.id }"
-            @click="go(it.id)"
-          >
-            <AvatarBadge v-if="tab === 'characters' || tab === 'identities'" :name="it.name" :src="it.avatar" :size="34" />
-            <div class="grow">
-              <div class="ellipsis name">{{ it.name }}</div>
-              <div class="faint ellipsis sub">{{ it.sub || '—' }}</div>
-            </div>
-            <KeyRound v-if="'key' in it && it.key" class="key" />
-          </button>
+    <!-- Hub -->
+    <template v-if="!kind">
+      <TopBar class="narrow-only"><strong class="grow">资源库</strong></TopBar>
+      <div class="page">
+        <div class="inner">
+          <h1 class="display">资源库</h1>
+          <LibraryHub :counts="counts" />
         </div>
       </div>
-      <div class="detail-pane">
-        <div v-if="!selected" class="empty">选择左侧条目进行编辑，或新建一个。</div>
-        <div v-else class="detail-inner">
-          <button class="btn ghost small back" type="button" @click="go(null)"><ArrowLeft /> 返回列表</button>
-          <div class="card card-pad">
-            <ProfileEditor
-              v-if="tab === 'characters' || tab === 'identities'" :key="`${tab}-${selected}`"
-              :kind="tab === 'characters' ? 'character' : 'identity'" :id="editId" :chat-id="null"
-              @saved="(id) => selected === 'new' && go(id)" @deleted="go(null)"
-            />
-            <PresetEditor v-else-if="tab === 'presets'" :key="`p-${selected}`" :id="editId" :chat-id="null" @saved="(id) => selected === 'new' && go(id)" @deleted="go(null)" />
-            <ChatTemplateEditor v-else-if="tab === 'templates'" :key="`t-${selected}`" :id="editId" @saved="(id) => selected === 'new' && go(id)" @deleted="go(null)" />
-            <WorkflowEditor v-else-if="tab === 'workflows'" :key="`w-${selected}`" :id="editId" :chat-id="null" @saved="(id) => selected === 'new' && go(id)" @deleted="go(null)" />
-            <ModelEditor v-else :key="`m-${selected}`" :id="editId" :chat-id="null" @saved="(id) => selected === 'new' && go(id)" @deleted="go(null)" />
-          </div>
+    </template>
+
+    <!-- One kind -->
+    <template v-else-if="!selected">
+      <TopBar><RouterLink to="/library" class="btn ghost small"><ArrowLeft /> 资源库</RouterLink></TopBar>
+      <div class="page">
+        <div class="inner">
+          <h1 class="display">{{ info!.label }}</h1>
+          <ErrorBox v-if="current?.error.value" :error="current.error.value" />
+          <LibraryCards v-else :kind="kind" :items="items" />
         </div>
       </div>
-    </div>
+    </template>
+
+    <!-- One record -->
+    <template v-else>
+      <TopBar>
+        <RouterLink :to="`/library/${kind}`" class="btn ghost small"><ArrowLeft /> {{ info!.label }}</RouterLink>
+        <span class="grow" />
+        <RouterLink v-if="kind === 'characters' && editId" :to="`/characters/${editId}`" class="btn ghost small"><Eye /> 角色页</RouterLink>
+      </TopBar>
+      <div class="page">
+        <div class="inner editor">
+          <h1 class="title">{{ editorTitle }}</h1>
+          <ProfileEditor
+            v-if="kind === 'characters' || kind === 'identities'" :key="`${kind}-${selected}`"
+            :kind="kind === 'characters' ? 'character' : 'identity'" :id="editId" :chat-id="null"
+            @saved="onSaved" @deleted="onDeleted"
+          />
+          <PresetEditor v-else-if="kind === 'presets'" :key="`p-${selected}`" :id="editId" :chat-id="null" @saved="onSaved" @deleted="onDeleted" />
+          <ChatTemplateEditor v-else-if="kind === 'templates'" :key="`t-${selected}`" :id="editId" @saved="onSaved" @deleted="onDeleted" />
+          <WorkflowEditor v-else-if="kind === 'workflows'" :key="`w-${selected}`" :id="editId" :chat-id="null" @saved="onSaved" @deleted="onDeleted" />
+          <ModelEditor v-else :key="`m-${selected}`" :id="editId" :chat-id="null" @saved="onSaved" @deleted="onDeleted" />
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
 <style scoped>
 .library { display: flex; flex-direction: column; height: 100%; }
-.lib-tabs { padding: 0 var(--space-3); background: var(--bg-elev); flex-shrink: 0; }
-.split { flex: 1; min-height: 0; display: flex; }
-.master { width: 320px; flex-shrink: 0; border-right: 1px solid var(--border); overflow-y: auto; padding: var(--space-3) var(--space-3); }
-.master-head { margin-bottom: var(--space-2); padding: 0 var(--space-1); }
-.list-item { width: 100%; border: 0; background: none; text-align: left; font: inherit; color: inherit; }
-.name { font-weight: 500; }
-.sub { font-size: var(--text-xs); }
-.key { width: 14px; height: 14px; color: var(--ok); }
-.detail-pane { flex: 1; min-width: 0; overflow-y: auto; }
-.detail-inner { max-width: 900px; margin: 0 auto; padding: var(--space-4) var(--space-4) var(--space-12); }
-.back { display: none; margin-bottom: var(--space-2); }
+.library .page { flex: 1; }
+.inner { max-width: 1200px; margin: 0 auto; padding: var(--space-8) var(--space-6) var(--space-12); display: flex; flex-direction: column; gap: var(--space-6); }
+.inner.editor { max-width: 920px; gap: var(--space-4); }
+.display { font-family: var(--font-reading); font-size: var(--text-display); font-weight: 600; letter-spacing: 0.06em; }
+.title { font-family: var(--font-reading); font-size: var(--text-3xl); font-weight: 600; }
+.narrow-only { display: none; }
 @media (max-width: 899px) {
-  .master { width: 100%; border-right: 0; }
-  .detail-pane { display: none; }
-  .split.detail .master { display: none; }
-  .split.detail .detail-pane { display: block; }
-  .back { display: inline-flex; }
-  .detail-inner { padding: var(--space-3) var(--space-3) var(--space-12); }
+  .narrow-only { display: flex; }
+  .inner { padding: var(--space-5) var(--space-4) var(--space-12); gap: var(--space-4); }
+  .display { font-size: var(--text-3xl); }
+  .title { font-size: var(--text-2xl); }
 }
 </style>

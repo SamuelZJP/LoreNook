@@ -97,7 +97,7 @@ const episodesByEnd = computed(() => {
 const readiness = computed(() => {
   const c = chat.data.value
   if (!c) return null
-  if (!c.writing_preset_id) return '尚未选择写作预设'
+  if (!c.writing_preset_id) return '还没有选择写作风格'
   if (!c.model_bindings.writing) return '尚未绑定写作模型'
   return null
 })

@@ -40,7 +40,7 @@ defineExpose({ apply, snapshot, restore })
     </select>
   </div>
   <div v-if="form.mode !== 'off'" class="field">
-    <label>图像工作流</label>
+    <label>绘图工作流</label>
     <select v-model="form.image_workflow_id" class="select">
       <option value="">（未选择）</option>
       <option v-for="w in workflows.data.value" :key="w.id" :value="w.id">{{ w.name }}</option>

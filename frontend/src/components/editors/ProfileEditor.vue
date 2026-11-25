@@ -165,17 +165,20 @@ async function remove() {
 
 type Tab = 'basic' | 'scenes' | 'state' | 'definitions' | 'portrait' | 'status-bar'
 const tab = ref<Tab>('basic')
-const tabs = computed(() => [
-  { id: 'basic' as const, label: '基本信息', fields: ['name', 'avatar', 'portrait', 'description'] as Field[] },
-  ...(isCharacter.value ? [{ id: 'scenes' as const, label: '开场', fields: [] as Field[] }] : []),
-  ...(isCharacter.value ? [{ id: 'state' as const, label: '状态', fields: ['state_schema', 'state_reference', 'state_update_rules', 'state_script'] as Field[] }] : []),
-  // These save on their own against an existing record, so they appear once it exists.
+interface TabInfo { id: Tab; label: string; fields: Field[]; advanced?: boolean }
+const tabs = computed<TabInfo[]>(() => [
+  { id: 'basic', label: '基本信息', fields: ['name', 'avatar', 'portrait', 'description'] },
+  ...(isCharacter.value ? [{ id: 'scenes' as const, label: '开场', fields: [] }] : []),
+  // Advanced: what shapes the AI's reading of the profile. Definitions, portrait and status bar
+  // save on their own against an existing record, so they appear once it exists.
   ...(creating.value ? [] : [
-    { id: 'definitions' as const, label: `${noun.value}定义`, fields: [] as Field[] },
-    { id: 'portrait' as const, label: '画像', fields: [] as Field[] },
-    ...(isCharacter.value ? [{ id: 'status-bar' as const, label: '状态栏', fields: [] as Field[] }] : []),
+    { id: 'definitions' as const, label: '设定', fields: [], advanced: true },
+    { id: 'portrait' as const, label: '插图外貌', fields: [], advanced: true },
+    ...(isCharacter.value ? [{ id: 'status-bar' as const, label: '状态栏', fields: [], advanced: true }] : []),
   ]),
+  ...(isCharacter.value ? [{ id: 'state' as const, label: '状态规则', fields: ['state_schema', 'state_reference', 'state_update_rules', 'state_script'] as Field[], advanced: true }] : []),
 ])
+const firstAdvanced = computed(() => tabs.value.find((t) => t.advanced)?.id)
 // These tabs save on their own, so the profile's save row doesn't apply to them.
 const ownSave = computed(() => tab.value === 'definitions' || tab.value === 'portrait' || tab.value === 'status-bar')
 watch(() => props.kind, () => { if (!tabs.value.some((t) => t.id === tab.value)) tab.value = 'basic' })
@@ -193,9 +196,12 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
     <div v-if="loading" class="empty">加载中…</div>
     <template v-else-if="!loadError">
       <nav class="tabs">
-        <button v-for="t in tabs" :key="t.id" type="button" :class="{ active: tab === t.id }" @click="tab = t.id">
-          {{ t.label }}<span v-if="tabDirty(t.id, t.fields)" class="dot" title="有未保存的修改" />
-        </button>
+        <template v-for="t in tabs" :key="t.id">
+          <span v-if="t.id === firstAdvanced" class="tab-group" aria-hidden="true">进阶</span>
+          <button type="button" :class="{ active: tab === t.id, advanced: t.advanced }" @click="tab = t.id">
+            {{ t.label }}<span v-if="tabDirty(t.id, t.fields)" class="dot" title="有未保存的修改" />
+          </button>
+        </template>
       </nav>
 
       <section v-show="tab === 'basic'" class="basic">
@@ -263,7 +269,7 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
       </div>
 
       <section v-if="tab === 'definitions'" class="stack">
-        <DefinitionsEditor v-if="defBase" :base="defBase" :chat-id="chatId" :title="`${noun}定义`" />
+        <DefinitionsEditor v-if="defBase" :base="defBase" :chat-id="chatId" :title="`${noun}设定`" />
       </section>
 
       <section v-if="tab === 'portrait'" class="stack">
@@ -278,6 +284,11 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
 </template>
 
 <style scoped>
+.tab-group {
+  align-self: center; margin-left: var(--space-3); padding-left: var(--space-3); border-left: 1px solid var(--border);
+  font-size: var(--text-xs); color: var(--text-faint); letter-spacing: 0.08em; white-space: nowrap;
+}
+.tabs button.advanced { font-weight: 400; }
 .dot { display: inline-block; width: 6px; height: 6px; margin-left: var(--space-1); border-radius: 50%; background: var(--warn); vertical-align: middle; }
 .bad { color: var(--danger); }
 .avatar-row { align-items: flex-start; }

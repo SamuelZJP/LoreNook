@@ -89,7 +89,7 @@ async function removeChat() {
       <div class="field"><label>保留原文的回合</label><input v-model.number="form.recent_rounds" class="input" type="number" min="0" /></div>
       <div class="field"><label>至少保留的摘要</label><input v-model.number="form.min_summaries" class="input" type="number" min="0" /></div>
     </div>
-    <h3>写作预设</h3>
+    <h3>写作风格</h3>
     <select v-model="form.writing_preset_id" class="select">
       <option value="">（未选择）</option>
       <option v-for="p in chat.writing_presets" :key="p.id" :value="p.id">{{ p.name }}</option>

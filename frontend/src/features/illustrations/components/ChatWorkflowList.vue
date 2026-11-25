@@ -31,8 +31,8 @@ async function importSource() {
 </script>
 
 <template>
-  <div class="row"><h3 class="grow">图像工作流</h3><button class="btn small" type="button" @click="editing = { id: null }"><Plus /> 新增</button></div>
-  <div v-if="!workflows.data.value?.length" class="empty">没有图像工作流</div>
+  <div class="row"><h3 class="grow">绘图工作流</h3><button class="btn small" type="button" @click="editing = { id: null }"><Plus /> 新增</button></div>
+  <div v-if="!workflows.data.value?.length" class="empty">没有绘图工作流</div>
   <button v-for="w in workflows.data.value" :key="w.id" class="list-item card" type="button" @click="editing = { id: w.id }">
     <div class="grow">
       <div class="ellipsis">{{ w.name }}</div>
@@ -42,14 +42,14 @@ async function importSource() {
     <Pencil class="ic" />
   </button>
   <div v-if="library.data.value?.length" class="row">
-    <select v-model="importing" class="select grow" aria-label="从资源库导入图像工作流">
+    <select v-model="importing" class="select grow" aria-label="从资源库导入绘图工作流">
       <option value="">从资源库导入…</option>
       <option v-for="w in library.data.value" :key="w.id" :value="w.id">{{ w.name }}</option>
     </select>
     <button class="btn small" type="button" :disabled="!importing" @click="importSource"><Import /> 导入</button>
   </div>
 
-  <ModalDialog v-if="editing" title="本聊天的图像工作流" width="860px" @close="editing = null">
+  <ModalDialog v-if="editing" title="本聊天的绘图工作流" width="860px" @close="editing = null">
     <WorkflowEditor :id="editing.id" :chat-id="chatId" @saved="(id) => (editing = { id })" @deleted="editing = null" />
   </ModalDialog>
 </template>

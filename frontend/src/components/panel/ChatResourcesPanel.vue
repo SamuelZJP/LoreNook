@@ -14,7 +14,7 @@ defineProps<{ chat: ChatDetail }>()
 
 type Editing = { kind: 'character' | 'identity' | 'preset' | 'model'; id?: string | null }
 const editing = ref<Editing | null>(null)
-const titles = { character: '编辑本聊天角色', identity: '编辑本聊天身份', preset: '本聊天的写作预设', model: '本聊天的模型配置' }
+const titles = { character: '编辑本聊天角色', identity: '编辑本聊天身份', preset: '本聊天的写作风格', model: '本聊天的模型' }
 </script>
 
 <template>
@@ -34,16 +34,16 @@ const titles = { character: '编辑本聊天角色', identity: '编辑本聊天�
       <Pencil class="ic" />
     </button>
 
-    <div class="row"><h3 class="grow">写作预设</h3><button class="btn small" type="button" @click="editing = { kind: 'preset', id: null }"><Plus /> 新增</button></div>
-    <div v-if="!chat.writing_presets.length" class="empty">没有预设</div>
+    <div class="row"><h3 class="grow">写作风格</h3><button class="btn small" type="button" @click="editing = { kind: 'preset', id: null }"><Plus /> 新增</button></div>
+    <div v-if="!chat.writing_presets.length" class="empty">没有写作风格</div>
     <button v-for="p in chat.writing_presets" :key="p.id" class="list-item card" type="button" @click="editing = { kind: 'preset', id: p.id }">
       <div class="grow ellipsis">{{ p.name }}</div>
       <span v-if="p.id === chat.writing_preset_id" class="badge accent">使用中</span>
       <Pencil class="ic" />
     </button>
 
-    <div class="row"><h3 class="grow">模型配置</h3><button class="btn small" type="button" @click="editing = { kind: 'model', id: null }"><Plus /> 新增</button></div>
-    <div v-if="!chat.model_configs.length" class="empty">没有模型配置</div>
+    <div class="row"><h3 class="grow">模型</h3><button class="btn small" type="button" @click="editing = { kind: 'model', id: null }"><Plus /> 新增</button></div>
+    <div v-if="!chat.model_configs.length" class="empty">没有模型</div>
     <button v-for="m in chat.model_configs" :key="m.id" class="list-item card" type="button" @click="editing = { kind: 'model', id: m.id }">
       <div class="grow">
         <div class="ellipsis">{{ m.name }}</div>

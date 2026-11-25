@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
-import { Save, Trash2, FileCode, Hammer, ScanText, Send, Download } from 'lucide-vue-next'
+import { Save, Trash2, FileCode, Hammer, ScanText, Send, Download, Upload } from 'lucide-vue-next'
 import { api, type Preset, type BuiltRequest } from '@/api/endpoints'
 import CodeEditor from '../CodeEditor.vue'
 import ErrorBox from '../ErrorBox.vue'
 import OutputView from '../chat/OutputView.vue'
 import ScopeNote from './ScopeNote.vue'
 import InfoTip from '../InfoTip.vue'
+import Disclosure from '../Disclosure.vue'
 import JsonField, { jsonProblem } from './JsonField.vue'
 import { toast } from '@/composables/toast'
 import { pretty, substituteNames } from '@/lib/format'
@@ -37,7 +38,7 @@ watch(() => [props.id, props.chatId], async () => {
   try {
     const list = await api.presets(scope.value)
     const p = list.find((x) => x.id === props.id)
-    if (!p) throw new Error('预设不存在或不属于当前范围')
+    if (!p) throw new Error('写作风格不存在或不属于当前范围')
     original.value = p
     name.value = p.name
     source.value = p.source
@@ -45,6 +46,16 @@ watch(() => [props.id, props.chatId], async () => {
     loadError.value = e
   }
 }, { immediate: true })
+
+const fileInput = ref<HTMLInputElement>()
+async function importFile(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (fileInput.value) fileInput.value.value = ''
+  if (!file) return
+  if (source.value.trim() && source.value !== presetExample && !confirm('用导入的文件替换当前源码？')) return
+  source.value = await file.text()
+  if (!name.value.trim()) name.value = file.name.replace(/\.[^.]+$/, '')
+}
 
 const dirty = computed(() => !original.value || original.value.name !== name.value || original.value.source !== source.value)
 
@@ -63,7 +74,7 @@ async function save() {
     original.value = saved
     qc.invalidateQueries({ queryKey: ['presets', props.chatId] })
     if (props.chatId) qc.invalidateQueries({ queryKey: ['chat', props.chatId] })
-    toast('预设已保存')
+    toast('写作风格已保存')
     emit('saved', saved.id)
   } catch (e) {
     saveError.value = e
@@ -73,7 +84,7 @@ async function save() {
 }
 
 async function remove() {
-  if (!original.value || !confirm('删除这个预设？')) return
+  if (!original.value || !confirm('删除这个写作风格？')) return
   try {
     await api.deletePreset(scope.value, original.value.id)
     qc.invalidateQueries({ queryKey: ['presets', props.chatId] })
@@ -168,19 +179,26 @@ async function runParse() {
 
 <template>
   <div class="stack">
-    <ScopeNote :chat-id="chatId" what="预设" />
+    <ScopeNote :chat-id="chatId" what="写作风格" />
     <ErrorBox v-if="loadError" :error="loadError" title="读取失败" />
     <template v-else>
       <div class="field"><label>名称</label><input v-model="name" class="input" /></div>
-      <div class="field">
-        <div class="row">
-          <label class="label">JavaScript 源码</label>
-          <InfoTip>定义 <code>build(materials)</code> 返回 <code>{api_type, body}</code>，以及 <code>parse(response)</code> 返回 AI 输出全文。不支持 import/export。</InfoTip>
-          <span class="grow" />
-          <button class="btn small" type="button" @click="fillExample"><FileCode /> 填入示例</button>
-        </div>
-        <CodeEditor v-model="source" language="javascript" min-height="320px" />
+      <div class="row wrap">
+        <button class="btn" type="button" @click="fileInput?.click()"><Upload /> 从文件导入</button>
+        <span class="faint small">{{ source.trim() ? `${source.length} 字符` : '还没有内容' }}</span>
+        <input ref="fileInput" type="file" accept=".js,text/javascript,text/plain" hidden @change="importFile" />
       </div>
+      <Disclosure label="源码">
+        <div class="field">
+          <div class="row">
+            <label class="label">JavaScript 源码</label>
+            <InfoTip>定义 <code>build(materials)</code> 返回 <code>{api_type, body}</code>，以及 <code>parse(response)</code> 返回 AI 输出全文。不支持 import/export。</InfoTip>
+            <span class="grow" />
+            <button class="btn small" type="button" @click="fillExample"><FileCode /> 填入示例</button>
+          </div>
+          <CodeEditor v-model="source" language="javascript" min-height="320px" />
+        </div>
+      </Disclosure>
       <ErrorBox v-if="saveError" :error="saveError" title="保存失败" />
       <div class="row">
         <button v-if="original" class="btn danger" type="button" @click="remove"><Trash2 /> 删除</button>
@@ -188,8 +206,7 @@ async function runParse() {
         <button class="btn primary" type="button" :disabled="saving || !name.trim() || !dirty" @click="save"><Save /> {{ original ? '保存' : '创建' }}</button>
       </div>
 
-      <details v-if="original" class="trials card card-pad" open>
-        <summary><h3>试运行</h3></summary>
+      <Disclosure v-if="original" label="试运行">
         <div class="stack">
           <p v-if="dirty" class="warn small">有未保存的修改，试运行用的是上次保存的版本。</p>
           <div class="row wrap">
@@ -205,7 +222,7 @@ async function runParse() {
           <div v-if="built" class="row wrap">
             <span class="label grow">2. 可选：用模型实际调用一次</span>
             <select v-model="invokeModelId" class="select model-pick">
-              <option value="">选择模型配置</option>
+              <option value="">选择模型</option>
               <option v-for="m in models.data.value" :key="m.id" :value="m.id">{{ m.name }} · {{ m.api_type }}</option>
             </select>
             <button class="btn small" type="button" :disabled="!!trialBusy || !invokeModelId" @click="runInvoke"><Send /> {{ trialBusy === 'invoke' ? '调用中…' : '调用' }}</button>
@@ -223,14 +240,12 @@ async function runParse() {
             <details><summary class="label">原文</summary><pre class="raw">{{ parsed }}</pre></details>
           </div>
         </div>
-      </details>
+      </Disclosure>
     </template>
   </div>
 </template>
 
 <style scoped>
-.trials summary { cursor: pointer; margin-bottom: var(--space-2); }
-.trials summary h3 { display: inline; }
 .warn { color: var(--warn); }
 .small { font-size: var(--text-sm); }
 .model-pick { width: auto; max-width: 100%; }

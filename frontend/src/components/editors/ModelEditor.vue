@@ -62,7 +62,7 @@ watch(() => [props.id, props.chatId], async () => {
   if (!props.id) return reset(null)
   try {
     const m = (await api.models(scope.value)).find((x) => x.id === props.id)
-    if (!m) throw new Error('模型配置不存在或不属于当前范围')
+    if (!m) throw new Error('模型不存在或不属于当前范围')
     reset(m)
   } catch (e) {
     loadError.value = e
@@ -103,7 +103,7 @@ async function save() {
     reset(saved)
     qc.invalidateQueries({ queryKey: ['models', props.chatId] })
     if (props.chatId) qc.invalidateQueries({ queryKey: ['chat', props.chatId] })
-    toast('模型配置已保存')
+    toast('模型已保存')
     emit('saved', saved.id)
   } catch (e) {
     saveError.value = e
@@ -113,7 +113,7 @@ async function save() {
 }
 
 async function remove() {
-  if (!original.value || !confirm('删除这个模型配置？使用它的用途绑定也会被删除。')) return
+  if (!original.value || !confirm('删除这个模型？使用它的用途绑定也会被删除。')) return
   try {
     await api.deleteModel(scope.value, original.value.id)
     qc.invalidateQueries({ queryKey: ['models', props.chatId] })
@@ -156,7 +156,7 @@ async function test() {
 
 <template>
   <div class="stack">
-    <ScopeNote :chat-id="chatId" what="模型配置" />
+    <ScopeNote :chat-id="chatId" what="模型" />
     <ErrorBox v-if="loadError" :error="loadError" title="读取失败" />
     <template v-else>
       <div class="grid-2">
