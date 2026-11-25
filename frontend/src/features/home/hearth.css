@@ -4,13 +4,26 @@
 @import '@fontsource/cormorant-garamond/400-italic.css';
 @import '@fontsource/cormorant-garamond/500.css';
 
+/* Registered as colors so a day/night switch interpolates them instead of jumping. */
+@property --h-bg { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --h-bg-2 { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --h-ink { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --h-muted { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --h-faint { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --h-accent { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --h-btn { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --h-btn-ink { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --h-line { syntax: '<color>'; inherits: true; initial-value: transparent; }
+
 .hearth {
   --h-serif: var(--font-reading);
   --h-latin: 'Cormorant Garamond', var(--font-reading);
   --h-sans: var(--font-sans);
+  --h-fade: 0.8s;
   position: relative; min-height: 100dvh; overflow-x: hidden;
   background: var(--h-bg); color: var(--h-ink); font-family: var(--h-serif);
-  transition: background 0.8s ease, color 0.8s ease;
+  transition-property: --h-bg, --h-bg-2, --h-ink, --h-muted, --h-faint, --h-accent, --h-btn, --h-btn-ink, --h-line;
+  transition-duration: var(--h-fade); transition-timing-function: ease;
 }
 .hearth.night {
   --h-bg: #100b07; --h-bg-2: #19110b; --h-ink: #efe3d3; --h-muted: #a8957f; --h-faint: rgb(255 170 100 / 7%);
@@ -36,3 +49,7 @@
 .hearth-btn.ghost:hover { border-color: var(--h-ink); }
 .hearth :focus-visible { outline: 2px solid var(--h-accent); outline-offset: 3px; }
 
+
+@media (prefers-reduced-motion: reduce) {
+  .hearth { --h-fade: 0s; }
+}

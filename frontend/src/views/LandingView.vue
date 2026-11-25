@@ -60,7 +60,7 @@ const features = [
     </section>
 
     <section class="closing">
-      <div v-if="night" class="closing-glow" aria-hidden="true" />
+      <div class="closing-glow" aria-hidden="true" />
       <p>炉火正旺，坐下来吧</p>
       <div class="actions">
         <RouterLink class="hearth-btn primary" :to="enter.to">{{ enter.label }}</RouterLink>
@@ -114,7 +114,9 @@ h2 { margin: 22px 0 110px; font-weight: 400; font-size: clamp(28px, 3.4vw, 44px)
 .closing-glow {
   position: absolute; left: 50%; bottom: -40%; width: 90vw; height: 90%; transform: translateX(-50%); pointer-events: none;
   background: radial-gradient(closest-side, rgb(255 128 44 / 22%), transparent 80%);
+  opacity: 0; transition: opacity var(--h-fade) ease;
 }
+.night .closing-glow { opacity: 1; }
 .footer {
   display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding: 28px 40px 36px;
   border-top: 1px solid var(--h-line); font-family: var(--h-sans); font-size: 12px; letter-spacing: 0.14em; color: var(--h-muted);

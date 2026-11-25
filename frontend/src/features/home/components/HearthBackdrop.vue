@@ -22,24 +22,27 @@ const embers = Array.from({ length: 34 }, (_, k) => {
 
 <template>
   <div class="backdrop" aria-hidden="true">
-    <template v-if="night">
+    <div class="layer scene" :class="{ shown: night }">
       <div class="layer planks" />
       <div class="glow far" />
       <div class="glow near" />
       <div class="glow core" />
       <span v-for="(style, i) in embers" :key="i" class="ember" :style="style" />
       <div class="layer vignette" />
-    </template>
-    <template v-else>
+    </div>
+    <div class="layer scene" :class="{ shown: !night }">
       <div class="layer sun" />
       <div class="window" />
       <div class="layer planks" />
-    </template>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .backdrop, .layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+/* Both scenes stay mounted and crossfade; the hidden one stops painting once faded out. */
+.scene { opacity: 0; visibility: hidden; transition: opacity var(--h-fade) ease, visibility 0s var(--h-fade); }
+.scene.shown { opacity: 1; visibility: visible; transition: opacity var(--h-fade) ease, visibility 0s; }
 .planks {
   background: repeating-linear-gradient(90deg, transparent 0 159px, var(--h-faint) 159px 160px);
   mask-image: radial-gradient(ellipse 70% 80% at 50% 100%, #000 0%, transparent 75%); opacity: 0.6;
