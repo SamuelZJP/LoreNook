@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, ref, watch, type Component } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
-import { Archive, Brain, Check, ChevronRight, Feather, Trash2 } from 'lucide-vue-next'
+import { Archive, Brain, ChevronRight, Feather, Trash2 } from 'lucide-vue-next'
 import { api, type ChatDetail } from '@/api/endpoints'
 import { provideSaveTracker } from '@/composables/autosave'
 import { toast } from '@/composables/toast'
@@ -59,14 +59,9 @@ const blocks = (page?: CorePage) => CHAT_SETTINGS.flatMap((c) => c.blocks ?? [])
 // ---- Navigation ----
 const openId = ref<string | null>(null)
 const open = computed(() => rows.value.find((r) => r.id === openId.value) ?? null)
-const done = ref(false)
+/** Save what is pending, then go back; stay if a save failed so the error shows. */
 async function finish() {
-  if (!(await tracker.flush())) return
-  done.value = true
-  setTimeout(() => {
-    done.value = false
-    openId.value = null
-  }, 450)
+  if (await tracker.flush()) openId.value = null
 }
 watch(() => props.chat.id, () => (openId.value = null))
 onBeforeUnmount(() => tracker.flush())
@@ -99,7 +94,7 @@ async function removeChat() {
       <button class="crumb" type="button" @click="finish"><component :is="open.icon" /> {{ open.label }}</button>
       <span class="grow" />
       <button class="btn small primary" type="button" :disabled="tracker.status.value === 'saving'" @click="finish">
-        <template v-if="done"><Check /> 已保存</template><template v-else>完成</template>
+        完成
       </button>
     </div>
     <component :is="open.Page" :chat="chat" />
