@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { ArrowUp, ArrowDown, Plus, Trash2, ChevronRight, Eye } from 'lucide-vue-next'
 import { api } from '@/api/endpoints'
 import ErrorBox from '../ErrorBox.vue'
+import InfoTip from '../InfoTip.vue'
 import JsonField, { jsonProblem } from './JsonField.vue'
 
 /** Opening scenes of one character. The parent owns the drafts and saves them with the character. */
@@ -59,14 +60,13 @@ export function newScene(name = '默认'): SceneDraft {
 <template>
   <div class="stack">
     <div class="row wrap">
-      <h3 class="grow">开场</h3>
+      <h3>开场</h3>
+      <InfoTip v-if="!chatScoped">
+        每个开场是一段开场白加一组初始变量，新建聊天时选一个。初始变量只需写与默认值不同的部分，例如 <code>{"世界": {"地点": "教室"}}</code>。
+      </InfoTip>
+      <span class="grow" />
       <button v-if="!chatScoped" class="btn small" type="button" @click="add"><Plus /> 新增</button>
     </div>
-    <p v-if="chatScoped" class="hint">聊天副本只保留创建时选择的开场。修改初始变量不会改动已生成的状态。</p>
-    <p v-else class="hint">
-      每个开场由开场消息（第 0 楼）和初始变量组成，新建聊天时选择其中一个。初始变量是 JSON 对象，只需写出与 Schema 默认值不同的字段，
-      例如 <code>{"世界": {"地点": "教室"}}</code>，其余字段由 Schema 补齐并校验。
-    </p>
 
     <div v-for="(s, i) in scenes" :key="s.key" class="scene card" :class="{ open: isOpen(s.key) }">
       <div class="head">

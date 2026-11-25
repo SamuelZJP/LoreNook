@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/vue-query'
 import { Save, Trash2 } from 'lucide-vue-next'
 import { pretty } from '@/lib/format'
 import ErrorBox from '@/components/ErrorBox.vue'
+import InfoTip from '@/components/InfoTip.vue'
 import ScopeNote from '@/components/editors/ScopeNote.vue'
 import JsonField, { jsonProblem } from '@/components/editors/JsonField.vue'
 import { toast } from '@/composables/toast'
@@ -111,16 +112,20 @@ async function remove() {
         <div class="field"><label>宽度</label><input v-model.number="form.width" class="input" type="number" min="64" max="8192" /></div>
         <div class="field"><label>高度</label><input v-model.number="form.height" class="input" type="number" min="64" max="8192" /></div>
       </div>
-      <p class="hint">尺寸填入 <code v-pre>{{width}}</code> <code v-pre>{{height}}</code>，也决定聊天中插图的预留比例。</p>
-
-      <JsonField v-model="workflow" label="工作流（API 格式）" min-height="200px" />
-      <p v-if="fixedSize" class="warn-note">工作流没有使用 <code v-pre>{{width}}</code> <code v-pre>{{height}}</code>。请确认上面的宽高与实际输出一致，否则插图的预留比例会不对。</p>
-      <div class="hint stack tight">
-        <span>在 ComfyUI 中使用 “Save (API Format)” 导出，再把需要替换的字符串改成占位符。</span>
-        <span><code v-pre>{{prompt}}</code> 必填：本回合的用户输入、剧情内容、状态信息、人物外貌和中心人物。LoreNook 不改写它，提示词由工作流自己生成，比如接入提示词增强节点。</span>
-        <span><code v-pre>{{images}}</code> 可选：已上传的参考图，主要人物在前，最多 {{ MAX_IMAGES }} 张，序号与提示词中的“参考图：图 N”对应。值是字符串形式的 JSON 数组，没有参考图时为 <code>[]</code>，适合接入接受这种输入的节点。</span>
-        <span><code v-pre>{{seed}}</code> <code v-pre>{{width}}</code> <code v-pre>{{height}}</code> 是数字。ComfyUI 会缓存输入不变的节点，所以提示词增强节点也要用 <code v-pre>{{seed}}</code>，否则重新生成时提示词不变。</span>
+      <div class="stack tight">
+        <div class="row">
+          <span class="label">工作流（API 格式）</span>
+          <InfoTip>
+            在 ComfyUI 中用 “Save (API Format)” 导出，再把要替换的字符串改成占位符：
+            <code v-pre>{{prompt}}</code>（必填，本回合的剧情和人物信息）、
+            <code v-pre>{{images}}</code>（参考图 JSON 数组，最多 {{ MAX_IMAGES }} 张）、
+            <code v-pre>{{seed}}</code> <code v-pre>{{width}}</code> <code v-pre>{{height}}</code>（数字）。
+            提示词增强节点也要接 <code v-pre>{{seed}}</code>，否则重新生成时提示词不变。
+          </InfoTip>
+        </div>
+        <JsonField v-model="workflow" min-height="200px" />
       </div>
+      <p v-if="fixedSize" class="warn-note">工作流没有使用 <code v-pre>{{width}}</code> <code v-pre>{{height}}</code>。请确认上面的宽高与实际输出一致，否则插图的预留比例会不对。</p>
       <p v-if="uiFormat" class="bad">这是界面格式的工作流（含 nodes / links），请改用 API 格式导出。</p>
       <template v-else-if="parsed">
         <p v-if="!found.hasPrompt" class="bad">缺少 <code v-pre>{{prompt}}</code> 占位符。</p>

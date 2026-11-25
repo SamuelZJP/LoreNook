@@ -1,16 +1,19 @@
 <script setup lang="ts">
+import { Lock } from 'lucide-vue-next'
+import InfoTip from '../InfoTip.vue'
+
+/** Marks a chat-owned copy. Library records need no note. */
 defineProps<{ chatId: string | null; what: string }>()
 </script>
 
 <template>
-  <div class="scope" :class="chatId ? 'chat' : 'source'">
-    <template v-if="chatId">正在编辑<strong>本聊天的{{ what }}副本</strong>。修改只影响这个聊天，不会改动资源库。</template>
-    <template v-else>正在编辑<strong>资源库中的{{ what }}</strong>。修改不会影响已创建的聊天，新聊天创建时才会复制。</template>
+  <div v-if="chatId" class="scope row">
+    <span class="badge accent"><Lock /> 仅本聊天</span>
+    <InfoTip>这是本聊天自己的{{ what }}，修改不会影响资源库或其他聊天。</InfoTip>
   </div>
 </template>
 
 <style scoped>
-.scope { font-size: var(--text-xs); padding: var(--space-1-5) var(--space-3); border-radius: var(--radius-s); }
-.scope.chat { background: var(--accent-soft); }
-.scope.source { background: var(--bg-sunken); color: var(--text-muted); }
+.scope { gap: var(--space-1); }
+.badge svg { width: 12px; height: 12px; }
 </style>

@@ -4,6 +4,7 @@ import { FileJson } from 'lucide-vue-next'
 import { api, type ChatDetail } from '@/api/endpoints'
 import type { RoundFlow } from '@/composables/roundFlow'
 import ErrorBox from '../ErrorBox.vue'
+import InfoTip from '../InfoTip.vue'
 import CodeEditor from '../CodeEditor.vue'
 import { pretty } from '@/lib/format'
 
@@ -29,10 +30,11 @@ async function build() {
 <template>
   <div class="stack">
     <div class="row">
-      <h3 class="grow">写作请求预览</h3>
+      <h3>请求预览</h3>
+      <InfoTip>用输入框里的内容生成一份将发给模型的请求，只预览，不会真的发送。</InfoTip>
+      <span class="grow" />
       <button class="btn small" type="button" :disabled="building" @click="build"><FileJson /> {{ building ? '构建中…' : '构建预览' }}</button>
     </div>
-    <p class="hint">使用当前输入框内容、临时指令和已选预设构建请求，不调用模型，也不合并模型默认参数。</p>
     <ErrorBox v-if="error" :error="error" title="预览失败" />
     <CodeEditor v-if="preview" :model-value="preview" language="json" readonly min-height="200px" />
   </div>

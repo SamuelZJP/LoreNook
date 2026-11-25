@@ -6,6 +6,7 @@ import { api } from '@/api/endpoints'
 import ModalDialog from './ModalDialog.vue'
 import ProfilePicker from './ProfilePicker.vue'
 import ErrorBox from './ErrorBox.vue'
+import Disclosure from './Disclosure.vue'
 import ChatParamsFields from './ChatParamsFields.vue'
 import { toast } from '@/composables/toast'
 
@@ -81,7 +82,7 @@ const saveTemplate = useMutation({
   }),
   onSuccess: (saved) => {
     qc.invalidateQueries({ queryKey: ['chat-templates'] })
-    toast('配置已保存')
+    toast('模板已保存')
     saveAs.name = ''
     saveAs.is_default = false
     templateId.value = saved.id
@@ -92,13 +93,12 @@ const saveTemplate = useMutation({
 <template>
   <ModalDialog title="新建聊天" width="620px" @close="emit('close')">
     <div class="stack">
-      <p class="hint">创建时会把所选角色、身份、定义、预设和模型配置复制为本聊天独立的副本。之后修改资源库不会影响这个聊天。</p>
       <div v-if="missing && !characters.isLoading.value && !identities.isLoading.value" class="notice">
         需要先在资源库中创建至少一个角色和一个用户身份。
         <RouterLink to="/library/characters" @click="emit('close')">前往资源库</RouterLink>
       </div>
       <div v-if="templates.data.value?.length" class="field">
-        <label>配置</label>
+        <label>开局模板</label>
         <select v-model="templateId" class="select">
           <option value="">（默认值）</option>
           <option v-for="t in templates.data.value" :key="t.id" :value="t.id">{{ t.name }}{{ t.is_default ? '（默认）' : '' }}</option>
@@ -126,27 +126,27 @@ const saveTemplate = useMutation({
         <input v-model="form.title" class="input" @input="titleTouched = true" />
       </div>
 
-      <details class="params">
-        <summary class="label">参数<span class="faint"> · {{ template?.name ?? '默认值' }}</span></summary>
-        <div v-if="paramsReady" class="stack params-body">
+      <Disclosure>
+        <template #summary><span class="faint"> · {{ template?.name ?? '默认值' }}</span></template>
+        <div v-if="paramsReady" class="stack">
           <ChatParamsFields
             ref="params" :key="templateId"
             :presets="presets.data.value ?? []" :models="models.data.value ?? []" :initial="template?.settings ?? null"
           />
           <div class="save-as">
-            <h3>另存为配置</h3>
+            <h3>另存为模板</h3>
             <div class="row wrap">
-              <input v-model="saveAs.name" class="input grow" placeholder="配置名称" />
+              <input v-model="saveAs.name" class="input grow" placeholder="模板名称" />
               <label class="check"><input v-model="saveAs.is_default" type="checkbox" /> 设为默认</label>
               <button
                 class="btn small" type="button" :disabled="!saveAs.name.trim() || saveTemplate.isPending.value"
                 @click="saveTemplate.mutate()"
               >保存</button>
             </div>
-            <ErrorBox v-if="saveTemplate.error.value" :error="saveTemplate.error.value" title="配置保存失败" />
+            <ErrorBox v-if="saveTemplate.error.value" :error="saveTemplate.error.value" title="模板保存失败" />
           </div>
         </div>
-      </details>
+      </Disclosure>
       <ErrorBox v-if="create.error.value" :error="create.error.value" title="创建失败" />
     </div>
     <template #footer>
@@ -164,7 +164,6 @@ const saveTemplate = useMutation({
 h3 { margin-top: var(--space-1); }
 .notice { padding: var(--space-3) var(--space-3); border-radius: var(--radius-m); background: var(--warn-soft); }
 summary { cursor: pointer; }
-.params-body { padding-top: var(--space-3); }
 .save-as { border-top: 1px solid var(--border); padding-top: var(--space-3); }
 .save-as .row { gap: var(--space-3); align-items: center; }
 </style>

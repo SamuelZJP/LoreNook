@@ -5,6 +5,8 @@ import { Save, Trash2, Send, KeyRound } from 'lucide-vue-next'
 import { api, API_TYPES, type ModelConfig } from '@/api/endpoints'
 import ErrorBox from '../ErrorBox.vue'
 import ScopeNote from './ScopeNote.vue'
+import InfoTip from '../InfoTip.vue'
+import Disclosure from '../Disclosure.vue'
 import JsonField, { jsonProblem } from './JsonField.vue'
 import { toast } from '@/composables/toast'
 import { pretty } from '@/lib/format'
@@ -36,6 +38,8 @@ const keyInput = ref('')
 const loadError = ref<unknown>(null)
 const saveError = ref<unknown>(null)
 const saving = ref(false)
+// Declared before the immediate watch below, which resets it.
+const testBody = ref('{}')
 
 function reset(m: ModelConfig | null) {
   original.value = m
@@ -122,7 +126,6 @@ async function remove() {
 }
 
 // ---- Invocation test (one real call) ----
-const testBody = ref('{}')
 const testing = ref(false)
 const testError = ref<unknown>(null)
 const testResponse = ref<Record<string, unknown> | null>(null)
@@ -167,22 +170,10 @@ async function test() {
         </div>
       </div>
       <div class="field">
-        <label>Base URL</label>
-        <input v-model="form.base_url" class="input mono" placeholder="https://…" />
-        <span class="hint">API 根地址，包含所需的版本路径；不要包含模型路径、查询参数或凭据。</span>
+        <div class="row label-row"><label>接口地址</label><InfoTip>服务商提供的 API 地址，含版本路径，例如 <code>https://api.deepseek.com/v1</code>。</InfoTip></div>
+        <input v-model="form.base_url" class="input mono" placeholder="https://api.example.com/v1" />
       </div>
-      <div class="grid-2">
-        <div class="field"><label>模型</label><input v-model="form.model" class="input mono" placeholder="例如 deepseek-chat" /></div>
-        <div class="field">
-          <label>请求超时（秒）</label>
-          <input v-model.number="form.timeout_seconds" class="input" type="number" min="10" max="1800" step="1" />
-          <span class="hint">10–1800；超过这么久没有收到任何数据即判定超时。</span>
-        </div>
-      </div>
-      <div class="field">
-        <label class="check"><input v-model="form.streaming" type="checkbox" /> 流式输出</label>
-        <span class="hint">以流式接收模型响应，再拼合成完整结果；网关对首字节等待有时长限制时开启。</span>
-      </div>
+      <div class="field"><label>模型</label><input v-model="form.model" class="input mono" placeholder="deepseek-chat" /></div>
 
       <div class="field">
         <label>API Key</label>
@@ -196,7 +187,17 @@ async function test() {
         <span v-if="keyMode === 'clear'" class="hint warn">保存时将清除已存储的密钥。</span>
       </div>
 
-      <JsonField v-model="params" label="默认参数（使用目标 API 的原生字段，缺失的请求字段会被递归填充）" min-height="100px" />
+      <Disclosure>
+        <div class="field">
+          <div class="row label-row"><label>请求超时（秒）</label><InfoTip>10–1800。超过这么久没有收到任何数据就判定超时。</InfoTip></div>
+          <input v-model.number="form.timeout_seconds" class="input timeout" type="number" min="10" max="1800" step="1" />
+        </div>
+        <div class="row label-row">
+          <label class="check"><input v-model="form.streaming" type="checkbox" /> 流式接收</label>
+          <InfoTip>网关限制首字节等待时间时开启。</InfoTip>
+        </div>
+        <JsonField v-model="params" label="默认参数" min-height="100px" />
+      </Disclosure>
       <ErrorBox v-if="saveError" :error="saveError" title="保存失败" />
       <div class="row">
         <button v-if="original" class="btn danger" type="button" @click="remove"><Trash2 /> 删除</button>
@@ -207,9 +208,9 @@ async function test() {
       </div>
 
       <details v-if="original" class="card card-pad">
-        <summary><h3>调用测试</h3></summary>
+        <summary><h3>测试连接</h3></summary>
         <div class="stack">
-          <p class="hint">使用已保存的配置真实调用一次模型（会消耗额度），默认参数会合并进请求体。</p>
+          <p class="muted small">会真实调用一次模型，消耗少量额度。</p>
           <JsonField v-model="testBody" label="请求体" min-height="100px" />
           <div class="row"><span class="spacer" />
             <button class="btn" type="button" :disabled="testing || !!jsonProblem(testBody)" @click="test"><Send /> {{ testing ? '调用中…' : '发送测试请求' }}</button>
@@ -229,6 +230,10 @@ async function test() {
 .key-modes { gap: var(--space-4); margin-bottom: var(--space-1); }
 .key-modes svg { width: 12px; height: 12px; }
 .warn { color: var(--warn); }
+.label-row { gap: var(--space-1); }
+.label-row > label:not(.check) { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); }
+.timeout { max-width: 160px; }
+.small { font-size: var(--text-sm); }
 summary { cursor: pointer; }
 summary h3 { display: inline; }
 .raw { padding: var(--space-2); background: var(--bg-sunken); border-radius: var(--radius-s); font-size: var(--text-xs); max-height: 360px; overflow: auto; }

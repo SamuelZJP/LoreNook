@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
-import { Code2, Pencil, Save, Undo2 } from 'lucide-vue-next'
+import { Code2, Lock, Pencil, Save, Undo2 } from 'lucide-vue-next'
 import { api } from '@/api/endpoints'
 import CodeEditor from '../CodeEditor.vue'
 import ErrorBox from '../ErrorBox.vue'
+import InfoTip from '../InfoTip.vue'
 import { jsonProblem } from '../editors/JsonField.vue'
 import { toast } from '@/composables/toast'
 import { formatTime, pretty } from '@/lib/format'
@@ -91,19 +92,21 @@ async function save() {
 <template>
   <div class="stack">
     <div class="row">
-      <h3 class="grow">最新状态</h3>
+      <h3>当前状态</h3>
+      <span v-if="state.data.value" class="faint stamp" :title="formatTime(state.data.value.created_at)">
+        {{ state.data.value.round_id ? formatTime(state.data.value.created_at) : '开场' }}
+      </span>
+      <span class="grow" />
       <template v-if="!editing">
-        <button class="btn small" type="button" :disabled="!editable || !state.data.value" @click="start"><Pencil /> 编辑</button>
+        <button v-if="editable" class="btn small" type="button" :disabled="!state.data.value" @click="start"><Pencil /> 编辑</button>
+        <span v-else class="locked faint" title="这一回合整理完成后才能编辑"><Lock /></span>
       </template>
       <template v-else>
+        <InfoTip>保存后会按角色规则校验，并用于下一次写作。已生成的摘要不会重算。</InfoTip>
         <button class="btn small" type="button" @click="cancel"><Undo2 /> 取消</button>
         <button class="btn small primary" type="button" :disabled="saving || !parsed" @click="save"><Save /> 保存</button>
       </template>
     </div>
-    <p v-if="state.data.value" class="hint">
-      {{ state.data.value.round_id ? '来自最近保存的回合' : '初始状态（尚无回合）' }} · {{ formatTime(state.data.value.created_at) }}
-    </p>
-    <p v-if="!editable" class="hint">归档未完成时不能手动编辑状态。</p>
     <ErrorBox v-if="state.error.value" :error="state.error.value" />
 
     <div v-if="editing && world" class="world card card-pad">
@@ -144,12 +147,14 @@ async function save() {
 
     <CodeEditor v-if="editing" v-model="draft" language="json" min-height="260px" />
     <span v-if="editing && jsonProblem(draft)" class="bad">JSON 无效：{{ jsonProblem(draft) }}</span>
-    <p v-if="editing" class="hint">保存后会经过角色 Schema 校验与修正，并立即用于下一次生成；不会重新计算摘要或情节。键名需保持原样（例如 <code>世界</code>）。</p>
     <ErrorBox v-if="error" :error="error" title="保存失败，编辑内容已保留" />
   </div>
 </template>
 
 <style scoped>
+.stamp { font-size: var(--text-xs); }
+.locked { display: inline-flex; padding: var(--space-1); }
+.locked svg { width: 15px; height: 15px; }
 .scene {
   padding: var(--space-4); border-radius: var(--radius-l);
   background: var(--accent-soft); color: var(--text);

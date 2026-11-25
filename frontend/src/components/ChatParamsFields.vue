@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { MODEL_PURPOSES, type ChatTemplateSettings, type ModelConfig, type ModelPurpose, type Preset } from '@/api/endpoints'
 import { PURPOSE_LABELS } from '@/lib/archive'
+import InfoTip from './InfoTip.vue'
 import NewChatIllustrationSection from '@/features/illustrations/components/NewChatIllustrationSection.vue'
 import NewChatRecallSection from '@/features/recall/components/NewChatRecallSection.vue'
 
@@ -25,7 +26,6 @@ const dropped = ref(0)
 const illustrationSection = ref<InstanceType<typeof NewChatIllustrationSection>>()
 const recallSection = ref<InstanceType<typeof NewChatRecallSection>>()
 
-const selectedPreset = computed(() => props.presets.find((p) => p.id === form.writing_preset_id))
 const writingModel = computed(() => props.models.find((m) => m.id === form.bindings.writing))
 
 onMounted(() => {
@@ -96,16 +96,16 @@ defineExpose({ snapshot, applyFeatures })
   <div class="stack">
     <p v-if="dropped" class="hint warn">配置引用的 {{ dropped }} 项预设或模型已从资源库删除，已忽略。</p>
 
-    <h3>写作预设</h3>
+    <h3>写作风格</h3>
     <div class="field">
-      <label>使用的预设</label>
+      <label>使用的风格</label>
       <select v-model="form.writing_preset_id" class="select">
         <option value="">（暂不选择）</option>
         <option v-for="p in presets" :key="p.id" :value="p.id">{{ p.name }}</option>
       </select>
     </div>
     <details v-if="presets.length > 1">
-      <summary class="label">同时复制其他预设</summary>
+      <summary class="label">同时带上其他风格</summary>
       <div class="row wrap checks">
         <label v-for="p in presets" v-show="p.id !== form.writing_preset_id" :key="p.id" class="check">
           <input v-model="form.writing_preset_ids" type="checkbox" :value="p.id" /> {{ p.name }}
@@ -113,8 +113,10 @@ defineExpose({ snapshot, applyFeatures })
       </div>
     </details>
 
-    <h3>模型绑定</h3>
-    <p v-if="!models.length" class="hint">资源库中还没有模型配置，可以稍后在聊天设置中添加。</p>
+    <div class="row">
+      <h3>模型</h3>
+      <InfoTip>不同的工作可以交给不同的模型。<template v-if="writingModel">写作模型的接口类型（<code>{{ writingModel.api_type }}</code>）需与预设一致。</template></InfoTip>
+    </div>
     <div class="grid-2">
       <div v-for="p in MODEL_PURPOSES" :key="p" class="field">
         <label>{{ PURPOSE_LABELS[p] }}</label>
@@ -124,11 +126,8 @@ defineExpose({ snapshot, applyFeatures })
         </select>
       </div>
     </div>
-    <p v-if="selectedPreset && writingModel" class="hint">
-      写作模型 API 类型：<code>{{ writingModel.api_type }}</code>。预设构建的请求必须使用相同的 API 类型。
-    </p>
     <details v-if="models.length > 1">
-      <summary class="label">额外复制未绑定的模型配置</summary>
+      <summary class="label">同时带上其他模型</summary>
       <div class="row wrap checks">
         <label v-for="m in models" :key="m.id" class="check">
           <input v-model="form.model_config_ids" type="checkbox" :value="m.id" /> {{ m.name }}
@@ -139,14 +138,17 @@ defineExpose({ snapshot, applyFeatures })
     <NewChatRecallSection ref="recallSection" :models="models" />
     <NewChatIllustrationSection ref="illustrationSection" />
 
-    <h3>记忆</h3>
+    <div class="row">
+      <h3>记忆</h3>
+      <InfoTip>最近的若干回合以原文交给 AI，更早的压缩成摘要和情节。原文越多越连贯，也越耗费额度。</InfoTip>
+    </div>
     <div class="grid-2">
       <div class="field">
-        <label>最近完整回合数 X</label>
+        <label>保留原文的回合</label>
         <input v-model.number="form.recent_rounds" class="input" type="number" min="0" />
       </div>
       <div class="field">
-        <label>最少保留回合摘要数 Y</label>
+        <label>至少保留的摘要</label>
         <input v-model.number="form.min_summaries" class="input" type="number" min="0" />
       </div>
     </div>

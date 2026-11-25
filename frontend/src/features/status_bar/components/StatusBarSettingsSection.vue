@@ -35,8 +35,7 @@ async function setEnabled(enabled: boolean) {
                @change="setEnabled(($event.target as HTMLInputElement).checked)" />
         在回复底部显示状态栏
       </label>
-      <span v-if="!hasCode" class="hint">本聊天的角色没有状态栏代码，可以在“资源”标签的角色“状态栏”中编写。</span>
-      <span v-else class="hint">最新回合总是显示；更早的回合可在回合下方单独展开。</span>
+      <span v-if="!hasCode" class="hint">这个角色还没有状态栏。</span>
     </template>
     <ErrorBox v-if="error" :error="error" title="保存失败" />
   </div>

@@ -5,6 +5,7 @@ import { Save, FileCode } from 'lucide-vue-next'
 import { api, type Character } from '@/api/endpoints'
 import CodeEditor from '@/components/CodeEditor.vue'
 import ErrorBox from '@/components/ErrorBox.vue'
+import InfoTip from '@/components/InfoTip.vue'
 import { toast } from '@/composables/toast'
 import { statusBarApi } from '../api'
 import { EXAMPLE } from '../example'
@@ -77,19 +78,22 @@ const previewData = computed(() => sample.value && {
   <div class="stack">
     <ErrorBox v-if="loadError" :error="loadError" title="读取失败" />
     <template v-else>
-      <p class="hint">
-        一段 HTML（可含 &lt;style&gt; 和 &lt;script&gt;），显示在回复底部。代码在隔离的框架中运行，不能访问 LoreNook，也不能发出网络请求，但可以从 CDN 加载脚本（例如 Vue）。
-        用 <code>lorenook.onData(data =&gt; …)</code> 接收数据：<code>state</code>（该回合结束时的完整状态）、<code>round_no</code>、<code>character.name</code>、<code>identity.name</code>、<code>theme</code>。
-        框架里可以直接使用 <code>var(--page-text)</code> 等界面颜色变量。留空表示没有状态栏。
-      </p>
       <div class="row">
+        <span class="label">状态栏 HTML</span>
+        <InfoTip>
+          显示在回复底部的一段 HTML，在隔离框架中运行，可从 CDN 加载脚本。
+          用 <code>lorenook.onData(data =&gt; …)</code> 接收 <code>state</code>、<code>round_no</code>、<code>character.name</code>、<code>identity.name</code>、<code>theme</code>。
+          可用 <code>var(--page-text)</code> 等颜色变量。留空即不显示。
+        </InfoTip>
         <span class="spacer" />
         <button class="btn small" type="button" @click="insertExample"><FileCode /> 插入示例</button>
       </div>
       <CodeEditor v-model="code" language="html" min-height="220px" />
       <div class="stack tight">
-        <h3>预览</h3>
-        <span class="hint">{{ chatId ? '使用本聊天的最新状态。' : '使用第一个开场的初始状态。' }}</span>
+        <div class="row">
+          <h3>预览</h3>
+          <InfoTip>{{ chatId ? '使用本聊天的最新状态。' : '使用第一个开场的初始状态。' }}</InfoTip>
+        </div>
         <ErrorBox v-if="sampleError" :error="sampleError" title="无法生成预览数据" />
         <div v-else-if="code.trim() && previewData" class="page-surface preview">
           <StatusBarFrame :code="code" :data="previewData" />

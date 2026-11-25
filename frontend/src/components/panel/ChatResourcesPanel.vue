@@ -4,6 +4,7 @@ import { Pencil, Plus, KeyRound } from 'lucide-vue-next'
 import type { ChatDetail } from '@/api/endpoints'
 import ModalDialog from '../ModalDialog.vue'
 import AvatarBadge from '../AvatarBadge.vue'
+import InfoTip from '../InfoTip.vue'
 import ProfileEditor from '../editors/ProfileEditor.vue'
 import PresetEditor from '../editors/PresetEditor.vue'
 import ModelEditor from '../editors/ModelEditor.vue'
@@ -18,8 +19,10 @@ const titles = { character: '编辑本聊天角色', identity: '编辑本聊天�
 
 <template>
   <div class="stack">
-    <p class="hint">以下都是这个聊天独立的副本，修改不会影响资源库或其他聊天。</p>
-    <h3>角色与身份</h3>
+    <div class="row">
+      <h3>角色与身份</h3>
+      <InfoTip>这里的内容属于本聊天，修改不会影响资源库或其他聊天。</InfoTip>
+    </div>
     <button class="list-item card" type="button" @click="editing = { kind: 'character' }">
       <AvatarBadge :name="chat.character.name" :src="chat.character.avatar" />
       <div class="grow"><div class="ellipsis"><strong>{{ chat.character.name }}</strong></div><div class="faint">角色 · {{ chat.character.definitions.length }} 条定义</div></div>

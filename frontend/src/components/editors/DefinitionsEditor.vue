@@ -6,6 +6,7 @@ import { api, type Definition } from '@/api/endpoints'
 import { ApiError, isTemplateError, type TemplateErrorDetail } from '@/api/client'
 import CodeEditor from '../CodeEditor.vue'
 import ErrorBox from '../ErrorBox.vue'
+import InfoTip from '../InfoTip.vue'
 import { toast } from '@/composables/toast'
 
 /** Definitions of one owner. `base` is the owner path, e.g. `/api/characters/{id}`. */
@@ -148,20 +149,21 @@ async function preview() {
 <template>
   <div class="stack">
     <div class="row wrap">
-      <h3 class="grow">{{ title ?? '定义' }}</h3>
+      <h3>{{ title ?? '定义' }}</h3>
+      <InfoTip>按顺序交给 AI。勾选“模板”的条目会按当前剧情状态展开，例如 <code v-pre>{{ state["世界"]["时间"] }}</code>。</InfoTip>
+      <span class="grow" />
       <button v-if="chatId" class="btn small" type="button" @click="preview"><Eye /> 渲染预览</button>
       <button v-if="anyDirty" class="btn small primary" type="button" @click="saveAll"><Save /> 全部保存</button>
       <button class="btn small" type="button" :disabled="busy" @click="add"><Plus /> 新增</button>
       <button class="btn ghost icon small" type="button" :title="allOpen ? '全部收起' : '全部展开'" :disabled="!list.data.value?.length" @click="toggleAll"><ChevronsUpDown /></button>
     </div>
-    <p class="hint">按顺序传给预设。启用“模板”的条目会用 Jinja2 针对最新状态渲染，例如 <code v-pre>{{ state["世界"]["时间"] }}</code>。渲染失败会在调用模型前停止生成。</p>
     <ErrorBox v-if="list.error.value" :error="list.error.value" />
     <ErrorBox v-if="listError" :error="listError" />
     <div v-if="templateError" class="tpl-error">
       模板渲染失败：条目 #{{ (list.data.value ?? []).findIndex((d) => d.id === templateError!.definition_id) + 1 }}
       <span v-if="templateError.line">第 {{ templateError.line }} 行</span>：{{ templateError.message }}
     </div>
-    <div v-if="resolved" class="hint ok">渲染成功，结果已显示在各启用条目下方（仅预览，不会保存）。</div>
+    <div v-if="resolved" class="hint ok">渲染成功，结果显示在各条目下方。</div>
     <div v-if="list.data.value && !list.data.value.length" class="empty">暂无定义</div>
 
     <div

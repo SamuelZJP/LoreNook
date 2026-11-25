@@ -6,6 +6,7 @@ import { Save, Trash2 } from 'lucide-vue-next'
 import { api, MODEL_PURPOSES, type ChatDetail, type ChatPatch, type ModelPurpose } from '@/api/endpoints'
 import { PURPOSE_LABELS } from '@/lib/archive'
 import ErrorBox from '../ErrorBox.vue'
+import InfoTip from '../InfoTip.vue'
 import IllustrationSettingsSection from '@/features/illustrations/components/IllustrationSettingsSection.vue'
 import RecallSettingsSection from '@/features/recall/components/RecallSettingsSection.vue'
 import StatusBarSettingsSection from '@/features/status_bar/components/StatusBarSettingsSection.vue'
@@ -80,17 +81,23 @@ async function removeChat() {
 <template>
   <div class="stack">
     <div class="field"><label>标题</label><input v-model="form.title" class="input" /></div>
-    <h3>记忆</h3>
+    <div class="row">
+      <h3>记忆</h3>
+      <InfoTip>最近的若干回合以原文交给 AI，更早的压缩成摘要和情节。原文越多越连贯，也越耗费额度。</InfoTip>
+    </div>
     <div class="grid-2">
-      <div class="field"><label>最近完整回合 X</label><input v-model.number="form.recent_rounds" class="input" type="number" min="0" /></div>
-      <div class="field"><label>最少回合摘要 Y</label><input v-model.number="form.min_summaries" class="input" type="number" min="0" /></div>
+      <div class="field"><label>保留原文的回合</label><input v-model.number="form.recent_rounds" class="input" type="number" min="0" /></div>
+      <div class="field"><label>至少保留的摘要</label><input v-model.number="form.min_summaries" class="input" type="number" min="0" /></div>
     </div>
     <h3>写作预设</h3>
     <select v-model="form.writing_preset_id" class="select">
       <option value="">（未选择）</option>
       <option v-for="p in chat.writing_presets" :key="p.id" :value="p.id">{{ p.name }}</option>
     </select>
-    <h3>模型绑定</h3>
+    <div class="row">
+      <h3>模型</h3>
+      <InfoTip>只能选择本聊天里的模型和预设，可在“资源”中添加。<template v-if="writingModel">写作模型的接口类型（<code>{{ writingModel.api_type }}</code>）需与预设一致。</template></InfoTip>
+    </div>
     <div v-for="p in MODEL_PURPOSES" :key="p" class="field">
       <label>{{ PURPOSE_LABELS[p] }}</label>
       <select v-model="form.bindings[p]" class="select">
@@ -98,8 +105,6 @@ async function removeChat() {
         <option v-for="m in chat.model_configs" :key="m.id" :value="m.id">{{ m.name }} · {{ m.model }}</option>
       </select>
     </div>
-    <p v-if="writingModel" class="hint">写作模型 API 类型为 <code>{{ writingModel.api_type }}</code>，需与预设 build 返回的 <code>api_type</code> 一致。</p>
-    <p class="hint">这里只能选择本聊天的副本。可以在“资源”标签中新增或编辑本聊天的预设与模型配置。</p>
     <ErrorBox v-if="error" :error="error" title="保存失败" />
     <div class="row">
       <button class="btn danger" type="button" @click="removeChat"><Trash2 /> 删除聊天</button>

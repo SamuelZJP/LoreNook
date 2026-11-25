@@ -5,6 +5,7 @@ import { Save, Trash2 } from 'lucide-vue-next'
 import { api, type ChatTemplate } from '@/api/endpoints'
 import ChatParamsFields from '../ChatParamsFields.vue'
 import ErrorBox from '../ErrorBox.vue'
+import InfoTip from '../InfoTip.vue'
 import { toast } from '@/composables/toast'
 
 const props = defineProps<{ id: string | null }>()
@@ -80,11 +81,13 @@ async function remove() {
 
 <template>
   <div class="stack">
-    <p class="hint">新建聊天时选择配置，即可预填以下参数；角色、用户身份和开场每次单独选择。配置只保存资源库条目的引用，被删除的条目会在使用时忽略。</p>
     <ErrorBox v-if="loadError" :error="loadError" title="读取失败" />
     <template v-else-if="ready">
       <div class="grid-2">
-        <div class="field"><label>名称</label><input v-model="name" class="input" /></div>
+        <div class="field">
+          <div class="row tight-row"><label class="label">名称</label><InfoTip>新建聊天时选中这个模板，下面的设置会自动填好。</InfoTip></div>
+          <input v-model="name" class="input" />
+        </div>
         <div class="field">
           <label>默认</label>
           <label class="check"><input v-model="isDefault" type="checkbox" /> 新建聊天时默认选中</label>
@@ -105,3 +108,7 @@ async function remove() {
     </template>
   </div>
 </template>
+
+<style scoped>
+.tight-row { gap: var(--space-1); }
+</style>

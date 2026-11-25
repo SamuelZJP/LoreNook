@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import { RefreshCw, ChevronRight, ChevronsUpDown } from 'lucide-vue-next'
+import { RefreshCw, ChevronRight, ChevronsUpDown, Sparkles } from 'lucide-vue-next'
 import { api, type ChatDetail, type ChatMemory } from '@/api/endpoints'
 import ErrorBox from '../ErrorBox.vue'
+import InfoTip from '../InfoTip.vue'
 import { contentBody } from '@/lib/sections'
 
 /** `timeline` replaces the assembled history for the current request; what differs is highlighted. */
@@ -51,20 +52,21 @@ function previewOf(item: Item) {
 <template>
   <div class="stack">
     <div class="row">
-      <h3 class="grow">写作上下文中的历史</h3>
+      <h3>记忆</h3>
+      <InfoTip>AI 写作时能看到的往事。较早的回合会压缩成摘要或情节；发送时与当前剧情相关的会临时展开。</InfoTip>
+      <span class="grow" />
       <button class="btn ghost icon small" type="button" :title="allOpen ? '全部收起' : '全部展开'" :disabled="!items.length" @click="toggleAll"><ChevronsUpDown /></button>
       <button class="btn ghost icon small" type="button" title="刷新" @click="memory.refetch()"><RefreshCw /></button>
     </div>
-    <p class="hint">由后端选择，每个已归档回合只使用一种表示。高亮的是本次发送时展开的记忆。这里只读。</p>
     <ErrorBox v-if="memory.error.value" :error="memory.error.value" />
     <template v-if="shown">
       <div class="row wrap">
-        <span class="badge">共 {{ shown.total_rounds }} 回合</span>
-        <span class="badge accent">情节 {{ counts.episode }}</span>
-        <span class="badge accent">摘要 {{ counts.summary }}</span>
-        <span class="badge accent">完整 {{ counts.round }}</span>
+        <span class="badge">{{ shown.total_rounds }} 回合</span>
+        <span class="legend episode">情节 {{ counts.episode }}</span>
+        <span class="legend summary">摘要 {{ counts.summary }}</span>
+        <span class="legend round">完整 {{ counts.round }}</span>
         <span v-if="preparing" class="badge">{{ preparing }}</span>
-        <span v-else-if="expanded.size" class="badge accent">本次展开 {{ expanded.size }}</span>
+        <span v-else-if="expanded.size" class="badge accent"><Sparkles class="spark" /> 本次展开 {{ expanded.size }}</span>
       </div>
       <div v-if="!items.length" class="empty">还没有已归档的回合</div>
       <ol class="items">
@@ -72,6 +74,7 @@ function previewOf(item: Item) {
           <button class="head" type="button" :aria-expanded="open.has(keyOf(item))" @click="toggle(item)">
             <ChevronRight class="chevron" />
             <span class="kind">{{ kindLabel[item.kind] }}</span>
+            <Sparkles v-if="expanded.has(keyOf(item))" class="spark" />
             <span class="range">{{ rangeOf(item) }}</span>
             <span class="preview">{{ previewOf(item) }}</span>
           </button>
@@ -93,6 +96,12 @@ function previewOf(item: Item) {
 </template>
 
 <style scoped>
+.legend { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-xs); color: var(--text-muted); }
+.legend::before { content: ''; width: 3px; height: 12px; border-radius: 2px; background: var(--border-strong); }
+.legend.episode::before { background: var(--accent); }
+.legend.summary::before { background: var(--warn); }
+.legend.round::before { background: var(--ok); }
+.spark { width: 13px; height: 13px; flex: none; color: var(--accent); }
 .items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
 .items li { border-radius: var(--radius-s); background: var(--bg-sunken); border-left: 3px solid var(--border-strong); }
 .items li.episode { border-left-color: var(--accent); }

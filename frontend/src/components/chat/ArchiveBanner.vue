@@ -53,7 +53,7 @@ const visible = computed(() => phase.value === 'archiving' || phase.value === 'i
       <strong>记录的错误：</strong>{{ round.archive_error }}
     </p>
     <p v-else-if="phase === 'incomplete'" class="hint">
-      该步骤没有错误记录，可能是请求中断。继续归档只会从当前步骤开始，不会重复已完成的步骤。
+      上次整理中断了，继续会从这一步接着做。
     </p>
     <ErrorBox v-if="showErr && err" :error="err.error" :title="err.action === 'retry' ? '继续归档失败' : err.action === 'check' ? '读取进度失败' : '确认失败'">
       <p v-if="err.note" class="note">{{ err.note }}</p>

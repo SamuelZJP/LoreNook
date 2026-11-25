@@ -10,6 +10,7 @@ import ImageUpload from '../ImageUpload.vue'
 import PortraitEditor from '@/features/illustrations/components/PortraitEditor.vue'
 import StatusBarEditor from '@/features/status_bar/components/StatusBarEditor.vue'
 import ScopeNote from './ScopeNote.vue'
+import InfoTip from '../InfoTip.vue'
 import DefinitionsEditor from './DefinitionsEditor.vue'
 import ScenesEditor, { newScene, type SceneDraft } from './ScenesEditor.vue'
 import { jsonProblem } from './JsonField.vue'
@@ -168,9 +169,12 @@ const tabs = computed(() => [
   { id: 'basic' as const, label: '基本信息', fields: ['name', 'avatar', 'description'] as Field[] },
   ...(isCharacter.value ? [{ id: 'scenes' as const, label: '开场', fields: [] as Field[] }] : []),
   ...(isCharacter.value ? [{ id: 'state' as const, label: '状态', fields: ['state_schema', 'state_reference', 'state_update_rules', 'state_script'] as Field[] }] : []),
-  { id: 'definitions' as const, label: `${noun.value}定义`, fields: [] as Field[] },
-  { id: 'portrait' as const, label: '画像', fields: [] as Field[] },
-  ...(isCharacter.value ? [{ id: 'status-bar' as const, label: '状态栏', fields: [] as Field[] }] : []),
+  // These save on their own against an existing record, so they appear once it exists.
+  ...(creating.value ? [] : [
+    { id: 'definitions' as const, label: `${noun.value}定义`, fields: [] as Field[] },
+    { id: 'portrait' as const, label: '画像', fields: [] as Field[] },
+    ...(isCharacter.value ? [{ id: 'status-bar' as const, label: '状态栏', fields: [] as Field[] }] : []),
+  ]),
 ])
 // These tabs save on their own, so the profile's save row doesn't apply to them.
 const ownSave = computed(() => tab.value === 'definitions' || tab.value === 'portrait' || tab.value === 'status-bar')
@@ -218,34 +222,33 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
       <section v-if="isCharacter" v-show="tab === 'state'" class="stack">
         <div class="field">
           <div class="row">
-            <label class="label grow">状态 Schema（Python / Pydantic）</label>
+            <label class="label">状态 Schema（Python / Pydantic）</label>
+            <InfoTip>
+              导出名为 <code>Schema</code> 的模型，必须包含 <code>世界</code> 对象：<code>日期</code>（YYYY-MM-DD）、<code>星期</code>、<code>时间</code>（HH:mm）、<code>地点</code>。
+              默认值与开场的初始变量合并成初始状态。
+            </InfoTip>
+            <span class="grow" />
             <button class="btn small" type="button" @click="fillSchemaExample"><FileCode /> 填入示例</button>
           </div>
           <CodeEditor v-model="draft.state_schema" language="python" min-height="220px" />
-          <span class="hint">
-            源码需导出名为 <code>Schema</code> 的模型，其默认值与各开场的初始变量合并生成初始状态，并且必须包含 <code>世界</code> 对象：
-            <code>日期</code>（YYYY-MM-DD）、<code>星期</code>（星期一–星期日）、<code>时间</code>（HH:mm）、<code>地点</code>。
-            创建或修改 Schema 时后端会校验每个开场的初始状态。
-          </span>
         </div>
         <div class="field"><label>状态参考信息</label><textarea v-model="draft.state_reference" class="textarea" rows="4" /></div>
         <div class="field"><label>状态更新规则</label><textarea v-model="draft.state_update_rules" class="textarea" rows="4" /></div>
         <div class="field">
           <div class="row">
-            <label class="label grow">状态脚本（Python，可留空）</label>
+            <label class="label">状态脚本（Python，可留空）</label>
+            <InfoTip>
+              定义 <code>process(state, previous, history)</code>，返回要保存的状态；抛出异常则本次更新失败。
+              <code>history</code> 是更早的状态列表，旧的在前，以 <code>previous</code> 结尾。
+            </InfoTip>
+            <span class="grow" />
             <button class="btn small" type="button" @click="fillScriptExample"><FileCode /> 填入示例</button>
           </div>
           <CodeEditor v-model="draft.state_script" language="python" min-height="160px" />
-          <span class="hint">
-            每次状态更新在模型的变更通过 Schema 校验后运行：<code>process(state, previous, history)</code> 返回要保存的状态，抛出异常则本次状态更新失败。
-            <code>previous</code> 是本回合之前的状态，<code>history</code> 是最近若干个之前的状态（旧→新，以 <code>previous</code> 结尾，<code>[{round_no, state}]</code>，初始状态的 round_no 为 0）。
-            返回结果会再次经过 Schema 校验。
-          </span>
         </div>
         <div class="field">
-          <label>历史状态数量</label>
-          <input v-model.number="scriptHistory" class="input" type="number" min="0" max="100" step="1" />
-          <span class="hint"><code>history</code> 包含的状态数，0–100，0 表示空列表。</span>
+          <div class="row tight-row"><label class="label">脚本可见的历史状态数</label><InfoTip>0–100。0 表示 <code>history</code> 为空。</InfoTip></div>
+          <input v-model.number="scriptHistory" class="input history" type="number" min="0" max="100" step="1" />
         </div>
       </section>
 
@@ -263,20 +266,14 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
 
       <section v-if="tab === 'definitions'" class="stack">
         <DefinitionsEditor v-if="defBase" :base="defBase" :chat-id="chatId" :title="`${noun}定义`" />
-        <template v-else-if="creating">
-          <h3>{{ noun }}定义</h3>
-          <p class="hint">创建后可以添加定义条目。</p>
-        </template>
       </section>
 
       <section v-if="tab === 'portrait'" class="stack">
         <PortraitEditor v-if="original" :kind="kind" :owner-id="original.id" :chat-id="chatId" />
-        <p v-else class="hint">创建后可以设置画像。</p>
       </section>
 
       <section v-if="tab === 'status-bar'" class="stack">
         <StatusBarEditor v-if="original && 'scenes' in original" :character="original" :chat-id="chatId" />
-        <p v-else class="hint">创建后可以编写状态栏。</p>
       </section>
     </template>
   </div>
@@ -286,5 +283,7 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
 .dot { display: inline-block; width: 6px; height: 6px; margin-left: var(--space-1); border-radius: 50%; background: var(--warn); vertical-align: middle; }
 .bad { color: var(--danger); }
 .avatar-row { align-items: flex-start; }
+.tight-row { gap: var(--space-1); }
+.history { max-width: 160px; }
 .actions { position: sticky; bottom: 0; background: var(--bg-elev); padding: var(--space-2) 0; z-index: 1; }
 </style>

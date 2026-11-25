@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { Save } from 'lucide-vue-next'
 import type { ModelConfig } from '@/api/endpoints'
 import ErrorBox from '@/components/ErrorBox.vue'
+import InfoTip from '@/components/InfoTip.vue'
 import { toast } from '@/composables/toast'
 import { recallApi, type RecallSettings } from '../api'
 
@@ -48,7 +49,10 @@ async function save() {
 
 <template>
   <div class="stack">
-    <h3>记忆召回</h3>
+    <div class="row">
+      <h3>记忆召回</h3>
+      <InfoTip>每次发送前，根据最近的剧情把相关的旧情节和摘要临时展开给 AI。上限是每次最多展开的条数。</InfoTip>
+    </div>
     <ErrorBox v-if="settings.error.value" :error="settings.error.value" title="读取失败" />
     <label class="check"><input v-model="form.enabled" type="checkbox" /> 启用记忆召回</label>
     <div class="grid-2">
@@ -72,8 +76,7 @@ async function save() {
         <input v-model.number="form.summary_limit" class="input" type="number" min="0" step="1" />
       </div>
     </div>
-    <p class="hint">每次发送时，以最近若干个完整回合和最新输入为依据，就地展开相关的情节和摘要。上限是每次最多展开的数量。</p>
-    <p v-if="form.enabled && !form.model_config_id" class="hint">还没有选择召回模型，选择之前不会进行召回。</p>
+    <p v-if="form.enabled && !form.model_config_id" class="hint warn">选择召回模型后才会生效。</p>
     <ErrorBox v-if="error" :error="error" title="保存失败" />
     <div class="row">
       <button class="btn small" type="button" :disabled="!dirty || saving" @click="save"><Save /> 保存记忆召回设置</button>

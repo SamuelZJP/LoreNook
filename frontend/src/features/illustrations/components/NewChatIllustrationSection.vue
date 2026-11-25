@@ -46,5 +46,5 @@ defineExpose({ apply, snapshot, restore })
       <option v-for="w in workflows.data.value" :key="w.id" :value="w.id">{{ w.name }}</option>
     </select>
   </div>
-  <p v-if="form.mode !== 'off' && !workflows.data.value?.length" class="hint">资源库中还没有图像工作流，可以先在资源库创建，或稍后在聊天资源中添加。</p>
+  <p v-if="form.mode !== 'off' && !workflows.data.value?.length" class="hint">还没有绘图工作流。</p>
 </template>

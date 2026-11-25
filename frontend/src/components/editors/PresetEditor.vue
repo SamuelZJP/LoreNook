@@ -7,6 +7,7 @@ import CodeEditor from '../CodeEditor.vue'
 import ErrorBox from '../ErrorBox.vue'
 import OutputView from '../chat/OutputView.vue'
 import ScopeNote from './ScopeNote.vue'
+import InfoTip from '../InfoTip.vue'
 import JsonField, { jsonProblem } from './JsonField.vue'
 import { toast } from '@/composables/toast'
 import { pretty, substituteNames } from '@/lib/format'
@@ -173,11 +174,12 @@ async function runParse() {
       <div class="field"><label>名称</label><input v-model="name" class="input" /></div>
       <div class="field">
         <div class="row">
-          <label class="label grow">JavaScript 源码</label>
+          <label class="label">JavaScript 源码</label>
+          <InfoTip>定义 <code>build(materials)</code> 返回 <code>{api_type, body}</code>，以及 <code>parse(response)</code> 返回 AI 输出全文。不支持 import/export。</InfoTip>
+          <span class="grow" />
           <button class="btn small" type="button" @click="fillExample"><FileCode /> 填入示例</button>
         </div>
         <CodeEditor v-model="source" language="javascript" min-height="320px" />
-        <span class="hint">定义同步函数 <code>build(materials)</code> 返回 <code>{api_type, body}</code>，以及 <code>parse(response)</code> 返回完整 AI 输出文本。不要使用 import/export。</span>
       </div>
       <ErrorBox v-if="saveError" :error="saveError" title="保存失败" />
       <div class="row">
@@ -189,7 +191,7 @@ async function runParse() {
       <details v-if="original" class="trials card card-pad" open>
         <summary><h3>试运行</h3></summary>
         <div class="stack">
-          <p class="hint">试运行使用<strong>已保存</strong>的源码，不会修改任何记录。{{ dirty ? '当前有未保存的修改。' : '' }}</p>
+          <p v-if="dirty" class="warn small">有未保存的修改，试运行用的是上次保存的版本。</p>
           <div class="row wrap">
             <span class="label grow">1. 构建（build）素材</span>
             <button v-if="chatId" class="btn small" type="button" :disabled="!!trialBusy" @click="loadChatMaterials"><Download /> 用当前聊天素材</button>
@@ -229,6 +231,8 @@ async function runParse() {
 <style scoped>
 .trials summary { cursor: pointer; margin-bottom: var(--space-2); }
 .trials summary h3 { display: inline; }
+.warn { color: var(--warn); }
+.small { font-size: var(--text-sm); }
 .model-pick { width: auto; max-width: 100%; }
 .raw { padding: var(--space-2); background: var(--bg-sunken); border-radius: var(--radius-s); font-size: var(--text-xs); }
 </style>

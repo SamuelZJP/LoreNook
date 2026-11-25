@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
 import { Plus, Save, Trash2, ChevronUp, ChevronDown } from 'lucide-vue-next'
 import ErrorBox from '@/components/ErrorBox.vue'
+import InfoTip from '@/components/InfoTip.vue'
 import ImageUpload from '@/components/ImageUpload.vue'
 import { toast } from '@/composables/toast'
 import { illustrationApi } from '../api'
@@ -80,10 +81,10 @@ async function save() {
   <div class="stack">
     <ErrorBox v-if="loadError" :error="loadError" title="读取失败" />
     <template v-else-if="kind === 'character'">
-      <p class="hint">
-        画面里可能出现的人物。多主角的角色卡（例如“ABC 学园”）应在这里列出每位主角。第一位是默认的主要人物；没有人物时默认使用角色卡本身。
-        外貌用简洁的视觉描述即可，工作流会把它改写成需要的风格。
-      </p>
+      <div class="row">
+        <h3>画面人物</h3>
+        <InfoTip>插图里可能出现的人物，多主角的角色卡要逐个列出。排第一的是默认主角。外貌写简短的视觉描述即可。</InfoTip>
+      </div>
       <div v-for="(m, i) in cast" :key="m.key" class="card card-pad member">
         <ImageUpload v-model="m.reference_image" label="参考图" :url-of="mediaUrl" />
         <div class="grow stack tight">
@@ -99,7 +100,10 @@ async function save() {
       <div class="row"><button class="btn small" type="button" @click="cast.push(toDraft({ name: '' }))"><Plus /> 添加人物</button></div>
     </template>
     <template v-else>
-      <p class="hint">用户身份入画时使用的外貌。可在聊天的插图设置中把用户身份选为主要人物。</p>
+      <div class="row">
+        <h3>入画外貌</h3>
+        <InfoTip>你在插图中出现时的样子。</InfoTip>
+      </div>
       <div class="card card-pad member">
         <ImageUpload v-model="look.reference_image" label="参考图" :url-of="mediaUrl" />
         <textarea v-model="look.appearance" class="textarea grow" rows="4" placeholder="外貌：发型、发色、瞳色、体型、常穿的衣服…" aria-label="外貌" />

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { RefreshCw, ChevronRight, ChevronsUpDown } from 'lucide-vue-next'
 import { api, type ChatDetail } from '@/api/endpoints'
 import ErrorBox from '../ErrorBox.vue'
+import InfoTip from '../InfoTip.vue'
 
 const props = defineProps<{ chat: ChatDetail }>()
 const resolved = useQuery({
@@ -33,11 +34,12 @@ const firstLine = (content: string) => content.trim().split('\n', 1)[0] || '（�
 <template>
   <div class="stack">
     <div class="row">
-      <h3 class="grow">定义渲染结果</h3>
+      <h3>设定预览</h3>
+      <InfoTip>按当前剧情状态展开后的角色设定和用户设定，也就是 AI 实际读到的内容。</InfoTip>
+      <span class="grow" />
       <button class="btn ghost icon small" type="button" :title="allOpen ? '全部收起' : '全部展开'" :disabled="!allKeys.length" @click="toggleAll"><ChevronsUpDown /></button>
       <button class="btn ghost icon small" type="button" title="刷新" :disabled="resolved.isFetching.value" @click="resolved.refetch()"><RefreshCw /></button>
     </div>
-    <p class="hint">按当前状态渲染本聊天的角色定义和用户定义。这里只读。</p>
     <ErrorBox v-if="resolved.error.value" :error="resolved.error.value" title="定义渲染失败" />
     <div v-else-if="resolved.isPending.value" class="empty">渲染中…</div>
     <template v-else>
