@@ -12,7 +12,7 @@ defineProps<{ items: Item[] }>()
         <summary :title="it.hint">{{ it.label }}<span class="count">{{ it.items.length }}</span></summary>
         <StateItems :items="it.items" />
       </details>
-      <div v-else class="item" :class="it.kind">
+      <div v-else class="item" :class="`is-${it.kind}`">
         <dt :title="it.hint">{{ it.label }}</dt>
         <dd v-if="it.kind === 'text'">{{ it.value }}</dd>
         <dd v-else-if="it.kind === 'dot'"><span class="dot" :class="{ on: it.value }" />{{ it.value ? '是' : '否' }}</dd>
@@ -32,7 +32,7 @@ defineProps<{ items: Item[] }>()
 .item + .item, .group + .item, .item + .group, .group + .group { border-top: 1px solid var(--border); }
 dt { flex: 0 0 auto; max-width: 40%; color: var(--text-muted); font-size: var(--text-sm); }
 dd { margin: 0; flex: 1; min-width: 0; text-align: right; font-size: var(--text-sm); overflow-wrap: anywhere; }
-.bar { flex-wrap: wrap; }
+.is-bar { flex-wrap: wrap; }
 .bar-cell { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-1); }
 .num { font-variant-numeric: tabular-nums; font-weight: 500; }
 .max { color: var(--text-faint); font-weight: 400; }
