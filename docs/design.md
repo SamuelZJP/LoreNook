@@ -118,6 +118,28 @@ State is free-form JSON, but top-level `世界` is required:
 - Generated states and chat-UI edits go through Schema + world contract. Data management writes check only the world contract (no Schema execution).
 - Templates read state with `state["世界"]["时间"]`.
 
+### State display
+
+The chat's state panel is drawn from the state plus the JSON Schema exported from the chat's `Schema`, so no character needs display code:
+
+- **Scene line** on top from `世界`, the same for every character.
+- **One card per other top-level object** (usually a person); other top-level values go in a final 其他 card.
+- **Display hints**, optional, in the field's `json_schema_extra={"display": ...}`: `bar` (number, with `max`, default 100), `tags` (list of strings), `group` (object as a collapsible group), `hidden`. Pydantic `title`/`description` become the label and tooltip.
+- **Fallback by value type** when there is no hint: number and string as text, boolean as a dot, list of scalars as tags, object as a group, empty values hidden.
+- **原始数据** at the bottom keeps the JSON editor; editing happens there.
+
+On wide screens the panel sits on the right; on phones it is a bottom sheet opened from the scene line.
+
+## Visual design
+
+"Ink and paper, by candlelight": a cabin corner lit by a candle. Calm, reading first.
+
+- **Floating islands.** The app shell is a warm wood-toned ground; sidebar, reading area and side panel are rounded cards on it with small gaps, not full-height columns split by rules.
+- **One accent, candle amber** (`#A85C14` light, `#E8A04A` dark), used for the send action, the current selection and dialogue marks only. Everything else is ink and paper neutrals. Dark mode (walnut ground, candlelit paper text) is the primary look.
+- **Reading column** ~720px, serif body, dialogue marked by a thin left rule instead of a box.
+- **Tokens only.** Colors, font sizes, spacing and radii come from `frontend/src/styles/tokens.css`; components don't write raw values. Dark values are defined once.
+- **Avatars** use the image, falling back to the first character of the name.
+
 ## Memory assembly
 
 History uses three representations, oldest to newest: **episodes → round summaries → full rounds**. Each archived round appears in exactly one.
@@ -258,6 +280,8 @@ A reply's reading page is, top to bottom: the illustration (if any), the **scene
 A character may carry status bar code: one HTML document, copied into chats with the card and editable there. It renders in a frame sandboxed without same-origin, and its CSP blocks requests and form posts, so the code can draw but can't reach LoreNook. It may load scripts (e.g. Vue from a CDN).
 
 - `lorenook.onData(cb)` delivers `{state, round_no, character, identity, theme}`, where `state` is the full state that round ended in. The app's theme variables are set on the frame's root.
+- **Public theme variables** are a contract with authors and keep their names: `--page-bg`, `--page-text`, `--page-muted`, `--page-em`, `--page-border`, `--page-rule`, `--text`, `--text-muted`, `--border`, `--accent`, `--danger`, `--warn`, `--font-reading`, `--reading-size`. Other app tokens may change freely.
+- The frame is transparent and inherits the reading font, so a bar reads as part of the page.
 - **Which rounds**: the newest round that has a state always shows its bar; earlier rounds open theirs on demand, to keep the number of frames small.
 - **Per-chat switch**, on by default, only offered when the chat's character has code.
 
