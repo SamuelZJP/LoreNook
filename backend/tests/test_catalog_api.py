@@ -7,7 +7,7 @@ import pytest
 from backend.config import Settings
 from backend.main import create_app
 from backend.modules.state.schema import python_initial_state
-from backend.repository.models import Chat
+from backend.repository.models import Chat, Round
 from backend.repository.queries import Repository
 
 
@@ -77,6 +77,12 @@ def test_chat_endpoints_default_state_and_copy_scoping(database):
         await client.patch(f"{url}/character", json={"avatar": "copy.png", "portrait": "cover.png"})
         assert [(chat["avatar"], chat["portrait"]) for chat in (await client.get("/api/chats")).json()] == [
             ("copy.png", "cover.png")]
+        # Before any round, the list shows the opening's last line.
+        assert [chat["last_line"] for chat in (await client.get("/api/chats")).json()] == ["副本开场"]
+        with database.transaction() as session:
+            session.add(Round(chat_id=data["id"], round_no=1, user_input="输入",
+                              ai_output="<think>想法</think><content>第一行\n\n“走吧。”</content>"))
+        assert [chat["last_line"] for chat in (await client.get("/api/chats")).json()] == ["“走吧。”"]
         assert (await client.get(f"/api/characters/{character['id']}")).json()["scenes"][0]["first_message"] == "第0楼"
         updated = (await client.patch(url, json={"title": "新标题", "recent_rounds": 0, "min_summaries": 0})).json()
         assert updated["title"] == "新标题" and updated["recent_rounds"] == 0

@@ -1,4 +1,5 @@
 from backend.modules.characters.service import CharacterService
+from backend.modules.chats.preview import last_line
 from backend.modules.users.service import IdentityService
 from backend.repository.models import Character, Chat, ChatModelBinding, ModelConfig, UserIdentity, WritingPreset
 from backend.repository.queries import Repository
@@ -12,10 +13,12 @@ class ChatService:
 
     def list(self) -> list[ChatListItem]:
         images = self.repository.chat_character_images()
+        texts = self.repository.chat_latest_texts()
         items = []
         for record in self.repository.list_chats():
             avatar, portrait = images.get(record.id, (None, None))
-            items.append(ChatListItem(**ChatRead.model_validate(record).model_dump(), avatar=avatar, portrait=portrait))
+            items.append(ChatListItem(**ChatRead.model_validate(record).model_dump(), avatar=avatar, portrait=portrait,
+                                      last_line=last_line(texts.get(record.id, ""))))
         return items
 
     def detail(self, chat_id: str) -> ChatDetail:

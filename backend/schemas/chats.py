@@ -47,6 +47,8 @@ class ChatListItem(ChatRead):
     # The chat's own character avatar and portrait.
     avatar: str | None = None
     portrait: str | None = None
+    # Last line of the newest reply, or of the opening before any round.
+    last_line: str = ""
 
 
 class StateRead(Contract):

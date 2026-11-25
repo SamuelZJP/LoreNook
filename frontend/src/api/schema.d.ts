@@ -1856,6 +1856,11 @@ export interface components {
             avatar?: string | null;
             /** Portrait */
             portrait?: string | null;
+            /**
+             * Last Line
+             * @default
+             */
+            last_line: string;
         };
         /** ChatMemory */
         ChatMemory: {

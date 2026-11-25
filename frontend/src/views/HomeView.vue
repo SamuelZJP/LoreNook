@@ -53,7 +53,8 @@ const tagline = (text?: string | null) => text?.replace(/\s+/g, ' ').trim() ?? '
             <RouterLink v-for="c in recent" :key="c.id" :to="`/chats/${c.id}`" class="recent-card">
               <ProfileCover :name="c.title" :portrait="c.portrait" :avatar="c.avatar" class="recent-cover">
                 <span class="recent-title ellipsis">{{ c.title }}</span>
-                <span class="recent-time">{{ formatTime(c.created_at) }}</span>
+                <span v-if="c.last_line" class="recent-line">{{ c.last_line }}</span>
+                <span v-else class="recent-time">{{ formatTime(c.created_at) }}</span>
               </ProfileCover>
             </RouterLink>
           </div>
@@ -100,10 +101,14 @@ const tagline = (text?: string | null) => text?.replace(/\s+/g, ' ').trim() ?? '
 .arrow { width: 16px; height: 16px; color: var(--text-muted); }
 
 .recent { display: flex; gap: var(--space-3); overflow-x: auto; scrollbar-width: none; scroll-snap-type: x mandatory; }
-.recent-card { flex: 0 0 136px; scroll-snap-align: start; border-radius: var(--radius-l); overflow: hidden; color: inherit; text-decoration: none; }
+.recent-card { flex: 0 0 160px; scroll-snap-align: start; border-radius: var(--radius-l); overflow: hidden; color: inherit; text-decoration: none; }
 .recent-cover :deep(.overlay) { padding-top: var(--space-6); }
 .recent-title { display: block; font-weight: 600; font-size: var(--text-sm); }
 .recent-time { display: block; font-size: var(--text-xs); opacity: 0.8; }
+.recent-line {
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-top: 2px;
+  font-family: var(--font-reading); font-size: var(--text-xs); line-height: 1.55; opacity: 0.9;
+}
 
 .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--space-4); }
 .card-link {
