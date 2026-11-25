@@ -66,7 +66,10 @@ const rawFirstMessage = computed(() => character.value?.scenes[0]?.first_message
 const firstMessage = computed(() =>
   character.value && identity.value ? substituteNames(rawFirstMessage.value, identity.value.name, character.value.name) : '')
 const roundList = computed(() => rounds.data.value ?? [])
-const illustrations = provideChatIllustrations(chatId, roundList)
+// Keep the newest entry in view.
+const scroller = ref<HTMLElement>()
+const docked = computed(() => isWide.value && panelOpen.value)
+const illustrations = provideChatIllustrations(chatId, roundList, { docked, scroller })
 provideChatStatusBar(chatId, roundList, computed(() => ({ character: character.value?.name ?? '', identity: identity.value?.name ?? '' })))
 const roundNo = computed(() => new Map(roundList.value.map((r) => [r.id, r.round_no])))
 const latest = computed(() => roundList.value.at(-1) ?? null)
@@ -136,9 +139,6 @@ const templateLocation = computed(() => {
   const where = ci >= 0 ? `角色定义 #${ci + 1}` : ui >= 0 ? `用户身份定义 #${ui + 1}` : '某条定义'
   return `${where}${e.detail.line ? ` 第 ${e.detail.line} 行` : ''}`
 })
-
-// Keep the newest entry in view.
-const scroller = ref<HTMLElement>()
 
 // Reply bubbles are capped against the visible chat area, less their name line and buttons.
 const timelineHeight = ref(0)
@@ -225,7 +225,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
                 </span>
               </template>
               <template v-if="!raw.has(r.id)" #head>
-                <RoundIllustration :round="r" />
+                <RoundIllustration :round="r" @show="openState" />
                 <RoundScene :round="r" @open="openState" />
               </template>
               <OutputView :text="r.ai_output" :raw="raw.has(r.id)" />

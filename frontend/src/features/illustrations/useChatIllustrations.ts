@@ -1,12 +1,20 @@
-import { computed, inject, onScopeDispose, provide, reactive, ref, watch, type InjectionKey, type Ref } from 'vue'
+import { computed, inject, nextTick, onScopeDispose, provide, reactive, ref, watch, type InjectionKey, type Ref } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import type { RoundRead } from '@/api/endpoints'
 import { toast } from '@/composables/toast'
 import { illustrationApi, type Illustration, type IllustrationProgress } from './api'
 import { isActive, illustrationPrefs } from './lib'
+import { pickReadingRound } from './reading'
 
-/** The illustration state of one open chat, shared by the pieces placed inside the chat view. */
-export function provideChatIllustrations(chatId: Ref<string>, rounds: Ref<RoundRead[]>) {
+/** Where the chat view is laid out: `docked` while the side panel sits beside the conversation. */
+export interface IllustrationLayout { docked: Ref<boolean>; scroller: Ref<HTMLElement | undefined> }
+
+/**
+ * The illustration state of one open chat, shared by the pieces placed inside the chat view.
+ * While the panel is docked, plates leave the reading column for the panel, which shows the
+ * illustration of the round being read.
+ */
+export function provideChatIllustrations(chatId: Ref<string>, rounds: Ref<RoundRead[]>, layout: IllustrationLayout) {
   const qc = useQueryClient()
   const query = useQuery({
     queryKey: computed(() => ['illustrations', chatId.value]),
@@ -97,7 +105,47 @@ export function provideChatIllustrations(chatId: Ref<string>, rounds: Ref<RoundR
   /** The round's page should take the full reading width to hold a plate. */
   const occupies = (roundId: string) => byRound.value.get(roundId)?.hidden === false
 
-  const state = { chatId, byRound, progress, enabled, gallery, backdrop, viewing, promptOf, choosingFocus, illustrate, setHidden, busy, occupies }
+  // Each illustrated round shown in the timeline registers its marker; the reading round follows the scroll.
+  const docked = layout.docked
+  const markers = new Map<string, HTMLElement>()
+  const reading = ref<string | null>(null)
+  function mark(roundId: string, el: HTMLElement | null) {
+    if (el) markers.set(roundId, el)
+    else markers.delete(roundId)
+  }
+  function locate() {
+    const view = layout.scroller.value
+    if (!docked.value || !view) return
+    const top = view.getBoundingClientRect().top
+    const order = new Map(rounds.value.map((r, i) => [r.id, i]))
+    const marks = [...markers.entries()]
+      .map(([roundId, el]) => ({ roundId, top: el.getBoundingClientRect().top - top }))
+      .sort((a, b) => (order.get(a.roundId) ?? 0) - (order.get(b.roundId) ?? 0))
+    const atEnd = view.scrollHeight - view.scrollTop - view.clientHeight < 8
+    reading.value = pickReadingRound(marks, view.clientHeight / 2, atEnd)
+  }
+  let frame = 0
+  const onScroll = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(locate) }
+  watch(layout.scroller, (el, old) => {
+    old?.removeEventListener('scroll', onScroll)
+    el?.addEventListener('scroll', onScroll, { passive: true })
+  }, { immediate: true })
+  watch([docked, byRound, rounds], () => nextTick(locate))
+  onScopeDispose(() => { layout.scroller.value?.removeEventListener('scroll', onScroll); cancelAnimationFrame(frame) })
+  /** Show a round's illustration in the panel, e.g. from its marker. */
+  const show = (roundId: string) => { reading.value = roundId }
+  /** The illustration the docked panel shows: the reading round's, else the newest. */
+  const current = computed(() => {
+    const own = reading.value ? byRound.value.get(reading.value) : undefined
+    if (own) return own
+    const latest = rounds.value.filter((r) => byRound.value.has(r.id)).at(-1)
+    return latest ? byRound.value.get(latest.id)! : null
+  })
+
+  const state = {
+    chatId, byRound, progress, enabled, gallery, backdrop, viewing, promptOf, choosingFocus, illustrate, setHidden, busy, occupies,
+    docked, reading, current, mark, show,
+  }
   provide(KEY, state)
   return state
 }

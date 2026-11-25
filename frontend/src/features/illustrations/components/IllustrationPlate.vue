@@ -4,11 +4,17 @@ import { Maximize2, RefreshCw, FileText, EyeOff, Image as ImageIcon, AlertTriang
 import { illustrationApi, type Illustration, type IllustrationProgress } from '../api'
 
 /** One round's illustration, framed as a book plate at the head of its reading page. */
-const props = defineProps<{ chatId: string; illustration: Illustration; progress?: IllustrationProgress; busy?: boolean }>()
+const props = defineProps<{
+  chatId: string; illustration: Illustration; progress?: IllustrationProgress; busy?: boolean
+  /** A fixed 4:3 frame filled edge to edge, for the docked panel; the image is cropped, full view shows it whole. */
+  fixed?: boolean
+}>()
 const emit = defineEmits<{ open: []; regenerate: []; focus: []; prompt: []; hide: [hidden: boolean] }>()
 
 const it = computed(() => props.illustration)
-const frameStyle = computed(() => ({ aspectRatio: `${it.value.width} / ${it.value.height}`, '--plate-ratio': it.value.width / it.value.height }))
+const frameStyle = computed(() => (props.fixed
+  ? { aspectRatio: '4 / 3' }
+  : { aspectRatio: `${it.value.width} / ${it.value.height}`, '--plate-ratio': it.value.width / it.value.height }))
 const src = computed(() => illustrationApi.image(props.chatId, it.value.id))
 const loaded = ref(false)
 watch(src, () => { loaded.value = false })
@@ -64,7 +70,7 @@ const steps = computed(() => {
     <button class="btn ghost small paper-ghost" type="button" @click="emit('hide', true)">隐藏</button>
   </div>
 
-  <figure v-else class="plate">
+  <figure v-else class="plate" :class="{ fixed }">
     <div class="frame">
       <div class="image" :style="frameStyle">
         <template v-if="it.status === 'ready'">
@@ -163,10 +169,14 @@ img.loaded { opacity: 1; }
 .hidden-strip svg { width: 14px; height: 14px; }
 .hidden-strip:hover { color: var(--page-em); }
 
+/* Docked in the panel: a fixed frame filled edge to edge. */
+.plate.fixed { margin: 0; }
+.fixed .frame { padding: 0; border: 0; border-radius: var(--radius-l); box-shadow: none; overflow: hidden; background: none; }
+.fixed .image { width: 100%; max-height: none; border-radius: 0; }
+.fixed .actions { top: var(--space-2); right: var(--space-2); }
 @media (max-width: 640px) {
-  /* Full-bleed inside the page bubble on phones. */
-  .plate { margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) var(--space-3); }
-  .frame { padding: 0; border: 0; border-radius: 0; box-shadow: none; }
-  .image { --plate-max: 70vh; border-radius: var(--radius-xs) var(--radius-l) 0 0; }
+  /* The full reading width on phones, without the paper frame. */
+  .frame { padding: 0; border: 0; border-radius: var(--radius-l); box-shadow: none; overflow: hidden; }
+  .image { --plate-max: 70vh; border-radius: 0; }
 }
 </style>

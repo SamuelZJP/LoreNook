@@ -9,6 +9,7 @@ import DefinitionsPanel from './DefinitionsPanel.vue'
 import RequestPanel from './RequestPanel.vue'
 import ChatSettingsPanel from './ChatSettingsPanel.vue'
 import ChatResourcesPanel from './ChatResourcesPanel.vue'
+import DockedIllustration from '@/features/illustrations/components/DockedIllustration.vue'
 
 export type PanelTab = 'state' | 'memory' | 'definitions' | 'request' | 'settings' | 'resources'
 type Tab = PanelTab
@@ -27,6 +28,8 @@ const behind = [
   { id: 'resources' as const, label: '本聊天资源', icon: Package },
 ]
 const behindActive = computed(() => behind.find((b) => b.id === props.tab) ?? null)
+// The state editor takes the panel's full height, so the docked illustration steps aside.
+const editingState = ref(false)
 
 const menuOpen = ref(false)
 const menu = ref<HTMLElement>()
@@ -65,13 +68,17 @@ function pick(id: Tab) {
       <button class="btn ghost icon" type="button" aria-label="关闭面板" @click="emit('close')"><X /></button>
     </div>
     <div class="content">
-      <StatePanel v-if="tab === 'state'" :chat-id="chat.id" :editable="latestComplete && flow.phase.value !== 'archiving'" />
+      <StatePanel
+        v-if="tab === 'state'" :chat-id="chat.id" :editable="latestComplete && flow.phase.value !== 'archiving'"
+        @editing="editingState = $event"
+      />
       <MemoryPanel v-else-if="tab === 'memory'" :chat="chat" :timeline="memoryTimeline" :preparing="flow.phase.value === 'preparing' ? flow.prepareLabel : ''" />
       <DefinitionsPanel v-else-if="tab === 'definitions'" :chat="chat" />
       <RequestPanel v-else-if="tab === 'request'" :chat="chat" :flow="flow" />
       <ChatSettingsPanel v-else-if="tab === 'settings'" :chat="chat" />
       <ChatResourcesPanel v-else :chat="chat" />
     </div>
+    <DockedIllustration v-if="tab === 'state' && !editingState" class="illustration" />
   </aside>
 </template>
 
@@ -105,5 +112,5 @@ function pick(id: Tab) {
   .head { position: relative; padding-top: var(--space-5); }
   .head::before { content: ''; position: absolute; top: var(--space-1-5); left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: var(--radius-pill); background: var(--border-strong); }
 }
-.content { flex: 1; overflow-y: auto; padding: var(--space-5) var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom)); }
+.content { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-5) var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom)); }
 </style>
