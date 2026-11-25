@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 
 from backend.api.dependencies import DatabaseDependency, ModelClientDependency
 from backend.modules.state.service import StateService
 from backend.repository.queries import Repository
 from backend.schemas.chats import StateRead
-from backend.schemas.state import StateDisplaySchema, StateReplace, StateUpdateResult
+from backend.schemas.state import StateDisplaySchema, StateHistoryEntry, StateReplace, StateUpdateResult
 from backend.workflows.edit_state import replace_latest_state
 from backend.workflows.state_update import run_state_update
 
@@ -15,6 +15,12 @@ router = APIRouter(prefix="/api/chats", tags=["state"])
 def read(chat_id: str, database: DatabaseDependency):
     with database.read() as session:
         return StateService(Repository(session)).latest(chat_id)
+
+
+@router.get("/{chat_id}/state/history", response_model=list[StateHistoryEntry])
+def read_history(chat_id: str, database: DatabaseDependency, limit: int = Query(4, ge=1, le=20)):
+    with database.read() as session:
+        return StateService(Repository(session)).history(chat_id, limit)
 
 
 @router.get("/{chat_id}/state/schema", response_model=StateDisplaySchema)

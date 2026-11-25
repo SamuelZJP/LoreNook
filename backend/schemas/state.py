@@ -14,6 +14,12 @@ class StateDisplaySchema(Contract):
     json_schema: dict[str, JsonValue] | None
 
 
+class StateHistoryEntry(Contract):
+    # The opening state is round 0.
+    round_no: NonnegativeInt
+    content: dict[str, JsonValue]
+
+
 class StateUpdateResult(Contract):
     chat_id: str
     round_id: str

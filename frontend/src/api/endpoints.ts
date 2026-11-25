@@ -26,6 +26,7 @@ export type ModelConfig = Schemas['ModelConfigRead']
 export type ModelConfigCreate = Schemas['ModelConfigCreate']
 export type ModelConfigPatch = Schemas['ModelConfigPatch']
 export type StateRead = Schemas['StateRead']
+export type StateHistoryEntry = Schemas['StateHistoryEntry']
 export type RoundRead = Schemas['RoundRead']
 export type ArchiveProgress = Schemas['ArchiveProgress']
 export type Episode = Schemas['EpisodeRead']
@@ -143,6 +144,7 @@ export const api = {
 
   // Latest-result editing
   state: (chatId: string) => request<StateRead>(`/api/chats/${chatId}/state`),
+  stateHistory: (chatId: string, limit = 4) => request<StateHistoryEntry[]>(`/api/chats/${chatId}/state/history?limit=${limit}`),
   stateSchema: (chatId: string) => request<Schemas['StateDisplaySchema']>(`/api/chats/${chatId}/state/schema`),
   putState: (chatId: string, content: Record<string, unknown>) =>
     request<StateRead>(`/api/chats/${chatId}/state`, json('PUT', { content })),

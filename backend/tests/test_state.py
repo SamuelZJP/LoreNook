@@ -463,3 +463,20 @@ def test_editable_schema_example():
     result = validate_state(source, {"角色": {"好感度": 150, "关系": "恋人"}})
     assert result["角色"]["好感度"] == 100 and result["角色"]["关系"] == "恋人"
     assert validate_state(source, {"角色": {"好感度": -1, "关系": "恋人"}})["角色"]["关系"] == "朋友"
+
+
+def test_state_history_lists_newest_snapshots_oldest_first(database, state_round):
+    chat_id, _character_id, round_id = state_round
+    later = {**python_initial_state(SCHEMA), "好感度": 30}
+    with database.transaction() as session:
+        ArchiveRepository(session).save_state(round_id, later)
+    async def scenario(client):
+        path = f"/api/chats/{chat_id}/state/history"
+        both = (await client.get(path)).json()
+        assert [entry["round_no"] for entry in both] == [0, 1]
+        assert both[0]["content"] == python_initial_state(SCHEMA)
+        assert both[1]["content"] == later
+        assert [entry["round_no"] for entry in (await client.get(path, params={"limit": 1})).json()] == [1]
+        assert (await client.get(path, params={"limit": 0})).status_code == 422
+        assert (await client.get("/api/chats/missing/state/history")).status_code == 404
+    run_api(database, scenario)

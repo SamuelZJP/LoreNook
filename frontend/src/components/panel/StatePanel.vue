@@ -11,6 +11,7 @@ import { toast } from '@/composables/toast'
 import { formatTime, pretty } from '@/lib/format'
 import { planStateDisplay } from '@/lib/stateDisplay'
 import StateItems from './StateItems.vue'
+import StateChanges from './StateChanges.vue'
 
 const props = defineProps<{ chatId: string; editable: boolean }>()
 const qc = useQueryClient()
@@ -145,6 +146,9 @@ async function save() {
         <h4 :title="card.hint">{{ card.title }}</h4>
         <StateItems :items="card.items" />
       </section>
+      <StateChanges
+        :chat-id="chatId" :schema="(schema.data.value?.json_schema ?? null) as Record<string, any> | null" :stamp="state.dataUpdatedAt.value"
+      />
       <CodeEditor v-if="showRaw" :model-value="draft" language="json" readonly min-height="160px" />
     </template>
     <ul v-if="editing && worldProblems.length" class="problems">

@@ -4,8 +4,8 @@
  * `description`); without one, the value's type decides. Plain data only; components render it.
  */
 
-type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
-type SchemaNode = Record<string, any>
+export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
+export type SchemaNode = Record<string, any>
 
 export type Item =
   | { kind: 'text'; key: string; label: string; hint?: string; value: string }
@@ -24,11 +24,11 @@ export interface StateDisplay {
 }
 
 const WORLD_KEYS = ['日期', '星期', '时间', '地点']
-const isObject = (v: unknown): v is Record<string, Json> => !!v && typeof v === 'object' && !Array.isArray(v)
-const isScalar = (v: unknown) => v === null || ['string', 'number', 'boolean'].includes(typeof v)
+export const isObject = (v: unknown): v is Record<string, Json> => !!v && typeof v === 'object' && !Array.isArray(v)
+export const isScalar = (v: unknown) => v === null || ['string', 'number', 'boolean'].includes(typeof v)
 
 /** Follows `$ref` and single-entry `allOf`, keeping sibling keys such as `display`. */
-function resolve(node: SchemaNode | undefined, root: SchemaNode | null): SchemaNode {
+export function resolve(node: SchemaNode | undefined, root: SchemaNode | null): SchemaNode {
   let current: SchemaNode = node ?? {}
   for (let depth = 0; depth < 8; depth++) {
     const { $ref, allOf, ...rest } = current
@@ -45,7 +45,7 @@ function resolve(node: SchemaNode | undefined, root: SchemaNode | null): SchemaN
   return current
 }
 
-function child(node: SchemaNode, key: string, root: SchemaNode | null): SchemaNode {
+export function child(node: SchemaNode, key: string, root: SchemaNode | null): SchemaNode {
   const props = node.properties?.[key]
   if (props) return resolve(props, root)
   if (isObject(node.additionalProperties)) return resolve(node.additionalProperties, root)
@@ -53,7 +53,7 @@ function child(node: SchemaNode, key: string, root: SchemaNode | null): SchemaNo
 }
 
 /** Pydantic fills `title` from the field name; only a different title is the author's label. */
-function label(key: string, node: SchemaNode): string {
+export function label(key: string, node: SchemaNode): string {
   const auto = key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
   return typeof node.title === 'string' && node.title !== auto && node.title !== key ? node.title : key
 }
