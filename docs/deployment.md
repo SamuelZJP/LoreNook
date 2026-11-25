@@ -42,20 +42,38 @@ Run it step by step and stop on any failure. Code-only changes don't need a Cadd
 
 ## Upgrading to v3 (once)
 
-v3 adds users. The migration needs the administrator who will own all existing data:
+v3 adds users. It is the Update procedure with an administrator for the migration, who will own all existing data:
 
 ```bash
+cd ~/LoreNook
 sudo systemctl stop lorenook
-# (backup as in Update)
+umask 077
+snap="backups/pre-v3-$(date +%Y%m%d-%H%M%S).db"
+sqlite3 data/lorenook.db ".backup '$snap'" && git rev-parse HEAD > "${snap%.db}.commit"
+git pull --ff-only
+.venv/bin/python -m pip install -r requirements-dev.lock && .venv/bin/python -m pip install --no-deps -e .
+.venv/bin/python -m pytest -q
+(cd frontend && npm ci && npm run build)
+sudo setfacl -R -m u:caddy:r-X frontend/dist
 set -a; source deploy/lorenook.env; set +a
 read -r LORENOOK_ADMIN_USERNAME && read -rs LORENOOK_ADMIN_PASSWORD && export LORENOOK_ADMIN_USERNAME LORENOOK_ADMIN_PASSWORD
 .venv/bin/python -m alembic upgrade head && .venv/bin/python -m alembic check
-unset LORENOOK_ADMIN_PASSWORD
+unset LORENOOK_ADMIN_USERNAME LORENOOK_ADMIN_PASSWORD
 ```
 
-`LORENOOK_MEDIA_DIRECTORY` must point at the real uploads when migrating (the default `data/media` does), so existing images are registered to the administrator. Then add the new settings to `deploy/lorenook.env` (below), start the service, and sign in.
+`LORENOOK_MEDIA_DIRECTORY` must point at the real uploads when migrating (the default `data/media` does), so existing images are registered to the administrator.
 
-Cut over in two steps: first deploy with Authelia still in front (`import protected` in the Cloud Caddy block) and check sign-in, sign-out, and that a second test user sees none of the administrator's data. Then remove `import protected` and reload the cloud Caddy.
+Add the new settings to `deploy/lorenook.env` (see its table below: at least `LORENOOK_ICP_NUMBER`, and `LORENOOK_MODEL_EXTRA_NETWORKS` if `getent ahosts api.deepseek.com` answers `198.18.x.x`; never the admin password), then:
+
+```bash
+sudo systemctl start lorenook
+curl --fail http://127.0.0.1:18780/api/public/home
+set -a; source deploy/lorenook.env; set +a; .venv/bin/python -m backend.cli user list
+```
+
+Then update the LAN Caddy (no `/docs` routes, `trusted_proxies`; see LAN Caddy below), validate and reload it.
+
+Cut over in two steps: first keep Authelia in front (`import protected` in the Cloud Caddy block) and check sign-in, sign-out, and that a second test user sees none of the administrator's data. Then remove `import protected` and reload the cloud Caddy.
 
 ## Users
 
