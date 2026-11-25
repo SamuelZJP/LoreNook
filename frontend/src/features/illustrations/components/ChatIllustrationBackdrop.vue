@@ -17,7 +17,7 @@ const c = useChatIllustrations()
 .backdrop { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: -1; }
 .backdrop img { position: absolute; inset: -80px; width: calc(100% + 160px); height: calc(100% + 160px); object-fit: cover; filter: blur(56px) saturate(1.15); opacity: 0.22; animation: fade-in 1.2s ease; }
 .backdrop.strong img { opacity: 0.45; }
-.backdrop::after { content: ''; position: absolute; inset: 0; background: color-mix(in srgb, var(--bg) 35%, transparent); }
+.backdrop::after { content: ''; position: absolute; inset: 0; background: color-mix(in srgb, var(--chat-bg, var(--bg)) 35%, transparent); }
 @keyframes fade-in { from { opacity: 0; } }
 @media (max-width: 640px) { .backdrop { display: none; } }
 </style>

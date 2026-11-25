@@ -33,10 +33,10 @@ function cycleTheme() {
 <style scoped>
 .app-sidebar {
   display: flex; flex-direction: column; gap: var(--space-3); height: 100%;
-  padding: var(--space-3) var(--space-3) calc(var(--space-3) + env(safe-area-inset-bottom)); background: var(--bg-elev); border-right: 1px solid var(--border);
+  padding: var(--space-3) var(--space-3) calc(var(--space-3) + env(safe-area-inset-bottom)); background: var(--bg-elev);
 }
-.brand { padding: var(--space-0-5) var(--space-1); font-size: var(--text-lg); }
-.logo { width: 28px; height: 28px; border-radius: var(--radius-s); background: var(--accent); color: var(--accent-text); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+.brand { padding: var(--space-1) var(--space-1) var(--space-1-5); font-size: var(--text-xl); font-family: var(--font-reading); letter-spacing: 0.02em; }
+.logo { width: 28px; height: 28px; border-radius: var(--radius-s); background: var(--accent); color: var(--accent-text); display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-reading); font-weight: 600; font-size: var(--text-lg); }
 .new { width: 100%; }
 .list { flex: 1; overflow-y: auto; min-height: 0; }
 .bottom { border-top: 1px solid var(--border); padding-top: var(--space-2); }

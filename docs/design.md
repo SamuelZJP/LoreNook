@@ -265,7 +265,7 @@ Avatars and reference images are uploaded through `/api/media` (PNG, JPEG, WebP;
 
 - **Inline plate.** The image is shown at the head of its round, inside the reading page, framed like a book plate, above the round's scene line. Space is reserved at the workflow's aspect ratio, so the page doesn't jump when the image arrives; a portrait image narrows the plate rather than being cropped.
 - **Full-screen scene view.** Clicking a plate opens it full-screen with the caption and round summary; the chat's illustrations can be browsed in round order.
-- **Ambient backdrop** (preference: off / subtle / strong): the latest illustration, blurred and dimmed, behind the chat column. Always off on phones.
+- **Ambient backdrop** (preference: off / subtle / strong, default off): the latest illustration, blurred and dimmed, behind the chat column. Always off on phones.
 - Per-plate actions: regenerate, change main characters, hide, view prompt. On touch screens they fold into one toggle so they don't cover the image.
 
 ## Reading a round

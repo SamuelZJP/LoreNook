@@ -316,16 +316,21 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 </template>
 
 <style scoped>
-.chat-view { display: flex; height: 100%; }
-.conversation { flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100%; position: relative; isolation: isolate; }
+/* The chat takes over the main island: conversation and panel become islands of their own. */
+.chat-view { display: flex; gap: var(--island-gap); height: 100%; background: var(--bg); }
+.conversation {
+  --chat-bg: var(--bg-sunken);
+  flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100%; position: relative; isolation: isolate;
+  background: var(--chat-bg); border-radius: var(--radius-xl); overflow: hidden;
+}
 .title-wrap { min-width: 0; }
 .title-wrap h1 { font-size: var(--text-lg); }
 .sub { font-size: var(--text-xs); }
 .btn.on { color: var(--accent); }
 .m { margin: var(--space-3); }
 .timeline { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
-.timeline-inner, .dock-inner { max-width: 900px; margin: 0 auto; padding: var(--space-5) var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
-.dock { flex-shrink: 0; background: linear-gradient(to bottom, transparent, var(--bg) 18px); }
+.timeline-inner, .dock-inner { max-width: calc(var(--reading-w) + 120px); margin: 0 auto; padding: var(--space-5) var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
+.dock { flex-shrink: 0; background: linear-gradient(to bottom, transparent, var(--chat-bg) 18px); }
 .dock-inner { padding-top: var(--space-1); padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom)); gap: var(--space-2); }
 .indent { margin-left: 44px; }
 .candidate-editor { display: block; width: 760px; max-width: 100%; font-family: var(--font-mono); font-size: var(--text-sm); }
@@ -337,13 +342,16 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 .tpl { margin-top: var(--space-1-5); font-size: var(--text-sm); }
 .spin { width: 16px; height: 16px; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.panel { width: var(--panel-w); flex-shrink: 0; border-left: 1px solid var(--border); }
+.panel { width: var(--panel-w); flex-shrink: 0; border-radius: var(--radius-xl); overflow: hidden; }
 .chat-view { position: relative; }
 @media (max-width: 1279px) and (min-width: 900px) {
   .panel { position: absolute; top: 0; right: 0; bottom: 0; z-index: 30; width: min(var(--panel-w), 70%); box-shadow: var(--shadow-pop); }
+  .chat-view { gap: 0; }
 }
 @media (max-width: 899px) {
-  .panel { position: fixed; inset: 0; z-index: 60; width: auto; border: 0; }
+  .panel { position: fixed; inset: 0; z-index: 60; width: auto; border-radius: 0; }
+  .chat-view { gap: 0; }
+  .conversation { border-radius: 0; }
 }
 @media (max-width: 640px) {
   .indent { margin-left: 0; }

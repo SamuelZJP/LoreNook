@@ -150,8 +150,11 @@ const placeholder = computed(() => {
 
 <style scoped>
 .composer {
-  position: relative; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-3);
-  background: var(--bg-elev); border: 1px solid var(--border); border-radius: var(--radius-l); box-shadow: var(--shadow);
+  position: relative; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+  background: var(--bg-elev); border: 1px solid var(--border); border-radius: var(--radius-xl); box-shadow: var(--shadow);
+  transition: border-color 0.12s;
+}
+.composer:focus-within { border-color: var(--border-strong);
 }
 .row-main { display: flex; gap: var(--space-2); align-items: flex-end; }
 .row-instruction { display: flex; gap: var(--space-2); align-items: flex-start; }
@@ -180,7 +183,7 @@ const placeholder = computed(() => {
 }
 .handle:hover::after { background: var(--text-muted); }
 .area:disabled { opacity: 0.6; }
-.send { min-height: 38px; }
+.send { min-height: 38px; padding-inline: var(--space-4); }
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (max-width: 480px) { .send-label { display: none; } .send { width: 40px; padding: 0; } }

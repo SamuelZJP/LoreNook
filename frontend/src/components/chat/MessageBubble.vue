@@ -67,18 +67,18 @@ onBeforeUnmount(() => observer?.disconnect())
 <style scoped>
 .msg { display: flex; gap: var(--space-3); align-items: flex-start; max-width: 100%; }
 .msg.user { flex-direction: row-reverse; }
-.col { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; max-width: min(760px, 86%); }
+.col { display: flex; flex-direction: column; gap: var(--space-1-5); min-width: 0; max-width: min(var(--reading-w), 86%); }
 .user .col { align-items: flex-end; }
-.wide .col { width: min(760px, 86%); }
+.wide .col { width: min(var(--reading-w), 86%); }
 .meta { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-xs); color: var(--text-faint); flex-wrap: wrap; }
 .user .meta { flex-direction: row-reverse; }
-.name { font-weight: 600; color: var(--text-muted); }
+.name { font-weight: 500; color: var(--text-muted); }
 .bubble {
   padding: var(--space-3) var(--space-4); border-radius: var(--radius-l); background: var(--bubble-ai);
-  border: 1px solid var(--border); box-shadow: var(--shadow); min-width: 0; max-width: 100%;
+  border: 1px solid var(--border); box-shadow: var(--shadow-island); min-width: 0; max-width: 100%;
 }
 .ai .bubble { border-top-left-radius: var(--radius-xs); }
-.bubble.page-surface { padding: var(--space-4) var(--space-5) var(--space-4); --pad-y: calc(var(--space-4) * 2); }
+.bubble.page-surface { padding: var(--space-6) var(--space-8) var(--space-5); --pad-y: calc(var(--space-6) + var(--space-5)); }
 .user .bubble { background: var(--bubble-user); color: var(--bubble-user-text); border-color: transparent; border-top-right-radius: var(--radius-xs); }
 .pending .bubble { border-style: dashed; border-color: var(--accent); }
 .user.pending .bubble { border: 1px dashed var(--bubble-user-text); }

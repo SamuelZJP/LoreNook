@@ -4,7 +4,7 @@
   background-image: var(--page-grain), var(--page-glow);
   color: var(--page-text);
   border: 1px solid var(--page-border);
-  box-shadow: inset 0 0 0 4px var(--page-bg), inset 0 0 0 5px var(--page-rule), var(--shadow);
+  box-shadow: inset 0 0 0 4px var(--page-bg), inset 0 0 0 5px var(--page-rule), var(--shadow-island);
 }
 
 /* Main prose */

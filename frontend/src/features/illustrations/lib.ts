@@ -51,9 +51,9 @@ type Backdrop = 'off' | 'subtle' | 'strong'
 function load(): { backdrop: Backdrop } {
   try {
     const stored = JSON.parse(localStorage.getItem(KEY) ?? '{}')
-    return { backdrop: ['off', 'subtle', 'strong'].includes(stored.backdrop) ? stored.backdrop : 'subtle' }
+    return { backdrop: ['off', 'subtle', 'strong'].includes(stored.backdrop) ? stored.backdrop : 'off' }
   } catch {
-    return { backdrop: 'subtle' }
+    return { backdrop: 'off' }
   }
 }
 export const illustrationPrefs = reactive(load())

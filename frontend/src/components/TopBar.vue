@@ -13,7 +13,7 @@ import { sidebarOpen } from '@/composables/layout'
 <style scoped>
 .topbar {
   display: flex; align-items: center; gap: var(--space-2); height: var(--topbar-h); padding: 0 var(--space-3);
-  padding-top: env(safe-area-inset-top); border-bottom: 1px solid var(--border); background: var(--bg-elev); flex-shrink: 0;
+  padding-top: env(safe-area-inset-top); border-bottom: 1px solid var(--border); background: var(--bg-elev); flex-shrink: 0; padding-inline: var(--space-4);
 }
 .menu { display: none; }
 @media (max-width: 899px) { .menu { display: inline-flex; } }
