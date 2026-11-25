@@ -9,8 +9,9 @@ Importing it also registers the feature's tables with the metadata and with data
 and its section of a character card file.
 """
 
+from backend.demo import feature as demo
 from backend.illustrations import feature as illustrations
 from backend.recall import feature as recall
 from backend.status_bar import feature as status_bar
 
-FEATURES = (illustrations, recall, status_bar)
+FEATURES = (illustrations, recall, status_bar, demo)

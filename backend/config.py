@@ -36,6 +36,10 @@ class Settings:
     model_extra_networks: str = field(default_factory=lambda: os.getenv("LORENOOK_MODEL_EXTRA_NETWORKS", ""))
     # ICP filing number shown in the home page footer.
     icp_number: str = field(default_factory=lambda: os.getenv("LORENOOK_ICP_NUMBER", ""))
+    # The site's address, e.g. https://example.com, for links printed by the command line.
+    public_origin: str = field(default_factory=lambda: os.getenv("LORENOOK_PUBLIC_ORIGIN", ""))
+    # Username of the account that demo links copy; empty turns demo links off.
+    demo_template: str = field(default_factory=lambda: os.getenv("LORENOOK_DEMO_TEMPLATE", ""))
 
     @staticmethod
     def _resolved(directory: str) -> Path:

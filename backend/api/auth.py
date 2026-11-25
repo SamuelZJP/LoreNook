@@ -12,7 +12,7 @@ from backend.schemas.accounts import AccountRead, LoginRequest
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
-def _client(request: Request) -> str | None:
+def client_address(request: Request) -> str | None:
     """The visitor's public address, or None when only a proxy's address is known.
 
     Behind the proxy chain every request may come from 127.0.0.1; throttling that would lock everyone out.
@@ -28,7 +28,7 @@ def _client(request: Request) -> str | None:
 @router.post("/login", response_model=AccountRead)
 async def login(payload: LoginRequest, request: Request, response: Response, database: DatabaseDependency):
     throttle = request.app.state.login_throttle
-    client = _client(request)
+    client = client_address(request)
     keys = (f"user:{payload.username.lower()}",) + ((f"client:{client}",) if client else ())
     wait = throttle.wait_seconds(*keys)
     if wait:

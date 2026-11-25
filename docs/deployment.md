@@ -86,6 +86,18 @@ No sign-up. Manage users on the server, with the env file sourced:
 .venv/bin/python -m backend.cli user list
 ```
 
+## Demo links
+
+Prepare a template account once: an administrator only you sign in to (`user add <name> --admin`), with the characters, identity, presets, model config (a key of its own with a spending cap, at a public address), workflow, chat template and a ready chat a visitor should get. Set `LORENOOK_DEMO_TEMPLATE` to its name and `LORENOOK_PUBLIC_ORIGIN` to the site's address, then restart. Don't use the template while links are being redeemed; each visitor gets a copy of it as it is at that moment.
+
+```bash
+.venv/bin/python -m backend.cli demo link --note 某公司 [--minutes 60] [--rounds 40] [--images 20] [--open-days 7]
+.venv/bin/python -m backend.cli demo list            # status and usage
+.venv/bin/python -m backend.cli demo revoke <id>     # an unopened link stops working; a running demo ends now
+```
+
+Send the printed link. A separate host name (e.g. `test-ln.example.com`) is optional: route it to the same backend in both Caddy files, and links work on either.
+
 ## Routine
 
 ```bash
@@ -144,6 +156,8 @@ Node must be `^20.19.0 || >=22.12.0`. The app doesn't load `.env` or migrate on 
 | `LORENOOK_MODEL_EXTRA_NETWORKS` | empty | Comma-separated networks users' model addresses may resolve to besides public ones. Set `198.18.0.0/15` if the server's DNS answers with a proxy's fake IPs, or every user's model call is refused. In that setup the proxy, not LoreNook, decides where a name finally goes. |
 | `LORENOOK_COOKIE_SECURE` | `1` | Session cookie only over HTTPS. `0` only for plain-http testing on a LAN address. |
 | `LORENOOK_API_DOCS` | `0` | `1` serves `/docs` and `/openapi.json` (development) |
+| `LORENOOK_DEMO_TEMPLATE` | empty | Username of the account demo links copy; empty turns redeeming off |
+| `LORENOOK_PUBLIC_ORIGIN` | empty | Site address, e.g. `https://lorenook.cryingstray.cn`, for links the command line prints |
 
 `LORENOOK_ADMIN_USERNAME` and `LORENOOK_ADMIN_PASSWORD` are read only by the v3 migration; don't keep them in the file.
 

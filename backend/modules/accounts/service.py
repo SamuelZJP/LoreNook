@@ -1,4 +1,8 @@
-"""Built-in users and browser sessions. There is no self-service sign-up; users are created from the command line."""
+"""Built-in users and browser sessions. There is no self-service sign-up; users are created from the command line.
+
+Roles: `admin`, `user`, and `demo`, a temporary account a feature creates for a visitor. A demo session ends
+when it was set to and is never extended.
+"""
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -16,7 +20,7 @@ SESSION_DAYS = 30
 REFRESH_AFTER = timedelta(days=1)
 USERNAME = re.compile(r"[A-Za-z0-9_.\-一-鿿]{2,32}")
 MIN_PASSWORD = 8
-ROLES = ("admin", "user")
+ROLES = ("admin", "user")  # Roles the command line may give; `demo` accounts are made only by their feature.
 
 
 @dataclass(frozen=True)
@@ -89,12 +93,16 @@ class AccountService:
         valid = verify_password(password, user.password_hash if user is not None else DUMMY_HASH)
         if user is None or not valid or user.disabled:
             return None
+        return self.open_session(user, self.clock() + timedelta(days=SESSION_DAYS)), _account(user)
+
+    def open_session(self, user: User, expires_at: datetime) -> str:
+        """A new session token for this user, valid until `expires_at`."""
         token = secrets.token_urlsafe(32)
         now = self.clock()
         self.repository.delete_expired_sessions(now)
         self.repository.add(LoginSession(user_id=user.id, token_hash=_token_hash(token),
-                                         expires_at=now + timedelta(days=SESSION_DAYS), last_seen_at=now))
-        return token, _account(user)
+                                         expires_at=expires_at, last_seen_at=now))
+        return token
 
     def resolve(self, token: str) -> tuple[Account | None, bool]:
         """Read-only: the signed-in account, and whether the session is due for `refresh`."""
@@ -105,7 +113,7 @@ class AccountService:
         now = self.clock()
         if record.expires_at <= now or user.disabled:
             return None, False
-        return _account(user), now - record.last_seen_at >= REFRESH_AFTER
+        return _account(user), user.role != "demo" and now - record.last_seen_at >= REFRESH_AFTER
 
     def refresh(self, token: str) -> None:
         found = self.repository.login_session(_token_hash(token))

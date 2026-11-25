@@ -7,6 +7,8 @@ export type Account = Schemas['AccountRead']
 
 export const account = ref<Account | null>(null)
 export const isAdmin = computed(() => account.value?.role === 'admin')
+/** A temporary account from a demo link. */
+export const isDemo = computed(() => account.value?.role === 'demo')
 
 let checked: Promise<void> | null = null
 
@@ -27,6 +29,13 @@ export async function signIn(username: string, password: string): Promise<void> 
   queryClient.clear()
   account.value = await request<Account>('/api/auth/login', { method: 'POST', body: { username, password } })
   checked = Promise.resolve()
+}
+
+/** Asks again who is signed in, after the session cookie changed without a sign-in. */
+export function reloadAccount(): Promise<void> {
+  queryClient.clear()
+  checked = null
+  return loadAccount()
 }
 
 /** Forgets everything cached for the previous user. */

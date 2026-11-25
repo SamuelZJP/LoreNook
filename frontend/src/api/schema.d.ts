@@ -1625,6 +1625,40 @@ export interface paths {
         patch: operations["update_chat_api_chats__chat_id__status_bar_patch"];
         trace?: never;
     };
+    "/api/demo/redeem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Redeem */
+        post: operations["redeem_api_demo_redeem_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demo/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Status */
+        get: operations["status_api_demo_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -2233,6 +2267,18 @@ export interface components {
             /** Definition Ids */
             definition_ids: string[];
         };
+        /** DemoStatus */
+        DemoStatus: {
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Rounds Left */
+            rounds_left: number;
+            /** Images Left */
+            images_left: number;
+        };
         /** EpisodeDecisionResult */
         EpisodeDecisionResult: {
             /** Episode Required */
@@ -2818,6 +2864,16 @@ export interface components {
             user_input: string;
             /** Ai Output */
             ai_output: string;
+        };
+        /** RedeemRequest */
+        RedeemRequest: {
+            /** Token */
+            token: string;
+        };
+        /** RedeemResult */
+        RedeemResult: {
+            /** Chat Id */
+            chat_id: string | null;
         };
         /** ResolvedDefinition */
         ResolvedDefinition: {
@@ -7802,6 +7858,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    redeem_api_demo_redeem_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RedeemRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedeemResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    status_api_demo_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoStatus"];
                 };
             };
         };

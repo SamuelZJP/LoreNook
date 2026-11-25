@@ -63,7 +63,7 @@ class User(Identified, Timestamped, Base):
     disabled: Mapped[bool] = mapped_column(
         Boolean(create_constraint=True, name="disabled_bool"), default=False, server_default="0"
     )
-    __table_args__ = (CheckConstraint("role IN ('admin', 'user')", name="valid_role"),)
+    __table_args__ = (CheckConstraint("role IN ('admin', 'user', 'demo')", name="valid_role"),)
 
 
 class LoginSession(Identified, Timestamped, Base):

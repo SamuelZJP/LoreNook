@@ -2,6 +2,8 @@
 import { Plus, Library, Settings, Moon, Sun, Monitor } from 'lucide-vue-next'
 import ChatList from './ChatList.vue'
 import UserCard from '@/features/account/components/UserCard.vue'
+import { isDemo } from '@/features/account/session'
+import DemoBanner from '@/features/demo/DemoBanner.vue'
 import { prefs } from '@/lib/prefs'
 
 const themes = ['system', 'light', 'dark'] as const
@@ -24,11 +26,11 @@ function cycleTheme() {
       <RouterLink to="/hall" class="btn primary new"><Plus /> 新建聊天</RouterLink>
       <ChatList class="list" />
       <nav class="bottom stack tight">
-        <RouterLink to="/library" class="list-item" active-class="active"><Library /> 资源库</RouterLink>
+        <RouterLink v-if="!isDemo" to="/library" class="list-item" active-class="active"><Library /> 资源库</RouterLink>
         <RouterLink to="/settings" class="list-item" active-class="active" :class="{ active: $route.path.startsWith('/data') }"><Settings /> 设置</RouterLink>
       </nav>
     </div>
-    <div class="account"><UserCard /></div>
+    <div class="account"><DemoBanner /><UserCard /></div>
   </aside>
 </template>
 

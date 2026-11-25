@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { ArrowRight, Cpu, Feather, Plus, UserRound } from 'lucide-vue-next'
 import { api } from '@/api/endpoints'
+import { isDemo } from '@/features/account/session'
 import TopBar from '@/components/TopBar.vue'
 import ProfileCover from '@/components/ProfileCover.vue'
 import ErrorBox from '@/components/ErrorBox.vue'
@@ -70,7 +71,7 @@ const tagline = (text?: string | null) => text?.replace(/\s+/g, ' ').trim() ?? '
                 <span class="tagline">{{ tagline(c.description) }}</span>
               </ProfileCover>
             </RouterLink>
-            <RouterLink to="/library/characters/new" class="card-link new-card">
+            <RouterLink v-if="!isDemo" to="/library/characters/new" class="card-link new-card">
               <Plus /><span>新角色</span>
             </RouterLink>
           </div>

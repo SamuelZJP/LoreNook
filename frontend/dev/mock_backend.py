@@ -24,6 +24,8 @@ data/mock-images and uploads in data/mock-media.
 
 Sign in as demo / demo-password (administrator, owns the seeded data) or guest / guest-password
 (a plain user with nothing yet). Cookies are not Secure here, so the mock also works over LAN http.
+Demo links copy the `demo` account: make one with
+    LORENOOK_DATABASE_URL=sqlite:///data/mock.db python -m backend.cli demo link
 """
 
 import argparse
@@ -332,7 +334,7 @@ def main() -> None:
 
     images, media = str(MOCK_IMAGES), str(ROOT / "data" / "mock-media")
     app = create_app(Settings(database_url=url, image_directory=images, media_directory=media, comfyui_poll_seconds=0.5,
-                              cookie_secure=False, api_docs=True),
+                              cookie_secure=False, api_docs=True, demo_template=DEMO[0]),
                      llm_transport=httpx.MockTransport(handler), comfyui_transport=httpx.MockTransport(comfy_handler),
                      comfyui_connect=MockComfySocket)
     if args.no_seed:

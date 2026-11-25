@@ -9,6 +9,7 @@ import ChatParamsFields from '@/components/ChatParamsFields.vue'
 import ErrorBox from '@/components/ErrorBox.vue'
 import ScrollRow from '@/components/ScrollRow.vue'
 import { useChatStart } from '@/composables/chatStart'
+import { isDemo } from '@/features/account/session'
 import { contentBody } from '@/lib/sections'
 
 /** A character's page: who they are, their openings, and starting a chat. */
@@ -28,7 +29,7 @@ const openingOf = (text: string) => contentBody(text).replace(/\s+/g, ' ').trim(
     <TopBar>
       <RouterLink to="/hall" class="btn ghost small"><ArrowLeft /> 角色</RouterLink>
       <span class="grow" />
-      <RouterLink v-if="character" :to="`/library/characters/${id}`" class="btn ghost small"><Pencil /> 编辑</RouterLink>
+      <RouterLink v-if="character && !isDemo" :to="`/library/characters/${id}`" class="btn ghost small"><Pencil /> 编辑</RouterLink>
     </TopBar>
     <div class="page">
       <ErrorBox v-if="characters.error.value" :error="characters.error.value" />

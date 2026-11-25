@@ -13,7 +13,7 @@ const open = ref(false)
     <AvatarBadge :name="account.username" :size="36" />
     <span class="grow text">
       <span class="name ellipsis">{{ account.username }}</span>
-      <span class="handle faint ellipsis">{{ account.role === 'admin' ? '管理员' : '炉友' }}</span>
+      <span class="handle faint ellipsis">{{ { admin: '管理员', demo: '体验' }[account.role] ?? '炉友' }}</span>
     </span>
     <ChevronRight class="chevron" />
   </button>

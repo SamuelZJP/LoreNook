@@ -7,6 +7,7 @@ ID in the path that does not belong to the user. Rows reached through such an ID
 then the user's too.
 """
 
+from collections.abc import Callable
 from urllib.parse import urlsplit
 
 from fastapi import HTTPException, Request
@@ -35,8 +36,20 @@ CHAT_CHILD_PARAMETERS = {"round_id", "episode_id", "illustration_id"}
 SELF_CHECKED_PARAMETERS = {"name"}
 
 
+# (request, account), after sign-in is confirmed; features raise HTTPException to refuse a request.
+REQUEST_CHECKS: list[Callable[[Request, Account], None]] = []
+
+
 def register_owned_parameter(name: str, model: type) -> None:
     OWNED_PARAMETERS[name] = model
+
+
+def register_public_route(path: str) -> None:
+    PUBLIC_ROUTES.add(path)
+
+
+def register_request_check(check: Callable[[Request, Account], None]) -> None:
+    REQUEST_CHECKS.append(check)
 
 
 def account_of(request: Request) -> Account | None:
@@ -84,8 +97,11 @@ def guard(request: Request) -> None:
     route = request.scope.get("route")
     if route is None or route.path in PUBLIC_ROUTES:
         return
-    if account_of(request) is None:
+    account = account_of(request)
+    if account is None:
         raise HTTPException(status_code=401, detail="请先登录")
+    for check in REQUEST_CHECKS:
+        check(request, account)
     parameters = {name: value for name, value in request.path_params.items() if name in OWNED_PARAMETERS}
     if parameters:
         with request.app.state.database.read() as session:
@@ -98,3 +114,12 @@ def require_admin(request: Request) -> None:
     account = account_of(request)
     if account is None or not account.is_admin:
         raise HTTPException(status_code=403, detail="仅管理员可用")
+
+
+def require_roles(*roles: str):
+    """A route dependency admitting only these roles."""
+    def check(request: Request) -> None:
+        account = account_of(request)
+        if account is None or account.role not in roles:
+            raise HTTPException(status_code=403, detail="当前账号不能使用此功能")
+    return check

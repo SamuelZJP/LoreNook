@@ -31,6 +31,7 @@ Backend dependencies point one way: `api → workflows → modules → repositor
 | `backend/repository/` | Tables and queries |
 | `backend/illustrations/` | Illustration feature; `feature.py` is its single connection to the app |
 | `backend/recall/` | Memory recall feature: `service.py` runs two passes of `judge.py` with `prompts.py`, producing a layout |
+| `backend/demo/` | Demo links feature: `passes.py` (link rules), `graph.py` (copy or remove one account's rows), `policy.py` (what a demo account may write) |
 | `backend/status_bar/` | Status bar feature: per-character HTML, rendered in a sandboxed frame by `frontend/src/features/status_bar/` |
 | `frontend/src/composables/roundFlow.ts` | Round lifecycle in the browser; `WriteStep` is the seam for a step before writing |
 | `frontend/src/features/` | Frontend of optional features; core views only place their components |

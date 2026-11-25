@@ -3,7 +3,7 @@
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from backend.api.access import register_owned_parameter, require_admin
+from backend.api.access import register_owned_parameter, require_roles
 from backend.illustrations.admin_tables import register_admin_tables
 from backend.illustrations.card import register_card_sections
 from backend.illustrations.api import router
@@ -22,8 +22,9 @@ register_owned_parameter("workflow_id", ImageWorkflow)
 
 
 def install(app: FastAPI) -> None:
-    # Renders go to the server's own ComfyUI, so only administrators may use them for now.
-    app.include_router(router, dependencies=[Depends(require_admin)])
+    # Renders go to the server's own ComfyUI, so only administrators may use them for now, and demo accounts,
+    # whose workflows come from their template and whose writes the demo feature limits.
+    app.include_router(router, dependencies=[Depends(require_roles("admin", "demo"))])
 
     @app.exception_handler(IllustrationError)
     async def illustration_error(request: Request, error: IllustrationError):

@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { setUnauthorizedHandler } from './api/client'
-import { account, forgetAccount, isAdmin, loadAccount } from './features/account/session'
+import { account, forgetAccount, isAdmin, isDemo, loadAccount } from './features/account/session'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -18,6 +18,7 @@ export const router = createRouter({
     { path: '/', name: 'landing', component: () => import('./views/LandingView.vue'), meta: { public: true, bare: true } },
     { path: '/login', name: 'login', component: () => import('./views/LoginView.vue'), meta: { public: true, bare: true } },
     { path: '/register', name: 'register', component: () => import('./views/RegisterView.vue'), meta: { public: true, bare: true } },
+    { path: '/try/:token', name: 'try', component: () => import('./features/demo/TryView.vue'), props: true, meta: { public: true, bare: true } },
     { path: '/hall', name: 'home', component: () => import('./views/HomeView.vue') },
     { path: '/characters/:id', name: 'character', component: () => import('./views/CharacterView.vue'), props: true },
     { path: '/chats/:id', name: 'chat', component: () => import('./views/ChatView.vue'), props: true },
@@ -44,6 +45,8 @@ router.beforeEach(async (to) => {
   }
   if (!account.value) return { name: 'login', query: { redirect: to.fullPath } }
   if (to.meta.admin && !isAdmin.value) return { name: 'home' }
+  // A demo account plays with what its template gave it.
+  if (to.name === 'library' && isDemo.value) return { name: 'home' }
   // Illustrations are for administrators for now.
   if (to.name === 'library' && to.params.tab === 'workflows' && !isAdmin.value) return { name: 'library' }
   return true
@@ -51,7 +54,9 @@ router.beforeEach(async (to) => {
 
 setUnauthorizedHandler(() => {
   if (!account.value) return
+  const endedDemo = isDemo.value
   forgetAccount()
   const here = router.currentRoute.value
-  if (!here.meta.public) router.replace({ name: 'login', query: { redirect: here.fullPath } })
+  if (endedDemo) router.replace({ name: 'landing' })
+  else if (!here.meta.public) router.replace({ name: 'login', query: { redirect: here.fullPath } })
 })

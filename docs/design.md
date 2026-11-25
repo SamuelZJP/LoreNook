@@ -25,6 +25,7 @@ The concepts, rules and reasons behind the code. For *how* something is implemen
 | Status bar | Character-authored HTML at the foot of a reply, drawn from the state that round ended in. |
 | Character card file | A character exported as one `.lorenook` file, importable as a new library character. |
 | User | A built-in account (administrator or user). There is no sign-up; users are created on the command line. |
+| Demo link | A one-time link that gives a visitor a temporary copy of a template account for a limited time. |
 | Chat template (聊天配置) | Named starting values for a new chat's parameters: presets, model bindings, memory X/Y and each feature's settings. One may be the default. |
 
 **Chats are fully independent.** Creating a chat copies the selected character (with only the selected scene), identity, definitions, presets and model configs into chat-owned records with new IDs. Editing a library resource never changes an existing chat. Library records have `chat_id = NULL`.
@@ -327,9 +328,21 @@ Imported episodes may have `created_by_round_id = NULL`; they work normally for 
 - **Every route needs sign-in** except the public home data, health, sign-in and sign-out. The check is application-wide, so a new route is protected without opting in.
 - **Ownership lives in the storage session.** Owned tables carry `owner_id`; every statement on them is filtered to the current user and new rows take the current user as owner. Other tables are reached through an owned parent: an ID in the path (chat, character, preset…) must belong to the user, and queries under a chat also filter by that chat. Code that touches owned rows without a scope fails rather than seeing everything.
 - **Uploaded images** are stored once by content hash; `media_files` records who may read each. A card export packs only images its user may read.
-- **Administrators** additionally get data management (all users' rows, raw) and illustrations, whose renders run on the server's own ComfyUI. New rows created in data management belong to the acting administrator.
+- **Administrators** additionally get data management (all users' rows, raw) and illustrations, whose renders run on the server's own ComfyUI. Demo accounts get illustrations too (see Demo links). New rows created in data management belong to the acting administrator.
 - **Character Python** (state Schema and script) is for administrators only; see Security.
 - **Model addresses.** A user's model request may only reach public addresses: the host is resolved, every address must be public, and the connection is pinned to the checked one. Administrators may use private addresses.
+
+## Demo links
+
+A separate feature (`backend/demo/`, `frontend/src/features/demo/`) for showing LoreNook to someone without an account.
+
+- **A link** (`/try/<token>`) is made on the command line with a note, a duration (default 60 minutes), a writing allowance (40) and a drawing allowance (20). Only its hash is stored. Unopened, it stops working after 7 days.
+- **Opening it shows one button.** The link is redeemed by that click, never by loading the page, so link previews in chat apps cannot spend it. It works once.
+- **Redeeming** creates a `demo` account and copies the template account (`LORENOOK_DEMO_TEMPLATE`) into it: every row it owns and every row that references those, through the table metadata, so features' tables come along without being listed. IDs get new values and every reference to them follows, in columns and inside JSON. Illustrations of copied chats keep pointing at the template's image files. The visitor is signed in until the demo ends, then lands in the newest copied chat.
+- **A demo account plays, it doesn't configure.** It reads everything it owns, but a write is refused unless its route is on the feature's allowed list: chats, writing, archiving, state, episodes, recall and illustrations. Models, presets, workflows, characters, identities and uploads stay as the template made them. A new route is refused until listed.
+- **Allowances** are spent per writing request and per requested drawing, before the request runs. Automatic drawing follows archived rounds, so the writing allowance bounds it.
+- **The end.** A demo session is never extended. At the end every request answers 401; within minutes the account is disabled and signed out; 24 hours later its rows are deleted, along with its chats' image folders. The user row stays, disabled.
+- The template's model must be at a public address: demo accounts are not administrators, so the model address rule applies to them.
 
 ## Security
 
@@ -337,4 +350,4 @@ State Schemas and state scripts execute arbitrary Python on the server, so only 
 
 ## Out of scope
 
-Saving candidates across reloads, streaming, self-service sign-up, speech generation, regenerating an already-archived round.
+Saving candidates across reloads, streaming, self-service sign-up (demo links aside), speech generation, regenerating an already-archived round.
