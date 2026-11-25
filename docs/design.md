@@ -24,9 +24,12 @@ The concepts, rules and reasons behind the code. For *how* something is implemen
 | Main characters | Who an illustration centers on, chosen from the cast and the user identity. |
 | Status bar | Character-authored HTML at the foot of a reply, drawn from the state that round ended in. |
 | Character card file | A character exported as one `.lorenook` file, importable as a new library character. |
+| User | A built-in account (administrator or user). There is no sign-up; users are created on the command line. |
 | Chat template (聊天配置) | Named starting values for a new chat's parameters: presets, model bindings, memory X/Y and each feature's settings. One may be the default. |
 
 **Chats are fully independent.** Creating a chat copies the selected character (with only the selected scene), identity, definitions, presets and model configs into chat-owned records with new IDs. Editing a library resource never changes an existing chat. Library records have `chat_id = NULL`.
+
+**Users are fully separate.** Every chat, library resource, template and uploaded image belongs to one user, and nobody sees or reaches another user's data, administrators included. Each user brings their own model and ComfyUI addresses.
 
 **Chat templates only prefill the new-chat form.** They never set the character, identity or scene, and creation still goes through the same request. They store library IDs as plain references, so a deleted preset or model is dropped (with a notice) when the template is used. Each optional feature stores its own entry under `features.<name>` and is the only code that reads it; the backend checks only that it is a JSON object.
 
@@ -312,16 +315,25 @@ A `.lorenook` file is a zip holding `card.json` and the images it refers to unde
 
 ## Data management
 
-`/api/admin/data` reads and batch-edits every business table, including history. A batch commits or rolls back as a whole, guarded by a read revision against stale writes. Final consistency is checked (references, continuous round numbers, complete archive results, gap-free non-overlapping episode coverage). No models, Schemas, templates or presets run.
+`/api/admin/data` (administrators only) reads and batch-edits every business table of every user, including history. A batch commits or rolls back as a whole, guarded by a read revision against stale writes. Final consistency is checked (references, continuous round numbers, complete archive results, gap-free non-overlapping episode coverage). No models, Schemas, templates or presets run.
 
 The UI (聊天数据) is scoped by owner: one chat at a time (its history plus its copied resources; definitions belong to their owner's chat), or 资源库原始数据 for rows with `chat_id = NULL`. Pending changes stay global, so one batch can span scopes. 资源库 remains the normal editor for library resources.
 
 Imported episodes may have `created_by_round_id = NULL`; they work normally for memory and coverage.
 
+## Accounts and ownership
+
+- **Sign-in.** A server-side session in an HttpOnly, Secure, SameSite=Lax cookie, valid 30 days and extended while used. Changing a password or disabling a user ends their sessions. Failed sign-ins make that username (and the visitor's public address, when known) wait, longer each time. Writes from another origin are refused.
+- **Every route needs sign-in** except the public home data, health, sign-in and sign-out. The check is application-wide, so a new route is protected without opting in.
+- **Ownership lives in the storage session.** Owned tables carry `owner_id`; every statement on them is filtered to the current user and new rows take the current user as owner. Other tables are reached through an owned parent: an ID in the path (chat, character, preset…) must belong to the user, and queries under a chat also filter by that chat. Code that touches owned rows without a scope fails rather than seeing everything.
+- **Uploaded images** are stored once by content hash; `media_files` records who may read each. A card export packs only images its user may read.
+- **Administrators** additionally get data management (all users' rows, raw) and illustrations, whose renders run on the server's own ComfyUI. New rows created in data management belong to the acting administrator.
+- **Model addresses.** A user's model request may only reach public addresses: the host is resolved, every address must be public, and the connection is pinned to the checked one. Administrators may use private addresses.
+
 ## Security
 
-There is no built-in login, state Schemas execute arbitrary Python, and the admin API can reveal model API keys. Only expose LoreNook behind external authentication to trusted users.
+State Schemas and state scripts execute arbitrary Python on the server, and the admin API can reveal every user's model API keys. Give accounts only to people you trust.
 
 ## Out of scope
 
-Saving candidates across reloads, streaming, multi-user accounts, speech generation, regenerating an already-archived round.
+Saving candidates across reloads, streaming, self-service sign-up, speech generation, regenerating an already-archived round.

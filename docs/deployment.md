@@ -4,12 +4,14 @@ Production runs on Ubuntu 26.04 at `192.168.31.64`, in `/home/samuel/LoreNook`, 
 
 ```text
 https://lorenook.cryingstray.cn
-  → Cloud Caddy (HTTPS + Authelia)
+  → Cloud Caddy (HTTPS)
   → frp TCP tunnel
   → LAN Caddy :8080 (host routing)
       ├─ pages/assets → frontend/dist/
-      └─ /api, /health, /docs → Uvicorn 127.0.0.1:18780 → data/lorenook.db
+      └─ /api, /health → Uvicorn 127.0.0.1:18780 → data/lorenook.db
 ```
+
+The app does its own sign-in; there is no external authentication in front of it. `/` is the public home page.
 
 Machine-local files (not in Git): `deploy/lorenook.env`, `deploy/lorenook.service`, `data/` (database, `data/images/`, `data/media/`), `backups/`. Their contents are reproduced below for reconstruction.
 
@@ -33,10 +35,38 @@ sudo setfacl -R -m u:caddy:r-X frontend/dist
 set -a; source deploy/lorenook.env; set +a
 .venv/bin/python -m alembic upgrade head && .venv/bin/python -m alembic check
 sudo systemctl start lorenook
-curl --fail http://127.0.0.1:18780/api/chats
+curl --fail http://127.0.0.1:18780/api/public/home && .venv/bin/python -m backend.cli user list
 ```
 
 Run it step by step and stop on any failure. Code-only changes don't need a Caddy reload.
+
+## Upgrading to v3 (once)
+
+v3 adds users. The migration needs the administrator who will own all existing data:
+
+```bash
+sudo systemctl stop lorenook
+# (backup as in Update)
+set -a; source deploy/lorenook.env; set +a
+read -r LORENOOK_ADMIN_USERNAME && read -rs LORENOOK_ADMIN_PASSWORD && export LORENOOK_ADMIN_USERNAME LORENOOK_ADMIN_PASSWORD
+.venv/bin/python -m alembic upgrade head && .venv/bin/python -m alembic check
+unset LORENOOK_ADMIN_PASSWORD
+```
+
+`LORENOOK_MEDIA_DIRECTORY` must point at the real uploads when migrating (the default `data/media` does), so existing images are registered to the administrator. Then add the new settings to `deploy/lorenook.env` (below), start the service, and sign in.
+
+Cut over in two steps: first deploy with Authelia still in front (`import protected` in the Cloud Caddy block) and check sign-in, sign-out, and that a second test user sees none of the administrator's data. Then remove `import protected` and reload the cloud Caddy.
+
+## Users
+
+No sign-up. Manage users on the server, with the env file sourced:
+
+```bash
+.venv/bin/python -m backend.cli user add <name> [--admin]   # asks for the password
+.venv/bin/python -m backend.cli user passwd <name>          # also signs them out everywhere
+.venv/bin/python -m backend.cli user disable <name>         # or enable
+.venv/bin/python -m backend.cli user list
+```
 
 ## Routine
 
@@ -46,11 +76,11 @@ sudo journalctl -u lorenook -f
 sudo systemctl restart lorenook
 ```
 
-`/health` only shows the process is up; `/api/chats` also checks the database. After an archive failure, use retry in the UI — don't re-confirm the candidate.
+`/health` only shows the process is up; `python -m backend.cli user list` (with the env file sourced) checks the database. After an archive failure, use retry in the UI — don't re-confirm the candidate.
 
 ## Backup and restore
 
-There is no scheduled backup. Take one manually when needed (the update procedure always snapshots first):
+A systemd timer backs up nightly (below). Take one manually when needed (the update procedure always snapshots first):
 
 ```bash
 cd ~/LoreNook && umask 077 && sqlite3 data/lorenook.db ".backup 'backups/manual-$(date +%Y%m%d-%H%M%S).db'"
@@ -58,7 +88,7 @@ cd ~/LoreNook && umask 077 && sqlite3 data/lorenook.db ".backup 'backups/manual-
 
 Database backups don't include `data/images/` (illustrations) or `data/media/` (uploaded avatars and reference images); copy those folders separately. Keep Caddy's request size limit, if any, above 16 MB so uploads pass.
 
-Backups contain model API keys. They are kept on the same machine only.
+Backups contain every user's model API keys. Keep them on this machine, or copy them only somewhere as private.
 
 Check a backup without touching production:
 
@@ -79,12 +109,25 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.lock && .venv/bin/python -m pip install --no-deps -e .
 (cd frontend && npm ci && npm run build)
 mkdir -p deploy data backups && chmod 700 data backups
-echo 'LORENOOK_DATABASE_URL=sqlite:///data/lorenook.db' > deploy/lorenook.env && chmod 600 deploy/lorenook.env
+printf '%s\n' 'LORENOOK_DATABASE_URL=sqlite:///data/lorenook.db' 'LORENOOK_ICP_NUMBER=<备案号>' > deploy/lorenook.env && chmod 600 deploy/lorenook.env
 set -a; source deploy/lorenook.env; set +a
 .venv/bin/python -m alembic upgrade head
 ```
 
-Node must be `^20.19.0 || >=22.12.0`. The app doesn't load `.env` or migrate on startup.
+Node must be `^20.19.0 || >=22.12.0`. The app doesn't load `.env` or migrate on startup. On a new empty database, create the first administrator with `backend.cli user add <name> --admin`.
+
+### `deploy/lorenook.env`
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `LORENOOK_DATABASE_URL` | `sqlite:///data/lorenook.db` | Database |
+| `LORENOOK_MEDIA_DIRECTORY` / `LORENOOK_IMAGE_DIRECTORY` | `data/media` / `data/images` | Uploads and illustrations |
+| `LORENOOK_ICP_NUMBER` | empty | ICP filing number in the home page footer |
+| `LORENOOK_MODEL_EXTRA_NETWORKS` | empty | Comma-separated networks users' model addresses may resolve to besides public ones. Set `198.18.0.0/15` if the server's DNS answers with a proxy's fake IPs, or every user's model call is refused. In that setup the proxy, not LoreNook, decides where a name finally goes. |
+| `LORENOOK_COOKIE_SECURE` | `1` | Session cookie only over HTTPS. `0` only for plain-http testing on a LAN address. |
+| `LORENOOK_API_DOCS` | `0` | `1` serves `/docs` and `/openapi.json` (development) |
+
+`LORENOOK_ADMIN_USERNAME` and `LORENOOK_ADMIN_PASSWORD` are read only by the v3 migration; don't keep them in the file.
 
 ### `deploy/lorenook.service`
 
@@ -132,7 +175,7 @@ Add inside the existing `:8080` block in `/etc/caddy/Caddyfile` (keep the final 
 @lorenook host lorenook.cryingstray.cn
 handle @lorenook {
     encode gzip
-    @lorenook_backend path /api /api/* /health /docs /docs/* /openapi.json /redoc
+    @lorenook_backend path /api /api/* /health
     handle @lorenook_backend {
         reverse_proxy 127.0.0.1:18780
     }
@@ -149,6 +192,18 @@ handle @lorenook {
 }
 ```
 
+Login throttling uses the visitor's address from `X-Forwarded-For`. The cloud Caddy sets it; let the LAN Caddy keep it by trusting the tunnel, in the global options block:
+
+```caddyfile
+{
+    servers {
+        trusted_proxies static 127.0.0.1/32 ::1/128
+    }
+}
+```
+
+Without it every visitor looks like `127.0.0.1` and throttling falls back to per-username only.
+
 Don't strip `/api` (no `handle_path`). Generation and archiving can take minutes — no short timeouts or automatic retries anywhere in the proxy chain. Illustration progress is a server-sent event stream (`/api/chats/{id}/illustrations/progress`) and must not be buffered; it sends `Cache-Control: no-transform` so `encode` leaves it alone.
 
 ```bash
@@ -159,9 +214,55 @@ sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile && sudo sy
 
 ```caddyfile
 lorenook.cryingstray.cn {
-    import protected
     reverse_proxy 127.0.0.1:8080
 }
 ```
 
-Make sure Authelia requires login for this host and frps port 8080 isn't publicly reachable.
+Make sure frps port 8080 isn't publicly reachable.
+
+### Nightly backup
+
+`deploy/lorenook-backup.sh` (mode 700) keeps 14 days of database snapshots and uploaded images:
+
+```bash
+#!/bin/sh
+set -eu
+cd /home/samuel/LoreNook
+umask 077
+stamp=$(date +%Y%m%d-%H%M%S)
+sqlite3 data/lorenook.db ".backup 'backups/nightly-$stamp.db'"
+tar -czf "backups/nightly-$stamp-files.tar.gz" -C data images media
+find backups -maxdepth 1 -name 'nightly-*' -mtime +14 -delete
+```
+
+`deploy/lorenook-backup.service`:
+
+```ini
+[Unit]
+Description=LoreNook nightly backup
+
+[Service]
+Type=oneshot
+User=samuel
+ExecStart=/home/samuel/LoreNook/deploy/lorenook-backup.sh
+```
+
+`deploy/lorenook-backup.timer`:
+
+```ini
+[Unit]
+Description=LoreNook nightly backup
+
+[Timer]
+OnCalendar=*-*-* 04:30
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+```bash
+sudo systemctl link "$HOME/LoreNook/deploy/lorenook-backup.service"
+sudo systemctl enable --now "$HOME/LoreNook/deploy/lorenook-backup.timer"
+systemctl list-timers lorenook-backup.timer
+```

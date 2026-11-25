@@ -17,6 +17,10 @@ Backend dependencies point one way: `api → workflows → modules → repositor
 | `backend/main.py` | Builds the app: core routers plus everything in `FEATURES` |
 | `backend/features.py` | The installed optional features, and the contract a feature provides |
 | `backend/api/` | HTTP routes, thin |
+| `backend/api/access.py` | Session cookie, request scope, and the check every route passes |
+| `backend/repository/ownership.py` | Filters and fills `owner_id` on every session by the scope in `shared/scope.py` |
+| `backend/modules/accounts/`, `backend/cli.py` | Built-in users, passwords, sessions; user administration from the command line |
+| `backend/llm/address_guard.py` | Users' model requests may only reach public addresses |
 | `backend/workflows/` | Multi-step operations and transaction boundaries |
 | `backend/workflows/writing.py`, `writing_materials.py` | One writing request: snapshot → materials → preset → model |
 | `backend/workflows/archive.py`, `archive_step.py` | Post-confirm pipeline; the shape all its model-backed steps share |
@@ -30,4 +34,6 @@ Backend dependencies point one way: `api → workflows → modules → repositor
 | `backend/status_bar/` | Status bar feature: per-character HTML, rendered in a sandboxed frame by `frontend/src/features/status_bar/` |
 | `frontend/src/composables/roundFlow.ts` | Round lifecycle in the browser; `WriteStep` is the seam for a step before writing |
 | `frontend/src/features/` | Frontend of optional features; core views only place their components |
+| `frontend/src/features/account/session.ts` | The signed-in account; the router waits for it before any page |
+| `frontend/src/features/home/` | The public home and login pages' look |
 | `frontend/src/components/panel/settings/contract.ts` | How a feature adds rows or blocks to a chat's settings; `features/chatSettings.ts` lists them |

@@ -1,3 +1,5 @@
+import ipaddress
+
 from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.concurrency import run_in_threadpool
 
@@ -10,17 +12,24 @@ from backend.schemas.accounts import AccountRead, LoginRequest
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
-def _client(request: Request) -> str:
+def _client(request: Request) -> str | None:
+    """The visitor's public address, or None when only a proxy's address is known.
+
+    Behind the proxy chain every request may come from 127.0.0.1; throttling that would lock everyone out.
+    """
     forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+    address = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "")
+    try:
+        return address if ipaddress.ip_address(address).is_global else None
+    except ValueError:
+        return None
 
 
 @router.post("/login", response_model=AccountRead)
 async def login(payload: LoginRequest, request: Request, response: Response, database: DatabaseDependency):
     throttle = request.app.state.login_throttle
-    keys = (f"user:{payload.username.lower()}", f"client:{_client(request)}")
+    client = _client(request)
+    keys = (f"user:{payload.username.lower()}",) + ((f"client:{client}",) if client else ())
     wait = throttle.wait_seconds(*keys)
     if wait:
         raise HTTPException(status_code=429, detail=f"尝试次数过多，请 {wait} 秒后再试",
