@@ -43,6 +43,11 @@ class ChatRead(Contract):
     created_at: datetime
 
 
+class ChatListItem(ChatRead):
+    # The chat's own character avatar.
+    avatar: str | None = None
+
+
 class StateRead(Contract):
     id: str
     character_id: str

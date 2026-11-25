@@ -2,7 +2,7 @@ from backend.modules.characters.service import CharacterService
 from backend.modules.users.service import IdentityService
 from backend.repository.models import Character, Chat, ChatModelBinding, ModelConfig, UserIdentity, WritingPreset
 from backend.repository.queries import Repository
-from backend.schemas.chats import ChatDetail, ChatPatch, ChatRead, ModelConfigRead, PresetRead, StateRead
+from backend.schemas.chats import ChatDetail, ChatListItem, ChatPatch, ChatRead, ModelConfigRead, PresetRead, StateRead
 from backend.shared.errors import ConflictError
 
 
@@ -10,8 +10,12 @@ class ChatService:
     def __init__(self, repository: Repository):
         self.repository = repository
 
-    def list(self) -> list[ChatRead]:
-        return [ChatRead.model_validate(record) for record in self.repository.list_chats()]
+    def list(self) -> list[ChatListItem]:
+        avatars = self.repository.chat_character_avatars()
+        return [
+            ChatListItem(**ChatRead.model_validate(record).model_dump(), avatar=avatars.get(record.id))
+            for record in self.repository.list_chats()
+        ]
 
     def detail(self, chat_id: str) -> ChatDetail:
         chat = self.repository.get(Chat, chat_id)

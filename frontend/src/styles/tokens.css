@@ -100,6 +100,8 @@
   --page-glow: radial-gradient(120% 70% at 0% 0%, rgb(255 240 215 / 55%), transparent 60%);
   --quote: #7a410c;
   --quote-rule: #d9a56c;
+  --avatar-bg-l: 88%;
+  --avatar-text-l: 32%;
 }
 
 /* Dark: walnut and candlelight */
@@ -152,5 +154,7 @@
   --page-glow: radial-gradient(120% 70% at 0% 0%, rgb(232 160 74 / 7%), transparent 60%);
   --quote: #f2c48a;
   --quote-rule: #8a5a24;
+  --avatar-bg-l: 24%;
+  --avatar-text-l: 80%;
   color-scheme: dark;
 }

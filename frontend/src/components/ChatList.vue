@@ -31,7 +31,7 @@ const chats = computed(() => {
         v-for="chat in chats" :key="chat.id" :to="`/chats/${chat.id}`"
         class="list-item" :class="{ active: route.params.id === chat.id }"
       >
-        <AvatarBadge :name="chat.title" :size="38" />
+        <AvatarBadge :name="chat.title" :src="chat.avatar" :size="38" />
         <div class="grow">
           <div class="ellipsis title">{{ chat.title }}</div>
           <div class="faint small">{{ formatTime(chat.created_at) }}</div>

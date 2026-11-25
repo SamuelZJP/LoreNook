@@ -15,8 +15,9 @@ const url = computed(() => {
 const style = computed(() => ({
   width: `${props.size}px`,
   height: `${props.size}px`,
-  fontSize: `${Math.round(props.size * 0.42)}px`,
-  background: url.value ? undefined : `hsl(${hue(props.name ?? '')} 55% 52%)`,
+  fontSize: `${Math.round(props.size * 0.44)}px`,
+  borderRadius: `${Math.round(props.size * 0.3)}px`,
+  '--avatar-hue': url.value ? undefined : String(hue(props.name ?? '')),
 }))
 </script>
 
@@ -28,9 +29,13 @@ const style = computed(() => ({
 </template>
 
 <style scoped>
+/* A rounded tile: the image, or the name's first character in a soft tone of a stable hue. */
 .avatar {
   display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
-  border-radius: 50%; color: #fff; font-weight: 600; overflow: hidden; user-select: none;
+  overflow: hidden; user-select: none; font-family: var(--font-reading); font-weight: 500;
+  background: hsl(var(--avatar-hue, 30) 32% var(--avatar-bg-l));
+  color: hsl(var(--avatar-hue, 30) 35% var(--avatar-text-l));
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
 </style>

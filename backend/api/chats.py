@@ -7,13 +7,13 @@ from backend.modules.users.service import IdentityService
 from backend.repository.models import Character, UserIdentity
 from backend.repository.queries import Repository
 from backend.schemas.catalog import CharacterPatch, CharacterRead, IdentityPatch, IdentityRead
-from backend.schemas.chats import ChatCreate, ChatDetail, ChatPatch, ChatRead
+from backend.schemas.chats import ChatCreate, ChatDetail, ChatListItem, ChatPatch
 from backend.workflows.create_chat import create_chat
 
 router = APIRouter(prefix="/api/chats", tags=["chats"])
 
 
-@router.get("", response_model=list[ChatRead])
+@router.get("", response_model=list[ChatListItem])
 def list_chats(database: DatabaseDependency):
     with database.read() as session:
         return ChatService(Repository(session)).list()

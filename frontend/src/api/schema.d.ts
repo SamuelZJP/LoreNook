@@ -1812,6 +1812,26 @@ export interface components {
             };
             latest_state: components["schemas"]["StateRead"];
         };
+        /** ChatListItem */
+        ChatListItem: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Writing Preset Id */
+            writing_preset_id: string | null;
+            /** Recent Rounds */
+            recent_rounds: number;
+            /** Min Summaries */
+            min_summaries: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Avatar */
+            avatar?: string | null;
+        };
         /** ChatMemory */
         ChatMemory: {
             /** Recent Rounds */
@@ -1839,24 +1859,6 @@ export interface components {
             model_bindings?: {
                 [key: string]: string;
             } | null;
-        };
-        /** ChatRead */
-        ChatRead: {
-            /** Id */
-            id: string;
-            /** Title */
-            title: string;
-            /** Writing Preset Id */
-            writing_preset_id: string | null;
-            /** Recent Rounds */
-            recent_rounds: number;
-            /** Min Summaries */
-            min_summaries: number;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
         };
         /** ChatResolvedDefinitions */
         ChatResolvedDefinitions: {
@@ -2123,7 +2125,7 @@ export interface components {
         };
         /**
          * FocusOptions
-         * @description Everyone who can be a main character in this chat, and who is the current default.
+         * @description Everyone who can be a main character in this chat, and who is the current default (empty: decided from the story).
          */
         FocusOptions: {
             /** Options */
@@ -3236,7 +3238,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChatRead"][];
+                    "application/json": components["schemas"]["ChatListItem"][];
                 };
             };
         };

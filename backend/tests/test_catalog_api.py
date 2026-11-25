@@ -65,7 +65,7 @@ def test_chat_endpoints_default_state_and_copy_scoping(database):
         url = f"/api/chats/{data['id']}"
         assert data["latest_state"]["content"] == {"世界": WORLD} and data["latest_state"]["round_id"] is None
         assert data["writing_preset_id"] is None and data["model_bindings"] == {}
-        assert len((await client.get("/api/chats")).json()) == 1
+        assert [chat["avatar"] for chat in (await client.get("/api/chats")).json()] == [None]
         assert (await client.get(url)).json() == data
         assert (await client.get(f"{url}/character")).json() == data["character"]
         assert (await client.get(f"{url}/user-identity")).json() == data["user_identity"]
@@ -73,6 +73,8 @@ def test_chat_endpoints_default_state_and_copy_scoping(database):
         assert (await client.delete(f"/api/user-identities/{data['user_identity']['id']}")).status_code == 404
         assert (await client.patch(f"{url}/character", json={"name": "副本", "scenes": [{"name": "开场", "first_message": "副本开场"}]})).status_code == 200
         assert (await client.patch(f"{url}/user-identity", json={"name": "副本身份"})).status_code == 200
+        await client.patch(f"{url}/character", json={"avatar": "copy.png"})
+        assert [chat["avatar"] for chat in (await client.get("/api/chats")).json()] == ["copy.png"]
         assert (await client.get(f"/api/characters/{character['id']}")).json()["scenes"][0]["first_message"] == "第0楼"
         updated = (await client.patch(url, json={"title": "新标题", "recent_rounds": 0, "min_summaries": 0})).json()
         assert updated["title"] == "新标题" and updated["recent_rounds"] == 0

@@ -136,7 +136,7 @@ const placeholder = computed(() => {
         :disabled="locked" @keydown="onKey"
       />
       <button
-        class="btn primary send" type="button" :disabled="locked"
+        class="btn accent send" type="button" :disabled="locked"
         :title="hasCandidate ? '用当前输入重新生成' : '生成回复（允许空输入）'" @click="submit"
       >
         <Loader2 v-if="phase === 'preparing' || phase === 'generating'" class="spin" />
