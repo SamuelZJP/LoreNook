@@ -1,4 +1,4 @@
-"""The rules of a demo link: create, redeem once, run out, close, purge. Runs in the system scope."""
+"""The rules of a demo link: create, redeem (again while it runs), run out, close, purge. Runs in the system scope."""
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -74,19 +74,23 @@ class DemoPasses:
         return token, record
 
     def redeem(self, token: str, template_username: str) -> Redeemed:
+        """The first redeem creates the account; later ones, while the demo runs, sign in to the same account."""
         record = self.session.scalar(select(DemoPass).where(DemoPass.token_hash == token_hash(token)))
         now = self.clock()
-        if record is None or status(record, now) != "未打开":
-            raise DemoLinkError("体验链接无效或已失效")
+        current = status(record, now) if record is not None else None
         accounts = AccountRepository(self.session)
-        template = accounts.user_by_name(template_username) if template_username else None
-        if template is None:
-            raise DemoUnavailableError("体验暂不可用")
-
-        user = accounts.add(User(username=self._free_username(accounts), role="demo",
-                                 password_hash=hash_password(secrets.token_urlsafe(32))))
-        copy_rows(self.session, account_rows(self.session, template.id), template.id, user.id)
-        record.redeemed_at, record.expires_at, record.user_id = now, now + timedelta(minutes=record.minutes), user.id
+        if current == "体验中":
+            user = self.session.get(User, record.user_id)
+        elif current == "未打开":
+            template = accounts.user_by_name(template_username) if template_username else None
+            if template is None:
+                raise DemoUnavailableError("体验暂不可用")
+            user = accounts.add(User(username=self._free_username(accounts), role="demo",
+                                     password_hash=hash_password(secrets.token_urlsafe(32))))
+            copy_rows(self.session, account_rows(self.session, template.id), template.id, user.id)
+            record.redeemed_at, record.expires_at, record.user_id = now, now + timedelta(minutes=record.minutes), user.id
+        else:
+            raise DemoLinkError("体验链接无效或已失效")
         session_token = AccountService(accounts, clock=self.clock).open_session(user, record.expires_at)
         chat_id = self.session.scalar(select(Chat.id).where(Chat.owner_id == user.id)
                                       .order_by(Chat.created_at.desc(), Chat.id).limit(1))

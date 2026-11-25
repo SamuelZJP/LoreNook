@@ -42,7 +42,7 @@ async function start() {
     <main class="hearth-form-body">
       <WordMark size="compact" tag="h1" />
       <div class="hearth-form">
-        <p class="hint">点击下方按钮后开始体验，计时也从这一刻开始。体验期间可以写作、归档和生图；结束后账号与数据会自动清除。</p>
+        <p class="hint">计时从第一次点击开始；体验期间可以用同一链接重新进入。体验中可以写作、归档和生图，结束后账号与数据会自动清除。</p>
         <p class="error" role="alert">{{ error }}</p>
         <button class="hearth-btn primary submit" type="button" :disabled="busy" @click="start">
           {{ busy ? '正在添柴…' : '欢迎体验' }}

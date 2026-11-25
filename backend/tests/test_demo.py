@@ -63,7 +63,7 @@ def owned_count(database, model, owner_id):
         return session.scalar(select(func.count()).select_from(model).where(model.owner_id == owner_id))
 
 
-def test_redeeming_copies_the_template_and_signs_in_once(database, template):
+def test_redeeming_copies_the_template_once_and_signs_in_while_it_runs(database, template):
     token = link(database)
     with scoped(SYSTEM), database.read() as session:
         template_id = AccountRepository(session).user_by_name(TEST_USERNAME).id
@@ -87,15 +87,20 @@ def test_redeeming_copies_the_template_and_signs_in_once(database, template):
             assert (await visitor.get("/api/media/avatar.png")).status_code != 403
             current = (await visitor.get("/api/demo/status")).json()
             assert current["rounds_left"] == 40 and current["images_left"] == 20
+            await visitor.post(f"/api/chats/{chats[0]['id']}/writing", json={})
+        async with client() as other_device:
+            again = await other_device.post("/api/demo/redeem", json={"token": token})
+            assert again.status_code == 200 and again.json() == redeemed.json()
+            assert (await other_device.get("/api/auth/me")).json() == me
+            assert (await other_device.get("/api/demo/status")).json() == current | {"rounds_left": 39}
         async with client() as other:
-            again = await other.post("/api/demo/redeem", json={"token": token})
-            assert again.status_code == 410
             assert (await other.post("/api/demo/redeem", json={"token": "nonsense"})).status_code == 410
             await sign_in(other)
             assert (await other.get("/api/demo/status")).status_code == 404
 
     run_app(database, scenario)
     with scoped(SYSTEM), database.read() as session:
+        assert session.scalar(select(func.count()).select_from(User).where(User.role == "demo")) == 1
         demo = session.scalar(select(User).where(User.role == "demo"))
         record = DemoPasses(session).of_user(demo.id)
         assert status(record, datetime.now(UTC)) == "体验中"
@@ -167,6 +172,7 @@ def test_finished_demos_are_signed_out_then_cleared(database, template):
                 session.scalar(select(DemoPass)).expires_at = datetime.now(UTC) - timedelta(seconds=1)
             ended = await visitor.get("/api/chats")
             assert ended.status_code == 401 and ended.json()["detail"] == "体验已结束"
+            assert (await visitor.post("/api/demo/redeem", json={"token": token})).status_code == 410
 
     run_app(database, scenario)
     with scoped(SYSTEM), database.read() as session:
