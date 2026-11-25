@@ -23,6 +23,8 @@ import { isWide } from '@/composables/layout'
 import TopBar from '@/components/TopBar.vue'
 import ErrorBox from '@/components/ErrorBox.vue'
 import MessageBubble from '@/components/chat/MessageBubble.vue'
+import CharacterIntro from '@/components/chat/CharacterIntro.vue'
+import AvatarBadge from '@/components/AvatarBadge.vue'
 import OutputView from '@/components/chat/OutputView.vue'
 import ComposerBar from '@/components/chat/ComposerBar.vue'
 import ArchiveBanner from '@/components/chat/ArchiveBanner.vue'
@@ -169,6 +171,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
     <section class="conversation">
       <ChatIllustrationBackdrop />
       <TopBar>
+        <AvatarBadge v-if="character" :name="character.name" :src="character.avatar" :size="32" />
         <div class="grow title-wrap">
           <h1 class="ellipsis">{{ chat.data.value?.title ?? '…' }}</h1>
           <div class="faint sub ellipsis" v-if="character && identity">{{ character.name }} · {{ identity.name }}</div>
@@ -188,7 +191,14 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
             </button>
             <span class="faint">还有 {{ hiddenFloors }} 层未显示</span>
           </div>
-          <MessageBubble v-else-if="character" side="ai" page :capped="capped" :name="character.name" :avatar="character.avatar" floor="0">
+          <CharacterIntro
+            v-else-if="character && identity" :name="character.name" :avatar="character.avatar" :portrait="character.portrait"
+            :description="character.description" :scene="character.scenes[0]?.name" :identity="identity.name"
+          />
+          <MessageBubble
+            v-if="!hiddenFloors && character" side="ai" page :capped="capped" :name="character.name" :avatar="character.avatar" floor="0"
+            :pin-actions="!roundList.length && !candidate"
+          >
             <template #meta><span v-if="prefs.showFloorNumbers">#0 开场</span></template>
             <OutputView v-if="rawFirstMessage" :text="firstMessage" :raw="raw.has('first')" />
             <p v-else class="faint">（没有开场消息）</p>
@@ -204,7 +214,10 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
               <template #meta><span v-if="prefs.showFloorNumbers">#{{ r.round_no }}</span></template>
               <div class="plain user-text">{{ r.user_input || '（空输入）' }}</div>
             </MessageBubble>
-            <MessageBubble side="ai" page :capped="capped" :wide="illustrations.occupies(r.id) && !raw.has(r.id)" :name="character?.name ?? 'AI'" :avatar="character?.avatar">
+            <MessageBubble
+              side="ai" page :capped="capped" :wide="illustrations.occupies(r.id) && !raw.has(r.id)" :name="character?.name ?? 'AI'" :avatar="character?.avatar"
+              :pin-actions="r.id === latest?.id && !candidate"
+            >
               <template #meta>
                 <span v-if="prefs.showFloorNumbers">#{{ r.round_no }}</span>
                 <span v-if="r.archive_step !== 'complete'" class="badge warn">
@@ -231,11 +244,11 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
             </MessageBubble>
             <RoundSummaryBlock
               v-if="summaryOpen(r.id) && (r.summary || r.archive_step !== 'state_update')"
-              :id="`summary-${r.id}`" class="indent" :chat-id="chatId" :round-id="r.id" :summary="r.summary"
+              :id="`summary-${r.id}`" :chat-id="chatId" :round-id="r.id" :summary="r.summary"
               :editable="r.id === latest?.id && latestComplete"
             />
             <EpisodeCard
-              v-for="ep in episodesByEnd.get(r.id) ?? []" :key="ep.id" class="indent"
+              v-for="ep in episodesByEnd.get(r.id) ?? []" :key="ep.id"
               :chat-id="chatId" :episode="ep" :start-no="roundNo.get(ep.start_round_id)" :end-no="roundNo.get(ep.end_round_id)"
               :editable="ep.created_by_round_id === latest?.id && latestComplete"
             />
@@ -251,7 +264,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
                 <div class="plain">{{ flow.usedInstruction.value }}</div>
               </div>
             </MessageBubble>
-            <MessageBubble side="ai" page :capped="capped && !flow.editing.value" :name="character?.name ?? 'AI'" :avatar="character?.avatar" pending>
+            <MessageBubble side="ai" page :capped="capped && !flow.editing.value" :name="character?.name ?? 'AI'" :avatar="character?.avatar" pending pin-actions>
               <template #meta>
                 <span class="badge accent">未保存的候选</span>
                 <span v-if="flow.edited.value" class="badge">已编辑</span>
@@ -277,10 +290,10 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
                 </template>
               </template>
             </MessageBubble>
-            <div v-if="flow.inputChanged.value && flow.phase.value === 'candidate'" class="notice warn indent">
+            <div v-if="flow.inputChanged.value && flow.phase.value === 'candidate'" class="notice warn">
               <AlertTriangle /> 输入框内容与候选的输入不同。请重新生成，使确认的输入与回复保持配对。
             </div>
-            <div v-if="candidateProblem" class="notice warn indent"><AlertTriangle /> {{ candidateProblem }}，归档时可能被拒绝。</div>
+            <div v-if="candidateProblem" class="notice warn"><AlertTriangle /> {{ candidateProblem }}，归档时可能被拒绝。</div>
           </template>
 
           <MessageBubble v-if="flow.phase.value === 'preparing' || flow.phase.value === 'generating'" side="ai" :name="character?.name ?? 'AI'" :avatar="character?.avatar" pending>
@@ -323,20 +336,19 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 /* The chat takes over the main island: conversation and panel become islands of their own. */
 .chat-view { display: flex; gap: var(--island-gap); height: 100%; background: var(--bg); }
 .conversation {
-  --chat-bg: var(--bg-sunken);
+  --chat-bg: var(--bg-elev);
   flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100%; position: relative; isolation: isolate;
   background: var(--chat-bg); border-radius: var(--radius-xl); overflow: hidden;
 }
 .title-wrap { min-width: 0; }
-.title-wrap h1 { font-size: var(--text-lg); }
+.title-wrap h1 { font-size: var(--text-md); font-weight: 600; }
 .sub { font-size: var(--text-xs); }
 .btn.on { color: var(--accent); }
 .m { margin: var(--space-3); }
 .timeline { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
-.timeline-inner, .dock-inner { max-width: calc(var(--reading-w) + 120px); margin: 0 auto; padding: var(--space-5) var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
+.timeline-inner, .dock-inner { max-width: calc(var(--reading-w) + 2 * var(--space-8)); margin: 0 auto; padding: var(--space-5) var(--space-8); display: flex; flex-direction: column; gap: var(--space-8); }
 .dock { flex-shrink: 0; background: linear-gradient(to bottom, transparent, var(--chat-bg) 18px); }
-.dock-inner { padding-top: var(--space-1); padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom)); gap: var(--space-2); }
-.indent { margin-left: 44px; }
+.dock-inner { padding-top: var(--space-1); padding-inline: var(--space-6); padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom)); gap: var(--space-2); }
 .candidate-editor { display: block; width: 760px; max-width: 100%; font-family: var(--font-mono); font-size: var(--text-sm); }
 .user-text { font-size: var(--reading-size); font-family: var(--font-reading); }
 .used-instruction { margin-top: var(--space-2); padding-top: var(--space-2); border-top: 1px dashed currentColor; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
@@ -365,7 +377,6 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
   .conversation { border-radius: 0; }
 }
 @media (max-width: 640px) {
-  .indent { margin-left: 0; }
   .timeline-inner { padding: var(--space-4) var(--space-3); }
   .dock-inner { padding-left: var(--space-2); padding-right: var(--space-2); }
 }

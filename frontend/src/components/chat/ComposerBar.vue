@@ -151,7 +151,7 @@ const placeholder = computed(() => {
 <style scoped>
 .composer {
   position: relative; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
-  background: var(--bg-elev); border: 1px solid var(--border); border-radius: var(--radius-xl); box-shadow: var(--shadow);
+  background: var(--bg-elev); border: 1px solid var(--border); border-radius: 22px; box-shadow: var(--shadow);
   transition: border-color 0.12s;
 }
 .composer:focus-within { border-color: var(--border-strong);
@@ -179,11 +179,14 @@ const placeholder = computed(() => {
 }
 .handle::after {
   content: ''; position: absolute; top: 4px; left: 16px; right: 16px; height: 4px;
-  border-radius: var(--radius-xs); background: var(--border);
+  border-radius: var(--radius-xs); background: var(--border-strong); opacity: 0; transition: opacity 0.15s;
 }
+/* The resize grip only appears when the pointer is on the composer. */
+.composer:hover .handle::after, .handle:focus-visible::after { opacity: 1; }
 .handle:hover::after { background: var(--text-muted); }
+@media (hover: none) { .handle::after { opacity: 1; } }
 .area:disabled { opacity: 0.6; }
-.send { min-height: 38px; padding-inline: var(--space-4); }
+.send { min-height: 40px; padding-inline: var(--space-4); }
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (max-width: 480px) { .send-label { display: none; } .send { width: 40px; padding: 0; } }

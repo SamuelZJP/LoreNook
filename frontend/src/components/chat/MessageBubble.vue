@@ -18,6 +18,8 @@ const props = defineProps<{
    * and only the default slot scrolls.
    */
   capped?: boolean
+  /** Keep the action row visible instead of revealing it on hover, e.g. on the newest entry. */
+  pinActions?: boolean
 }>()
 
 const bubble = ref<HTMLElement>()
@@ -47,10 +49,10 @@ onBeforeUnmount(() => observer?.disconnect())
 </script>
 
 <template>
-  <div class="msg" :class="[side, { pending, wide }]">
-    <AvatarBadge class="av" :name="name" :src="avatar" :size="34" />
+  <div class="msg" :class="[side, { pending, wide, 'pin-actions': pinActions }]">
     <div class="col">
       <div class="meta">
+        <AvatarBadge class="av" :name="name" :src="avatar" :size="side === 'ai' ? 28 : 24" />
         <span class="name">{{ name }}</span>
         <slot name="meta" />
       </div>
@@ -65,37 +67,37 @@ onBeforeUnmount(() => observer?.disconnect())
 </template>
 
 <style scoped>
-.msg { display: flex; gap: var(--space-3); align-items: flex-start; max-width: 100%; }
-.msg.user { flex-direction: row-reverse; }
-.col { display: flex; flex-direction: column; gap: var(--space-1-5); min-width: 0; max-width: min(var(--reading-w), 86%); }
-.user .col { align-items: flex-end; }
-.wide .col { width: min(var(--reading-w), 86%); }
+/* AI text runs the full reading width under a name line; the user's input is a soft bubble on the right. */
+.msg { display: flex; max-width: 100%; }
+.msg.user { justify-content: flex-end; }
+.col { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; max-width: 100%; }
+.ai .col { width: 100%; }
+.user .col { align-items: flex-end; max-width: 80%; }
 .meta { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-xs); color: var(--text-faint); flex-wrap: wrap; }
 .user .meta { flex-direction: row-reverse; }
-.name { font-weight: 500; color: var(--text-muted); }
-.bubble {
-  padding: var(--space-3) var(--space-4); border-radius: var(--radius-l); background: var(--bubble-ai);
-  border: 1px solid var(--border); box-shadow: var(--shadow-island); min-width: 0; max-width: 100%;
-}
-.ai .bubble { border-top-left-radius: var(--radius-xs); }
-.bubble.page-surface { padding: var(--space-6) var(--space-8) var(--space-5); --pad-y: calc(var(--space-6) + var(--space-5)); }
-.user .bubble { background: var(--bubble-user); color: var(--bubble-user-text); border-color: transparent; border-top-right-radius: var(--radius-xs); }
-.pending .bubble { border-style: dashed; border-color: var(--accent); }
-.user.pending .bubble { border: 1px dashed var(--bubble-user-text); }
+.name { font-weight: 600; font-size: var(--text-sm); color: var(--text); }
+.user .name { font-weight: 500; color: var(--text-muted); font-size: var(--text-xs); }
+.bubble { --pad-y: calc(var(--space-3) * 2); padding: var(--space-3) var(--space-4); border-radius: var(--radius-l); background: var(--bg-sunken); min-width: 0; max-width: 100%; }
+.bubble.page-surface { --pad-y: 0px; padding: 0; background: none; border-radius: 0; }
+.user .bubble { background: var(--bubble-user); color: var(--bubble-user-text); border-radius: 20px 20px var(--radius-xs) 20px; padding: var(--space-3) var(--space-4); }
+/* An unsaved candidate keeps a dashed outline so it never reads as part of the story yet. */
+.pending .bubble, .pending .bubble.page-surface { outline: 1px dashed var(--accent); outline-offset: var(--space-2); border-radius: var(--radius-s); }
+.user.pending .bubble { outline-color: var(--text-faint); border-radius: 20px 20px var(--radius-xs) 20px; }
 /* The body never shrinks below a few lines, so a tall illustration can push the bubble past the cap. */
 .capped .body {
-  max-height: max(calc(var(--reply-cap, 100vh) - var(--fixed-h) - var(--pad-y, calc(var(--space-3) * 2))), calc(var(--reading-size, 16px) * 8));
+  max-height: max(calc(var(--reply-cap, 100vh) - var(--fixed-h) - var(--pad-y)), calc(var(--reading-size, 16px) * 8));
   overflow-y: auto; scrollbar-width: thin;
   margin-right: calc(-1 * var(--space-3)); padding-right: var(--space-3);
 }
 .capped .body.more { mask-image: linear-gradient(to bottom, #000 calc(100% - 2.5em), transparent); }
-.actions { display: flex; gap: var(--space-1); flex-wrap: wrap; }
-.user .actions { justify-content: flex-end; }
+.actions { display: flex; gap: var(--space-0-5); flex-wrap: wrap; margin-left: calc(-1 * var(--space-2)); opacity: 0; transition: opacity 0.15s; }
+.actions :deep(.btn.ghost) { color: var(--text-faint); }
+.actions :deep(.btn.ghost:hover:not(:disabled)) { color: var(--text); }
+.msg:hover .actions, .msg:focus-within .actions, .pin-actions .actions { opacity: 1; }
+.user .actions { justify-content: flex-end; margin-left: 0; margin-right: calc(-1 * var(--space-2)); }
+@media (hover: none) { .actions { opacity: 1; } }
 @media (max-width: 640px) {
-  .av { display: none; }
-  .col { max-width: 94%; }
-  .wide .col { width: 94%; }
-  .bubble.page-surface { padding: var(--space-4) var(--space-4) var(--space-3); --pad-y: calc(var(--space-4) + var(--space-3)); }
+  .user .col { max-width: 92%; }
   .capped .body { margin-right: calc(-1 * var(--space-2)); padding-right: var(--space-2); }
 }
 </style>
