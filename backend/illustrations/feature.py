@@ -1,9 +1,10 @@
-"""The feature's single connection to the application: routes, errors, tables, hooks and lifecycle."""
+"""The feature's single connection to the application: routes, errors, tables, card section, hooks and lifecycle."""
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from backend.illustrations.admin_tables import register_admin_tables
+from backend.illustrations.card import register_card_sections
 from backend.illustrations.api import router
 from backend.illustrations.comfyui import ComfyUIClient
 from backend.illustrations.errors import IllustrationError
@@ -14,6 +15,7 @@ from backend.illustrations.storage import ImageStorage
 from backend.repository.queries import Repository
 
 register_admin_tables()
+register_card_sections()
 
 
 def install(app: FastAPI) -> None:

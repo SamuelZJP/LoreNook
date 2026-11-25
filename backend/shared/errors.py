@@ -19,6 +19,10 @@ class ArchiveExecutionError(RuntimeError):
         super().__init__("归档已停止，请读取保存进度")
 
 
+class CharacterCardError(ValueError):
+    """A character card file can't be read or doesn't follow the format."""
+
+
 class StateInitializationError(ValueError):
     """A character's schema cannot produce a valid initial state."""
 

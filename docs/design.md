@@ -23,6 +23,7 @@ The concepts, rules and reasons behind the code. For *how* something is implemen
 | Cast | The people on a character card who can be drawn, each with an appearance and optional reference image. |
 | Main characters | Who an illustration centers on, chosen from the cast and the user identity. |
 | Status bar | Character-authored HTML at the foot of a reply, drawn from the state that round ended in. |
+| Character card file | A character exported as one `.lorenook` file, importable as a new library character. |
 | Chat template (聊天配置) | Named starting values for a new chat's parameters: presets, model bindings, memory X/Y and each feature's settings. One may be the default. |
 
 **Chats are fully independent.** Creating a chat copies the selected character (with only the selected scene), identity, definitions, presets and model configs into chat-owned records with new IDs. Editing a library resource never changes an existing chat. Library records have `chat_id = NULL`.
@@ -286,6 +287,28 @@ A character may carry status bar code: one HTML document, copied into chats with
 - **Per-chat switch**, on by default, only offered when the chat's character has code.
 
 It is a separate feature: `backend/status_bar/` and `frontend/src/features/status_bar/`.
+
+## Character card files
+
+A `.lorenook` file is a zip holding `card.json` and the images it refers to under `media/`:
+
+```json
+{
+  "format": "lorenook.character",
+  "version": 1,
+  "character": {"name": "…", "avatar": "media/<hash>.png", "scenes": [{"name": "默认", "initial_state": {}}], "…": "…"},
+  "features": {"illustrations": {"cast": [{"name": "…", "appearance": "…", "reference_image": "media/<hash>.webp"}]},
+               "status_bar": {"code": "…"}}
+}
+```
+
+- **`character` mirrors `CharacterCreate`** without IDs or `order` fields: list order is the order. Uploaded images become package paths; outside avatar URLs stay as they are.
+- **`features.<name>` belongs to that feature**, which registers how to export and import it. The core checks only that each is an object. Sections no installed feature reads are skipped, and the import says so.
+- **Version.** A wrong `format` or a `version` above the supported one is refused. Bump the version only for changes an older LoreNook can't read.
+- **Export** works for a library character (all scenes) and a chat's copy (its one scene). It writes what is saved.
+- **Import always creates a new library character**; names may repeat. Every image is checked by content and stored by hash. A missing or invalid image, or invalid feature data, fails the whole import.
+- **Code is dropped unless the user keeps it.** `state_schema` and `state_script` are unsandboxed Python, so the import first shows whether the card has them. Kept code runs at import as on any save. Dropping the Schema skips the scene checks, since scenes usually rely on its defaults; creating a chat still checks the scene.
+- Limits: 64 MB per file, 256 entries, 16 MB for `card.json` and for each image. Entries outside `card.json` and `media/` are ignored.
 
 ## Data management
 

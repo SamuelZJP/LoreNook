@@ -1,7 +1,8 @@
-import { request } from './client'
+import { download, request } from './client'
 import type { Schemas } from './client'
 
 export type Character = Schemas['CharacterRead']
+export type CardSummary = Schemas['CardSummary']
 export type CharacterCreate = Schemas['CharacterCreate']
 export type CharacterPatch = Schemas['CharacterPatch']
 export type Scene = Schemas['SceneRead']
@@ -119,6 +120,13 @@ export const api = {
   deleteModel: (s: Scope, id: string) => request<void>(`${modelBase(s)}/${id}`, json('DELETE')),
   invokeModel: (s: Scope, id: string, body: BuiltRequest) =>
     request<Schemas['ModelResponse']>(`${modelBase(s)}/${id}/invoke`, json('POST', body)),
+
+  // Character card files: a library character, or a chat's own copy with `chatId`
+  exportCard: (s: { characterId: string } | { chatId: string }) =>
+    download('chatId' in s ? `/api/chats/${s.chatId}/character/card` : `/api/characters/${s.characterId}/card`, '角色卡.lorenook'),
+  inspectCard: (file: Blob) => request<CardSummary>('/api/character-cards/inspect', { method: 'POST', file }),
+  importCard: (file: Blob, keepCode: boolean) =>
+    request<Character>('/api/character-cards/import', { method: 'POST', file, query: { keep_code: keepCode } }),
 
   // Uploaded images
   uploadMedia: (file: Blob) => request<Schemas['MediaRead']>('/api/media', { method: 'POST', file }),

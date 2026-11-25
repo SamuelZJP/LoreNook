@@ -22,6 +22,7 @@ Backend dependencies point one way: `api → workflows → modules → repositor
 | `backend/workflows/archive.py`, `archive_step.py` | Post-confirm pipeline; the shape all its model-backed steps share |
 | `backend/modules/memory/` | `sources.py` (validated records) → `layout.py` (plain numbers) → `render.py` (text) |
 | `backend/modules/presets/` | Sandboxed JS presets: receive materials, build the request, parse the response |
+| `backend/modules/character_cards/` | Card file format and zip; features add their data through `sections.py` |
 | `backend/modules/` (others) | One package per domain concept |
 | `backend/repository/` | Tables and queries |
 | `backend/illustrations/` | Illustration feature; `feature.py` is its single connection to the app |

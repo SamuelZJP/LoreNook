@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
-import { Save, Trash2, FileCode } from 'lucide-vue-next'
+import { Download, Save, Trash2, FileCode } from 'lucide-vue-next'
 import { api, definitionBase, type Character, type Identity, type SceneInput } from '@/api/endpoints'
 import CodeEditor from '../CodeEditor.vue'
 import ErrorBox from '../ErrorBox.vue'
@@ -150,6 +150,18 @@ async function save() {
   }
 }
 
+const exporting = ref(false)
+async function exportCard() {
+  exporting.value = true
+  try {
+    await api.exportCard(props.chatId ? { chatId: props.chatId } : { characterId: props.id! })
+  } catch (error) {
+    toast(error instanceof Error ? error.message : String(error), 'error')
+  } finally {
+    exporting.value = false
+  }
+}
+
 async function remove() {
   if (!props.id || props.chatId) return
   if (!confirm(`删除这个${noun.value}？已创建的聊天中的副本不受影响。`)) return
@@ -257,6 +269,10 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
       <ErrorBox v-if="saveError && !ownSave" :error="saveError" title="保存失败" />
       <div v-show="!ownSave" class="row actions">
         <button v-if="id && !chatId" class="btn danger" type="button" @click="remove"><Trash2 /> 删除</button>
+        <button
+          v-if="isCharacter && !creating" class="btn" type="button" :disabled="exporting"
+          :title="unsaved ? '导出的是已保存的内容' : undefined" @click="exportCard"
+        ><Download /> 导出角色卡</button>
         <span class="spacer" />
         <span v-if="scenesInvalid" class="hint bad">开场需要名称和有效的 JSON 初始变量</span>
         <span v-else-if="historyInvalid" class="hint bad">历史状态数量需为 0–100 的整数</span>

@@ -13,6 +13,18 @@ from backend.shared.errors import NotFoundError
 MAX_BYTES = 16 * 1024 * 1024
 EXTENSIONS = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"}
 MEDIA_NAME = re.compile(r"[0-9a-f]{64}\.(png|jpg|webp)")
+# Avatars and portraits store this URL; reference images store the bare name.
+URL_PREFIX = "/api/media/"
+
+
+def media_url(name: str) -> str:
+    return URL_PREFIX + name
+
+
+def name_from_url(url: str) -> str | None:
+    """The stored name behind an uploaded image's URL; None for anything else, such as an outside URL."""
+    name = url.removeprefix(URL_PREFIX)
+    return name if url.startswith(URL_PREFIX) and MEDIA_NAME.fullmatch(name) else None
 
 
 def sniff_image(data: bytes) -> str | None:

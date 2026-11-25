@@ -108,3 +108,43 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   }
   return data as T
 }
+
+/** The filename a download response names, preferring the UTF-8 form. */
+function filenameOf(response: Response, fallback: string): string {
+  const header = response.headers.get('content-disposition') ?? ''
+  const encoded = /filename\*=UTF-8''([^;]+)/i.exec(header)
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded[1])
+    } catch {
+      // Fall through to the plain name.
+    }
+  }
+  return /filename="([^"]+)"/i.exec(header)?.[1] ?? fallback
+}
+
+/** Fetch a file and hand it to the browser as a download. Errors are thrown like `request`'s. */
+export async function download(path: string, fallback: string): Promise<void> {
+  let response: Response
+  try {
+    response = await fetch(path)
+  } catch (error) {
+    throw new ApiError(0, String(error), null, true)
+  }
+  if (!response.ok) {
+    const text = await response.text()
+    let detail: unknown = text
+    try {
+      detail = (JSON.parse(text) as { detail?: unknown }).detail ?? text
+    } catch {
+      // Not JSON: keep the text.
+    }
+    throw new ApiError(response.status, detail)
+  }
+  const url = URL.createObjectURL(await response.blob())
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filenameOf(response, fallback)
+  link.click()
+  setTimeout(() => URL.revokeObjectURL(url), 0)
+}

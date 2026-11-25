@@ -1,13 +1,15 @@
-"""The feature's single connection to the application: routes, tables and the chat-created hook."""
+"""The feature's single connection to the application: routes, tables, card section and the chat-created hook."""
 
 from fastapi import FastAPI
 
 from backend.repository.queries import Repository
 from backend.status_bar.admin_tables import register_admin_tables
+from backend.status_bar.card import register_card_sections
 from backend.status_bar.api import router
 from backend.status_bar.service import StatusBarService
 
 register_admin_tables()
+register_card_sections()
 
 
 def install(app: FastAPI) -> None:

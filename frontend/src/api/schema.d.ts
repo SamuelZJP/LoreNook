@@ -98,6 +98,80 @@ export interface paths {
         patch: operations["update_identity_api_user_identities__identity_id__patch"];
         trace?: never;
     };
+    "/api/characters/{character_id}/card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Library Card */
+        get: operations["export_library_card_api_characters__character_id__card_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chats/{chat_id}/character/card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Chat Card */
+        get: operations["export_chat_card_api_chats__chat_id__character_card_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character-cards/inspect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Inspect
+         * @description The request body is the card file. Nothing is stored.
+         */
+        post: operations["inspect_api_character_cards_inspect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character-cards/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import
+         * @description The request body is the card file. Without `keep_code`, the card's Schema and state script are dropped.
+         */
+        post: operations["import__api_character_cards_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chats": {
         parameters: {
             query?: never;
@@ -1624,6 +1698,24 @@ export interface components {
             body: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+        };
+        /**
+         * CardSummary
+         * @description What an import would bring in, shown before the user confirms.
+         */
+        CardSummary: {
+            /** Name */
+            name: string;
+            /** Scenes */
+            scenes: number;
+            /** Has State Schema */
+            has_state_schema: boolean;
+            /** Has State Script */
+            has_state_script: boolean;
+            /** Features */
+            features: string[];
+            /** Unknown Features */
+            unknown_features: string[];
         };
         /** CastMemberInput */
         CastMemberInput: {
@@ -3253,6 +3345,119 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IdentityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_library_card_api_characters__character_id__card_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_chat_card_api_chats__chat_id__character_card_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    inspect_api_character_cards_inspect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardSummary"];
+                };
+            };
+        };
+    };
+    import__api_character_cards_import_post: {
+        parameters: {
+            query?: {
+                keep_code?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterRead"];
                 };
             };
             /** @description Validation Error */

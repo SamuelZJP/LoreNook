@@ -34,8 +34,10 @@ class CharacterService:
             except StateInitializationError as error:
                 raise StateInitializationError(f"开场「{scene.name}」：{error}") from error
 
-    def create(self, payload: CharacterCreate, chat_id: str | None = None) -> CharacterRead:
-        self._validate_scenes(payload.state_schema, payload.scenes)
+    def create(self, payload: CharacterCreate, chat_id: str | None = None, *, check_scenes: bool = True) -> CharacterRead:
+        """`check_scenes=False` is for a card imported without its Schema: creating a chat checks the scene."""
+        if check_scenes:
+            self._validate_scenes(payload.state_schema, payload.scenes)
         check_state_script(payload.state_script)
         return self._create(payload, chat_id)
 

@@ -5,7 +5,8 @@ A feature is a package that depends on the core, never the reverse. Its `feature
     install(app)                                  add routes and error handlers
     start(app, config, database, client, **opts)  start services, subscribe to hooks; returns a stop function
 
-Importing it also registers the feature's tables with the metadata and with data management.
+Importing it also registers the feature's tables with the metadata and with data management,
+and its section of a character card file.
 """
 
 from backend.illustrations import feature as illustrations

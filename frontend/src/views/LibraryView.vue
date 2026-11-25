@@ -14,6 +14,7 @@ import WorkflowEditor from '@/features/illustrations/components/WorkflowEditor.v
 import { illustrationApi } from '@/features/illustrations/api'
 import LibraryHub from '@/components/library/LibraryHub.vue'
 import LibraryCards, { type CardItem } from '@/components/library/LibraryCards.vue'
+import CardImport from '@/components/library/CardImport.vue'
 import { kindInfo, type LibraryKind } from '@/components/library/kinds'
 
 /** Three levels: the hub, one kind's cards, one record's editor. */
@@ -79,7 +80,10 @@ const onDeleted = () => go(null)
       <TopBar><RouterLink to="/library" class="btn ghost small"><ArrowLeft /> 资源库</RouterLink></TopBar>
       <div class="page">
         <div class="inner">
-          <h1 class="display">{{ info!.label }}</h1>
+          <div class="row heading">
+            <h1 class="display grow">{{ info!.label }}</h1>
+            <CardImport v-if="kind === 'characters'" />
+          </div>
           <ErrorBox v-if="current?.error.value" :error="current.error.value" />
           <LibraryCards v-else :kind="kind" :items="items" />
         </div>
@@ -118,6 +122,7 @@ const onDeleted = () => go(null)
 .inner.editor { max-width: 920px; gap: var(--space-4); }
 .display { font-family: var(--font-reading); font-size: var(--text-display); font-weight: 600; letter-spacing: 0.06em; }
 .title { font-family: var(--font-reading); font-size: var(--text-3xl); font-weight: 600; }
+.heading { flex-wrap: wrap; }
 .narrow-only { display: none; }
 @media (max-width: 899px) {
   .narrow-only { display: flex; }

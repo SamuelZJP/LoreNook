@@ -6,6 +6,7 @@ from fastapi import FastAPI
 import httpx
 
 from backend.api.catalog import router as catalog_router
+from backend.api.character_cards import router as character_cards_router
 from backend.api.chats import router as chats_router
 from backend.api.chat_templates import router as chat_templates_router
 from backend.api.definitions import router as definitions_router
@@ -64,6 +65,7 @@ def create_app(
     app = FastAPI(title="LoreNook", version="0.1.0", lifespan=lifespan)
     register_error_handlers(app)
     app.include_router(catalog_router)
+    app.include_router(character_cards_router)
     app.include_router(chats_router)
     app.include_router(chat_templates_router)
     app.include_router(definitions_router)
