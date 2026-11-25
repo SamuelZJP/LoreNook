@@ -2,6 +2,9 @@
 
 For frontend development and testing only: no network requests reach any model provider.
 
+Seeds an example character on an empty database, then adds any story from mock_stories.py whose
+character is missing: characters with many nested state fields and chats already some rounds in.
+
     python frontend/dev/mock_backend.py [--port 8000] [--db data/mock.db] [--reset] [--no-seed]
 
 Markers in the user input control the mock models (they reach every prompt that includes the input):
@@ -34,9 +37,12 @@ import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+MOCK_IMAGES = ROOT / "data" / "mock-images"
 sys.path.insert(0, str(ROOT))
 
 import httpx  # noqa: E402
+
+from mock_stories import seed_stories  # noqa: E402
 
 failed_once: set[str] = set()
 day_offset = 0
@@ -246,28 +252,30 @@ def seed(app) -> None:
                 "workflow": {**MOCK_WORKFLOW, "10": {"class_type": "LLMAPIProNode", "inputs": {"prompt": "{{prompt}}", "images": "{{images}}"}}},
             }).raise_for_status()
             print("Seeded mock image workflow.")
-        if client.get("/api/characters").json():
-            return
-        client.post("/api/characters", json={
-            "name": "示例角色", "description": "用于前端开发的示例角色",
-            "scenes": [
-                {"name": "图书馆", "description": "早晨，图书馆刚开门",
-                 "first_message": "<content>“你来了。”她从书页上抬起头。</content>"},
-                {"order": 1, "name": "闭馆后", "description": "夜晚，只剩你们两人",
-                 "first_message": "<content>灯一盏盏熄灭，她合上了最后一本书。</content>",
-                 "initial_state": {"世界": {"时间": "21:30", "地点": "图书馆"}, "角色": {"好感度": 30, "关系": "熟人"}}},
-            ],
-            "state_schema": schema,
-            "definitions": [{"content": "她是一名图书管理员。"},
-                            {"content": "当前时间：{{ state[\"世界\"][\"时间\"] }}", "has_template": True}],
-        }).raise_for_status()
-        client.post("/api/user-identities", json={"name": "旅人", "description": "示例身份"}).raise_for_status()
-        client.post("/api/writing-presets", json={"name": "Google 工具示例", "source": preset}).raise_for_status()
-        client.post("/api/model-configs", json={
-            "name": "模拟 Google", "api_type": "google_generate_content",
-            "base_url": "https://mock.invalid/v1beta", "model": "mock-model", "api_key": "mock-key",
-        }).raise_for_status()
-        print("Seeded example character, identity, preset and mock model configuration.")
+        if not client.get("/api/characters").json():
+            client.post("/api/characters", json={
+                "name": "示例角色", "description": "用于前端开发的示例角色",
+                "scenes": [
+                    {"name": "图书馆", "description": "早晨，图书馆刚开门",
+                     "first_message": "<content>“你来了。”她从书页上抬起头。</content>"},
+                    {"order": 1, "name": "闭馆后", "description": "夜晚，只剩你们两人",
+                     "first_message": "<content>灯一盏盏熄灭，她合上了最后一本书。</content>",
+                     "initial_state": {"世界": {"时间": "21:30", "地点": "图书馆"}, "角色": {"好感度": 30, "关系": "熟人"}}},
+                ],
+                "state_schema": schema,
+                "definitions": [{"content": "她是一名图书管理员。"},
+                                {"content": "当前时间：{{ state[\"世界\"][\"时间\"] }}", "has_template": True}],
+            }).raise_for_status()
+            client.post("/api/user-identities", json={"name": "旅人", "description": "示例身份"}).raise_for_status()
+            client.post("/api/writing-presets", json={"name": "Google 工具示例", "source": preset}).raise_for_status()
+            client.post("/api/model-configs", json={
+                "name": "模拟 Google", "api_type": "google_generate_content",
+                "base_url": "https://mock.invalid/v1beta", "model": "mock-model", "api_key": "mock-key",
+            }).raise_for_status()
+            print("Seeded example character, identity, preset and mock model configuration.")
+        added = seed_stories(client, app.state.database, MOCK_IMAGES, png)
+        if added:
+            print("Seeded mock stories: " + "、".join(added))
 
 
 def main() -> None:
@@ -291,7 +299,7 @@ def main() -> None:
     from backend.config import Settings
     from backend.main import create_app
 
-    images, media = str(ROOT / "data" / "mock-images"), str(ROOT / "data" / "mock-media")
+    images, media = str(MOCK_IMAGES), str(ROOT / "data" / "mock-media")
     app = create_app(Settings(database_url=url, image_directory=images, media_directory=media, comfyui_poll_seconds=0.5),
                      llm_transport=httpx.MockTransport(handler), comfyui_transport=httpx.MockTransport(comfy_handler),
                      comfyui_connect=MockComfySocket)
