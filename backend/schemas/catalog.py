@@ -22,14 +22,16 @@ class DefinitionRead(DefinitionInput):
 class IdentityCreate(Contract):
     name: Name
     avatar: str | None = None
+    portrait: str | None = None
     description: str = ""
     definitions: list[DefinitionInput] = Field(default_factory=list)
 
 
 class IdentityPatch(PatchContract):
-    nullable_fields = frozenset({"avatar"})
+    nullable_fields = frozenset({"avatar", "portrait"})
     name: Name | None = None
     avatar: str | None = None
+    portrait: str | None = None
     description: str | None = None
     definitions: list[DefinitionInput] | None = None
 

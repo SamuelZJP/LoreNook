@@ -25,7 +25,7 @@ def run_api(database, scenario, factory=python_initial_state, llm_transport=None
 @pytest.mark.parametrize("path", ["/api/characters", "/api/user-identities"])
 def test_library_crud_patch_semantics_and_validation(database, path):
     async def scenario(client):
-        created = await client.post(path, json={"name": "来源", "avatar": "avatar.png", "description": "原描述",
+        created = await client.post(path, json={"name": "来源", "avatar": "avatar.png", "portrait": "portrait.png", "description": "原描述",
                                                "definitions": [{"content": "定义原文"}], **({"state_schema": STATE_SCHEMA} if path == "/api/characters" else {})})
         assert created.status_code == 201, created.text
         data = created.json()
@@ -33,9 +33,10 @@ def test_library_crud_patch_semantics_and_validation(database, path):
         url = f"{path}/{data['id']}"
         assert (await client.get(path)).json() == [data]
         assert (await client.get(url)).json() == data
-        patched = await client.patch(url, json={"name": "新名称", "avatar": None})
+        assert data["portrait"] == "portrait.png"
+        patched = await client.patch(url, json={"name": "新名称", "avatar": None, "portrait": None})
         assert patched.status_code == 200
-        assert patched.json()["name"] == "新名称" and patched.json()["avatar"] is None
+        assert patched.json()["name"] == "新名称" and patched.json()["avatar"] is None and patched.json()["portrait"] is None
         assert patched.json()["description"] == "原描述"
         assert patched.json()["definitions"] == data["definitions"]
         assert (await client.patch(url, json={})).json() == patched.json()

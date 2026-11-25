@@ -46,6 +46,7 @@ class IdentityRow(TimestampedRow):
     chat_id: RecordId | None = None
     name: Name
     avatar: str | None = None
+    portrait: str | None = None
     description: str = ""
 
 

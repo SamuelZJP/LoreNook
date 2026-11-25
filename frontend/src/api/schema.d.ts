@@ -1661,6 +1661,8 @@ export interface components {
             name: string;
             /** Avatar */
             avatar?: string | null;
+            /** Portrait */
+            portrait?: string | null;
             /**
              * Description
              * @default
@@ -1702,6 +1704,8 @@ export interface components {
             name?: string | null;
             /** Avatar */
             avatar?: string | null;
+            /** Portrait */
+            portrait?: string | null;
             /** Description */
             description?: string | null;
             /** Definitions */
@@ -1725,6 +1729,8 @@ export interface components {
             name: string;
             /** Avatar */
             avatar?: string | null;
+            /** Portrait */
+            portrait?: string | null;
             /**
              * Description
              * @default
@@ -2177,6 +2183,8 @@ export interface components {
             name: string;
             /** Avatar */
             avatar?: string | null;
+            /** Portrait */
+            portrait?: string | null;
             /**
              * Description
              * @default
@@ -2191,6 +2199,8 @@ export interface components {
             name?: string | null;
             /** Avatar */
             avatar?: string | null;
+            /** Portrait */
+            portrait?: string | null;
             /** Description */
             description?: string | null;
             /** Definitions */
@@ -2202,6 +2212,8 @@ export interface components {
             name: string;
             /** Avatar */
             avatar?: string | null;
+            /** Portrait */
+            portrait?: string | null;
             /**
              * Description
              * @default

@@ -5,8 +5,8 @@ import { Save, Trash2, FileCode } from 'lucide-vue-next'
 import { api, definitionBase, type Character, type Identity, type SceneInput } from '@/api/endpoints'
 import CodeEditor from '../CodeEditor.vue'
 import ErrorBox from '../ErrorBox.vue'
-import AvatarBadge from '../AvatarBadge.vue'
 import ImageUpload from '../ImageUpload.vue'
+import PortraitUpload from '../PortraitUpload.vue'
 import PortraitEditor from '@/features/illustrations/components/PortraitEditor.vue'
 import StatusBarEditor from '@/features/status_bar/components/StatusBarEditor.vue'
 import ScopeNote from './ScopeNote.vue'
@@ -37,15 +37,15 @@ const isCharacter = computed(() => props.kind === 'character')
 const noun = computed(() => (isCharacter.value ? '角色' : '用户身份'))
 const creating = computed(() => !props.chatId && !props.id)
 
-const fields = ['name', 'avatar', 'description', 'state_schema', 'state_reference', 'state_update_rules', 'state_script'] as const
+const fields = ['name', 'avatar', 'portrait', 'description', 'state_schema', 'state_reference', 'state_update_rules', 'state_script'] as const
 type Field = (typeof fields)[number]
 const draft = reactive<Record<Field, string>>({
-  name: '', avatar: '', description: '', state_schema: '', state_reference: '', state_update_rules: '', state_script: '',
+  name: '', avatar: '', portrait: '', description: '', state_schema: '', state_reference: '', state_update_rules: '', state_script: '',
 })
 // How many earlier states the state script receives; the one numeric profile field.
 const scriptHistory = ref(0)
 const scenes = ref<SceneDraft[]>([])
-const activeFields = computed(() => (isCharacter.value ? fields : (['name', 'avatar', 'description'] as const)))
+const activeFields = computed(() => (isCharacter.value ? fields : (['name', 'avatar', 'portrait', 'description'] as const)))
 
 function fill(p: Profile | null, keepKeys = false) {
   for (const f of fields) {
@@ -107,13 +107,13 @@ async function load() {
 }
 watch(() => [props.kind, props.id, props.chatId], load, { immediate: true })
 
+// Image references are nullable: an empty draft means null.
+const NULLABLE: readonly Field[] = ['avatar', 'portrait']
 function value(f: Field): unknown {
-  return (original.value as unknown as Record<string, unknown> | null)?.[f] ?? (f === 'avatar' ? null : '')
+  return (original.value as unknown as Record<string, unknown> | null)?.[f] ?? (NULLABLE.includes(f) ? null : '')
 }
-const changed = computed(() => activeFields.value.filter((f) => {
-  const now = f === 'avatar' ? (draft.avatar.trim() || null) : draft[f]
-  return now !== value(f)
-}))
+const outgoing = (f: Field) => (NULLABLE.includes(f) ? (draft[f].trim() || null) : draft[f])
+const changed = computed(() => activeFields.value.filter((f) => outgoing(f) !== value(f)))
 
 async function save() {
   saving.value = true
@@ -122,13 +122,13 @@ async function save() {
     let saved: Profile
     if (creating.value) {
       const body: Record<string, unknown> = {}
-      for (const f of activeFields.value) body[f] = f === 'avatar' ? (draft.avatar.trim() || null) : draft[f]
+      for (const f of activeFields.value) body[f] = outgoing(f)
       if (isCharacter.value) Object.assign(body, { scenes: sceneInputs(), state_script_history: scriptHistory.value })
       saved = isCharacter.value ? await api.createCharacter(body as never) : await api.createIdentity(body as never)
     } else {
-      // PATCH only what changed; avatar is the one nullable field.
+      // PATCH only what changed.
       const body: Record<string, unknown> = {}
-      for (const f of changed.value) body[f] = f === 'avatar' ? (draft.avatar.trim() || null) : draft[f]
+      for (const f of changed.value) body[f] = outgoing(f)
       if (scenesChanged.value) body.scenes = sceneInputs()
       if (historyChanged.value) body.state_script_history = scriptHistory.value
       if (props.chatId) {
@@ -166,7 +166,7 @@ async function remove() {
 type Tab = 'basic' | 'scenes' | 'state' | 'definitions' | 'portrait' | 'status-bar'
 const tab = ref<Tab>('basic')
 const tabs = computed(() => [
-  { id: 'basic' as const, label: '基本信息', fields: ['name', 'avatar', 'description'] as Field[] },
+  { id: 'basic' as const, label: '基本信息', fields: ['name', 'avatar', 'portrait', 'description'] as Field[] },
   ...(isCharacter.value ? [{ id: 'scenes' as const, label: '开场', fields: [] as Field[] }] : []),
   ...(isCharacter.value ? [{ id: 'state' as const, label: '状态', fields: ['state_schema', 'state_reference', 'state_update_rules', 'state_script'] as Field[] }] : []),
   // These save on their own against an existing record, so they appear once it exists.
@@ -198,21 +198,19 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
         </button>
       </nav>
 
-      <section v-show="tab === 'basic'" class="stack">
-        <div class="row">
-          <AvatarBadge :name="draft.name" :src="draft.avatar" :size="52" />
-          <div class="grow stack tight">
-            <div class="field"><label>名称</label><input v-model="draft.name" class="input" /></div>
+      <section v-show="tab === 'basic'" class="basic">
+        <PortraitUpload v-model="draft.portrait" :name="draft.name" :avatar="draft.avatar" class="portrait" />
+        <div class="grow stack">
+          <div class="field"><label>名称</label><input v-model="draft.name" class="input" /></div>
+          <div class="field">
+            <label>头像</label>
+            <div class="row avatar-row">
+              <ImageUpload :model-value="draft.avatar || null" label="上传头像" value="url" :size="72" @update:model-value="draft.avatar = $event ?? ''" />
+              <input v-model="draft.avatar" class="input grow" placeholder="或填写图片 URL" aria-label="头像 URL" />
+            </div>
           </div>
+          <div class="field"><label>简介</label><textarea v-model="draft.description" class="textarea" rows="4" /></div>
         </div>
-        <div class="field">
-          <label>头像</label>
-          <div class="row avatar-row">
-            <ImageUpload :model-value="draft.avatar || null" label="上传头像" value="url" :size="72" @update:model-value="draft.avatar = $event ?? ''" />
-            <input v-model="draft.avatar" class="input grow" placeholder="或填写图片 URL（可留空）" aria-label="头像 URL" />
-          </div>
-        </div>
-        <div class="field"><label>描述</label><textarea v-model="draft.description" class="textarea" rows="3" /></div>
       </section>
 
       <section v-if="isCharacter" v-show="tab === 'scenes'" class="stack">
@@ -283,6 +281,10 @@ const defBase = computed(() => (original.value ? definitionBase(props.kind, orig
 .dot { display: inline-block; width: 6px; height: 6px; margin-left: var(--space-1); border-radius: 50%; background: var(--warn); vertical-align: middle; }
 .bad { color: var(--danger); }
 .avatar-row { align-items: flex-start; }
+/* The form drops below the portrait when the pane is too narrow for both. */
+.basic { display: flex; flex-wrap: wrap; gap: var(--space-5); align-items: flex-start; }
+.basic > .grow { min-width: 260px; }
+.portrait { width: 180px; flex-shrink: 0; }
 .tight-row { gap: var(--space-1); }
 .history { max-width: 160px; }
 .actions { position: sticky; bottom: 0; background: var(--bg-elev); padding: var(--space-2) 0; z-index: 1; }

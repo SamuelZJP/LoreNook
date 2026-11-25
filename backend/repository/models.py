@@ -69,6 +69,8 @@ class Character(Identified, Timestamped, Base):
     )
     name: Mapped[str] = mapped_column(Text)
     avatar: Mapped[str | None] = mapped_column(Text)
+    # Upright 3:4 cover shown on cards and the character page.
+    portrait: Mapped[str | None] = mapped_column(Text)
     description: Mapped[str] = mapped_column(Text, default="", server_default="")
     state_schema: Mapped[str] = mapped_column(Text, default="", server_default="")
     state_reference: Mapped[str] = mapped_column(Text, default="", server_default="")
@@ -100,6 +102,8 @@ class UserIdentity(Identified, Timestamped, Base):
     )
     name: Mapped[str] = mapped_column(Text)
     avatar: Mapped[str | None] = mapped_column(Text)
+    # Upright 3:4 cover shown on cards and the character page.
+    portrait: Mapped[str | None] = mapped_column(Text)
     description: Mapped[str] = mapped_column(Text, default="", server_default="")
 
 

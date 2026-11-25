@@ -22,7 +22,7 @@ def sources(database):
     with database.transaction() as session:
         repository = Repository(session)
         character = CharacterService(repository, initial_state).create(CharacterCreate(
-            name="来源角色", avatar="avatars/character.png", description="角色介绍",
+            name="来源角色", avatar="avatars/character.png", portrait="portraits/character.png", description="角色介绍",
             scenes=[{"name": "白天", "first_message": "<content>开场原文</content>"},
                     {"order": 1, "name": "夜晚", "description": "晚自习后", "first_message": "夜晚开场",
                      "initial_state": {"数字": 20}}],
@@ -34,7 +34,7 @@ def sources(database):
             ],
         ))
         identity = IdentityService(repository).create(IdentityCreate(
-            name="来源身份", avatar="avatars/user.png", description="身份介绍",
+            name="来源身份", avatar="avatars/user.png", portrait="portraits/user.png", description="身份介绍",
             definitions=[{"order": 0, "content": "身份定义"}],
         ))
         preset = repository.add(WritingPreset(name="来源预设", source="function build() {}"))
@@ -82,6 +82,8 @@ def test_create_copies_everything_rebuilds_links_and_deduplicates(database, sour
     assert [(scene.name, scene.first_message) for scene in result.character.scenes] == [
         ("白天", "<content>开场原文</content>")]
     assert result.character.scenes[0].character_id == result.character.id
+    assert result.character.portrait == "portraits/character.png"
+    assert result.user_identity.portrait == "portraits/user.png"
     assert result.character.state_schema == "schema source"
     assert result.character.state_reference == "参考"
     assert result.character.state_update_rules == "规则"

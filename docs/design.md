@@ -7,7 +7,7 @@ The concepts, rules and reasons behind the code. For *how* something is implemen
 | Concept | Meaning |
 | --- | --- |
 | Chat | One conversation between a user identity and a character. Owns its rounds, state and memory. |
-| Character / User identity | The roleplay character and the user's persona. Each has a name, avatar, description and definitions. |
+| Character / User identity | The roleplay character and the user's persona. Each has a name, avatar, an optional 3:4 portrait (the cover on cards and pages), description and definitions. |
 | Definition | A setting entry (incl. worldbook-style lore) owned by a character or identity. Optionally a Jinja2 template. |
 | Scene | One of a character's openings: a First Message plus initial-state overrides. A chat is created from exactly one scene. |
 | First Message | The selected scene's opening text, shown as entry 0 and always passed to the preset. |
