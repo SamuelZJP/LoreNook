@@ -1,9 +1,9 @@
 # Deployment
 
-Production runs on Ubuntu 26.04 at `192.168.31.64`, in `/home/samuel/LoreNook`, as user `samuel`.
+Production runs on an Ubuntu server on the home LAN, from `~/LoreNook`, as an unprivileged user (`<user>` below). A cloud host with a public address terminates HTTPS and forwards through a tunnel.
 
 ```text
-https://lorenook.cryingstray.cn
+https://lorenook.example.com
   → Cloud Caddy (HTTPS)
   → frp TCP tunnel
   → LAN Caddy :8080 (host routing)
@@ -40,40 +40,9 @@ curl --fail http://127.0.0.1:18780/api/public/home && .venv/bin/python -m backen
 
 Run it step by step and stop on any failure. Code-only changes don't need a Caddy reload.
 
-## Upgrading to v3 (once)
+## Migrating an older database to accounts (once)
 
-v3 adds users. It is the Update procedure with an administrator for the migration, who will own all existing data:
-
-```bash
-cd ~/LoreNook
-sudo systemctl stop lorenook
-umask 077
-snap="backups/pre-v3-$(date +%Y%m%d-%H%M%S).db"
-sqlite3 data/lorenook.db ".backup '$snap'" && git rev-parse HEAD > "${snap%.db}.commit"
-git pull --ff-only
-.venv/bin/python -m pip install -r requirements-dev.lock && .venv/bin/python -m pip install --no-deps -e .
-.venv/bin/python -m pytest -q
-(cd frontend && npm ci && npm run build)
-sudo setfacl -R -m u:caddy:r-X frontend/dist
-set -a; source deploy/lorenook.env; set +a
-read -r LORENOOK_ADMIN_USERNAME && read -rs LORENOOK_ADMIN_PASSWORD && export LORENOOK_ADMIN_USERNAME LORENOOK_ADMIN_PASSWORD
-.venv/bin/python -m alembic upgrade head && .venv/bin/python -m alembic check
-unset LORENOOK_ADMIN_USERNAME LORENOOK_ADMIN_PASSWORD
-```
-
-`LORENOOK_MEDIA_DIRECTORY` must point at the real uploads when migrating (the default `data/media` does), so existing images are registered to the administrator.
-
-Add the new settings to `deploy/lorenook.env` (see its table below: at least `LORENOOK_ICP_NUMBER`, and `LORENOOK_MODEL_EXTRA_NETWORKS` if `getent ahosts api.deepseek.com` answers `198.18.x.x`; never the admin password), then:
-
-```bash
-sudo systemctl start lorenook
-curl --fail http://127.0.0.1:18780/api/public/home
-set -a; source deploy/lorenook.env; set +a; .venv/bin/python -m backend.cli user list
-```
-
-Then update the LAN Caddy (no `/docs` routes, `trusted_proxies`; see LAN Caddy below), validate and reload it.
-
-Cut over in two steps: first keep Authelia in front (`import protected` in the Cloud Caddy block) and check sign-in, sign-out, and that a second test user sees none of the administrator's data. Then remove `import protected` and reload the cloud Caddy.
+Databases from before built-in users need an administrator for the migration, who will own all existing data. Run the Update procedure, but before `alembic upgrade head` export `LORENOOK_ADMIN_USERNAME` and `LORENOOK_ADMIN_PASSWORD` (read them with `read -rs`, never store them in the env file), and unset them afterwards. `LORENOOK_MEDIA_DIRECTORY` must point at the real uploads so existing images are registered to the administrator.
 
 ## Users
 
@@ -157,9 +126,9 @@ Node must be `^20.19.0 || >=22.12.0`. The app doesn't load `.env` or migrate on 
 | `LORENOOK_COOKIE_SECURE` | `1` | Session cookie only over HTTPS. `0` only for plain-http testing on a LAN address. |
 | `LORENOOK_API_DOCS` | `0` | `1` serves `/docs` and `/openapi.json` (development) |
 | `LORENOOK_DEMO_TEMPLATE` | empty | Username of the account demo links copy; empty turns redeeming off |
-| `LORENOOK_PUBLIC_ORIGIN` | empty | Site address, e.g. `https://lorenook.cryingstray.cn`, for links the command line prints |
+| `LORENOOK_PUBLIC_ORIGIN` | empty | Site address, e.g. `https://lorenook.example.com`, for links the command line prints |
 
-`LORENOOK_ADMIN_USERNAME` and `LORENOOK_ADMIN_PASSWORD` are read only by the v3 migration; don't keep them in the file.
+`LORENOOK_ADMIN_USERNAME` and `LORENOOK_ADMIN_PASSWORD` are read only by the accounts migration; don't keep them in the file.
 
 ### `deploy/lorenook.service`
 
@@ -173,11 +142,11 @@ After=network-online.target
 
 [Service]
 Type=simple
-User=samuel
-WorkingDirectory=/home/samuel/LoreNook
-EnvironmentFile=/home/samuel/LoreNook/deploy/lorenook.env
+User=<user>
+WorkingDirectory=/home/<user>/LoreNook
+EnvironmentFile=/home/<user>/LoreNook/deploy/lorenook.env
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/home/samuel/LoreNook/.venv/bin/python -m uvicorn backend.main:app --host 127.0.0.1 --port 18780 --workers 1 --timeout-graceful-shutdown 420
+ExecStart=/home/<user>/LoreNook/.venv/bin/python -m uvicorn backend.main:app --host 127.0.0.1 --port 18780 --workers 1 --timeout-graceful-shutdown 420
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=450
@@ -197,14 +166,14 @@ sudo systemctl enable --now "$HOME/LoreNook/deploy/lorenook.service"
 Let the `caddy` user read the build:
 
 ```bash
-sudo setfacl -m u:caddy:--x /home/samuel /home/samuel/LoreNook /home/samuel/LoreNook/frontend
-sudo setfacl -R -m u:caddy:r-X /home/samuel/LoreNook/frontend/dist
+sudo setfacl -m u:caddy:--x /home/<user> /home/<user>/LoreNook /home/<user>/LoreNook/frontend
+sudo setfacl -R -m u:caddy:r-X /home/<user>/LoreNook/frontend/dist
 ```
 
 Add inside the existing `:8080` block in `/etc/caddy/Caddyfile` (keep the final `handle { abort }`):
 
 ```caddyfile
-@lorenook host lorenook.cryingstray.cn
+@lorenook host lorenook.example.com
 handle @lorenook {
     encode gzip
     @lorenook_backend path /api /api/* /health
@@ -212,11 +181,11 @@ handle @lorenook {
         reverse_proxy 127.0.0.1:18780
     }
     handle /assets/* {
-        root * /home/samuel/LoreNook/frontend/dist
+        root * /home/<user>/LoreNook/frontend/dist
         file_server
     }
     handle {
-        root * /home/samuel/LoreNook/frontend/dist
+        root * /home/<user>/LoreNook/frontend/dist
         try_files {path} /index.html
         header Cache-Control "no-cache"
         file_server
@@ -245,12 +214,12 @@ sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile && sudo sy
 ### Cloud Caddy
 
 ```caddyfile
-lorenook.cryingstray.cn {
+lorenook.example.com {
     reverse_proxy 127.0.0.1:8080
 }
 ```
 
-Make sure frps port 8080 isn't publicly reachable.
+Make sure the tunnel's forwarded port isn't publicly reachable.
 
 ### Nightly backup
 
@@ -259,7 +228,7 @@ Make sure frps port 8080 isn't publicly reachable.
 ```bash
 #!/bin/sh
 set -eu
-cd /home/samuel/LoreNook
+cd /home/<user>/LoreNook
 umask 077
 stamp=$(date +%Y%m%d-%H%M%S)
 sqlite3 data/lorenook.db ".backup 'backups/nightly-$stamp.db'"
@@ -275,8 +244,8 @@ Description=LoreNook nightly backup
 
 [Service]
 Type=oneshot
-User=samuel
-ExecStart=/home/samuel/LoreNook/deploy/lorenook-backup.sh
+User=<user>
+ExecStart=/home/<user>/LoreNook/deploy/lorenook-backup.sh
 ```
 
 `deploy/lorenook-backup.timer`:
